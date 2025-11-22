@@ -13,6 +13,10 @@ import SettingsModule from './components/SettingsModule';
 import AdvancedStatistics from './components/AdvancedStatistics';
 import InvoiceReminders from './components/InvoiceReminders';
 import SessionHistory from './components/SessionHistory';
+import WeeklyPlanner from './components/WeeklyPlanner';
+import SessionTemplates from './components/SessionTemplates';
+import MarketingAutomation from './components/MarketingAutomation';
+import ProductsInventory from './components/ProductsInventory';
 import { checkAvailability, calculateLogistics, suggestOptimalTimeSlots } from './services/logisticsService';
 import { Patient, Appointment, ApptStatus, PatientType, Invoice, InvoiceStatus, Expense, AppSettings } from './types';
 import { X, Save, Clock, MapPin, User, Globe, AlertTriangle, Search, Zap, Plus, ChevronLeft } from 'lucide-react';
@@ -651,6 +655,14 @@ const App: React.FC = () => {
           {currentView === 'reminders' && <InvoiceReminders />}
 
           {currentView === 'records' && <SessionHistory />}
+
+          {currentView === 'planner' && <WeeklyPlanner />}
+
+          {currentView === 'templates' && <SessionTemplates />}
+
+          {currentView === 'marketing' && <MarketingAutomation />}
+
+          {currentView === 'inventory' && <ProductsInventory />}
         </div>
 
         {isNewApptModalOpen && renderNewApptModal()}

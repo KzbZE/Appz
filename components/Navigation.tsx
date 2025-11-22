@@ -1,5 +1,5 @@
 import React from 'react';
-import { LayoutDashboard, Users, TrendingUp, Calendar, Settings, PieChart, BarChart, FileText, Bell } from 'lucide-react';
+import { LayoutDashboard, Users, TrendingUp, Calendar, Settings, PieChart, BarChart, FileText, Bell, CalendarDays, FileCode, Send, Package } from 'lucide-react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../db';
 
@@ -14,17 +14,21 @@ const Navigation: React.FC<NavigationProps> = ({ currentView, setView }) => {
   const navItems = [
     { id: 'dashboard', label: 'Pilotage', icon: LayoutDashboard },
     { id: 'calendar', label: 'Agenda', icon: Calendar },
+    { id: 'planner', label: 'Planning', icon: CalendarDays },
     { id: 'patients', label: 'Patients', icon: Users },
     { id: 'records', label: 'Dossiers', icon: FileText },
+    { id: 'templates', label: 'Templates', icon: FileCode },
     { id: 'coach', label: 'IA Coach', icon: TrendingUp },
     { id: 'finance', label: 'Finance', icon: PieChart },
+    { id: 'inventory', label: 'Produits', icon: Package },
+    { id: 'marketing', label: 'Marketing', icon: Send },
     { id: 'reminders', label: 'Rappels', icon: Bell },
     { id: 'stats', label: 'Stats', icon: BarChart },
   ];
 
   const mobileNavItems = [
     { id: 'dashboard', label: 'Accueil', icon: LayoutDashboard },
-    { id: 'calendar', label: 'Agenda', icon: Calendar },
+    { id: 'planner', label: 'Planning', icon: CalendarDays },
     { id: 'patients', label: 'Patients', icon: Users },
     { id: 'records', label: 'Dossiers', icon: FileText },
     { id: 'finance', label: 'Finance', icon: PieChart },
