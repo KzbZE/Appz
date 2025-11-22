@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { Appointment, Patient, Invoice, Session, PatientType, ApptStatus, InvoiceStatus } from '../types';
-import { TrendingUp, Users, PieChart, Award, Activity, DollarSign, MapPin, ArrowUpRight, ArrowDownRight, Search, Calendar, Target, AlertCircle, ChevronRight, Zap, BarChart3 } from 'lucide-react';
+import { TrendingUp, Users, PieChart, Award, Activity, DollarSign, MapPin, ArrowUpRight, ArrowDownRight, Search, Calendar, Target, AlertCircle, ChevronRight, Zap, BarChart3, Clock, Route, Percent, TrendingDown, Star, Heart, Navigation, Sparkles, Crown, Trophy, Flame } from 'lucide-react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../db';
 
@@ -46,6 +46,15 @@ const AdvancedStatistics: React.FC = () => {
     return { start, end };
   }, [period, selectedMonth, selectedYear]);
 
+  // Previous period for comparison
+  const previousPeriodRange = useMemo(() => {
+    const duration = periodRange.end.getTime() - periodRange.start.getTime();
+    return {
+      start: new Date(periodRange.start.getTime() - duration),
+      end: new Date(periodRange.start.getTime() - 1)
+    };
+  }, [periodRange]);
+
   // Filter data by period
   const filteredAppointments = useMemo(() =>
     appointments.filter(a => {
@@ -53,6 +62,14 @@ const AdvancedStatistics: React.FC = () => {
       return date >= periodRange.start && date <= periodRange.end;
     }),
     [appointments, periodRange]
+  );
+
+  const previousAppointments = useMemo(() =>
+    appointments.filter(a => {
+      const date = new Date(a.startTime);
+      return date >= previousPeriodRange.start && date <= previousPeriodRange.end;
+    }),
+    [appointments, previousPeriodRange]
   );
 
   const filteredSessions = useMemo(() =>
@@ -63,12 +80,28 @@ const AdvancedStatistics: React.FC = () => {
     [sessions, periodRange]
   );
 
+  const previousSessions = useMemo(() =>
+    sessions.filter(s => {
+      const date = new Date(s.date);
+      return date >= previousPeriodRange.start && date <= previousPeriodRange.end;
+    }),
+    [sessions, previousPeriodRange]
+  );
+
   const filteredInvoices = useMemo(() =>
     invoices.filter(i => {
       const date = new Date(i.date);
       return date >= periodRange.start && date <= periodRange.end;
     }),
     [invoices, periodRange]
+  );
+
+  const previousInvoices = useMemo(() =>
+    invoices.filter(i => {
+      const date = new Date(i.date);
+      return date >= previousPeriodRange.start && date <= previousPeriodRange.end;
+    }),
+    [invoices, previousPeriodRange]
   );
 
   // Monthly breakdown for year view
@@ -87,6 +120,11 @@ const AdvancedStatistics: React.FC = () => {
         return d >= monthStart && d <= monthEnd;
       });
 
+      const monthAppts = appointments.filter(a => {
+        const d = new Date(a.startTime);
+        return d >= monthStart && d <= monthEnd;
+      });
+
       const revenue = monthInvoices.reduce((sum, inv) => sum + inv.amountPaid, 0);
       const pending = monthInvoices.reduce((sum, inv) => sum + (inv.amountTTC - inv.amountPaid), 0);
 
@@ -94,6 +132,7 @@ const AdvancedStatistics: React.FC = () => {
         month: i,
         name: new Date(selectedYear, i).toLocaleDateString('fr-FR', { month: 'short' }),
         sessions: monthSessions.length,
+        appointments: monthAppts.length,
         revenue,
         pending,
         total: revenue + pending
@@ -101,15 +140,25 @@ const AdvancedStatistics: React.FC = () => {
     });
 
     return months;
-  }, [selectedYear, sessions, invoices]);
+  }, [selectedYear, sessions, invoices, appointments]);
 
-  // Core statistics
+  // ADVANCED STATISTICS
   const stats = useMemo(() => {
     const completedAppts = filteredAppointments.filter(a => a.status === ApptStatus.COMPLETED);
+    const prevCompletedAppts = previousAppointments.filter(a => a.status === ApptStatus.COMPLETED);
+
     const totalRevenue = filteredInvoices.reduce((sum, inv) => sum + inv.amountPaid, 0);
+    const prevRevenue = previousInvoices.reduce((sum, inv) => sum + inv.amountPaid, 0);
+    const revenueGrowth = prevRevenue > 0 ? ((totalRevenue - prevRevenue) / prevRevenue) * 100 : 0;
+
     const totalPending = filteredInvoices.reduce((sum, inv) => sum + (inv.amountTTC - inv.amountPaid), 0);
     const totalSessions = filteredSessions.length;
+    const prevSessions = previousSessions.length;
+    const sessionGrowth = prevSessions > 0 ? ((totalSessions - prevSessions) / prevSessions) * 100 : 0;
+
     const avgSessionPrice = totalSessions > 0 ? (totalRevenue / totalSessions) : 0;
+    const prevAvgPrice = prevSessions > 0 ? (prevRevenue / prevSessions) : 0;
+    const avgPriceGrowth = prevAvgPrice > 0 ? ((avgSessionPrice - prevAvgPrice) / prevAvgPrice) * 100 : 0;
 
     const overdueInvoices = invoices.filter(inv =>
       inv.status !== InvoiceStatus.PAID &&
@@ -128,22 +177,94 @@ const AdvancedStatistics: React.FC = () => {
     }).length;
 
     // Location breakdown
-    const cabinetRevenue = completedAppts.filter(a => a.type === 'CABINET').reduce((sum, a) => sum + a.price, 0);
-    const externalRevenue = completedAppts.filter(a => a.type !== 'CABINET').reduce((sum, a) => sum + a.price + (a.travelFee || 0), 0);
+    const cabinetAppts = completedAppts.filter(a => a.type === 'CABINET');
+    const externalAppts = completedAppts.filter(a => a.type !== 'CABINET' && a.type !== 'BLOCK');
+    const cabinetRevenue = cabinetAppts.reduce((sum, a) => sum + a.price, 0);
+    const externalRevenue = externalAppts.reduce((sum, a) => sum + a.price + (a.travelFee || 0), 0);
+
+    // Travel stats
+    const totalDistance = externalAppts.reduce((sum, a) => sum + (a.distanceKm || 0), 0);
+    const totalTravelTime = externalAppts.reduce((sum, a) => sum + (a.travelDurationMin || 0), 0);
+    const totalTravelFees = externalAppts.reduce((sum, a) => sum + (a.travelFee || 0), 0);
+    const avgDistance = externalAppts.length > 0 ? totalDistance / externalAppts.length : 0;
+
+    // Time analysis
+    const totalWorkMinutes = completedAppts.reduce((sum, a) => sum + a.durationMin, 0);
+    const totalWorkHours = totalWorkMinutes / 60;
+    const revenuePerHour = totalWorkHours > 0 ? totalRevenue / totalWorkHours : 0;
+
+    // Conversion rates
+    const conversionRate = filteredAppointments.length > 0 ? (completedAppts.length / filteredAppointments.length) * 100 : 0;
+    const noShowRate = filteredAppointments.filter(a => a.status === ApptStatus.CANCELLED).length / (filteredAppointments.length || 1) * 100;
+
+    // Patient type breakdown
+    const humanRevenue = completedAppts.filter(a => {
+      const p = patients.find(pt => pt.id === a.patientId);
+      return p?.type === PatientType.HUMAN;
+    }).reduce((sum, a) => sum + a.price, 0);
+
+    const equineRevenue = completedAppts.filter(a => {
+      const p = patients.find(pt => pt.id === a.patientId);
+      return p?.type === PatientType.EQUINE;
+    }).reduce((sum, a) => sum + a.price, 0);
+
+    const canineRevenue = completedAppts.filter(a => {
+      const p = patients.find(pt => pt.id === a.patientId);
+      return p?.type === PatientType.CANINE;
+    }).reduce((sum, a) => sum + a.price, 0);
+
+    // New patients this period
+    const newPatients = patients.filter(p => {
+      const firstSession = sessions
+        .filter(s => s.patientId === p.id)
+        .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())[0];
+
+      if (!firstSession) return false;
+      const date = new Date(firstSession.date);
+      return date >= periodRange.start && date <= periodRange.end;
+    }).length;
+
+    // Retention rate
+    const patientsWithMultipleSessions = patients.filter(p => {
+      const pSessions = filteredSessions.filter(s => s.patientId === p.id);
+      return pSessions.length > 1;
+    }).length;
+    const retentionRate = activePatients > 0 ? (patientsWithMultipleSessions / activePatients) * 100 : 0;
+
+    // Forecast next month
+    const avgMonthlyRevenue = monthlyData.filter(m => m.revenue > 0).reduce((sum, m) => sum + m.revenue, 0) / Math.max(monthlyData.filter(m => m.revenue > 0).length, 1);
+    const forecastNextMonth = avgMonthlyRevenue * (1 + revenueGrowth / 100);
 
     return {
       totalRevenue,
+      revenueGrowth,
       totalPending,
       totalSessions,
+      sessionGrowth,
       avgSessionPrice,
+      avgPriceGrowth,
       activePatients,
       overdueCount: overdueInvoices.length,
       overdueAmount: overdueInvoices.reduce((sum, inv) => sum + (inv.amountTTC - inv.amountPaid), 0),
       cabinetRevenue,
       externalRevenue,
-      conversionRate: filteredAppointments.length > 0 ? (completedAppts.length / filteredAppointments.length) * 100 : 0
+      totalDistance,
+      totalTravelTime,
+      totalTravelFees,
+      avgDistance,
+      revenuePerHour,
+      conversionRate,
+      noShowRate,
+      humanRevenue,
+      equineRevenue,
+      canineRevenue,
+      newPatients,
+      retentionRate,
+      forecastNextMonth,
+      cabinetCount: cabinetAppts.length,
+      externalCount: externalAppts.length
     };
-  }, [filteredAppointments, filteredInvoices, filteredSessions, patients, sessions, invoices]);
+  }, [filteredAppointments, previousAppointments, filteredInvoices, previousInvoices, filteredSessions, previousSessions, patients, sessions, invoices, monthlyData, periodRange]);
 
   // Client ranking
   const clientStats = useMemo(() => {
@@ -166,6 +287,9 @@ const AdvancedStatistics: React.FC = () => {
         else status = 'LOST';
       }
 
+      const avgPerSession = sessionCount > 0 ? totalSpent / sessionCount : 0;
+      const lifetimeValue = totalSpent;
+
       return {
         id: p.id,
         name: p.name,
@@ -174,7 +298,9 @@ const AdvancedStatistics: React.FC = () => {
         sessionCount,
         totalSpent,
         lastVisit,
-        status
+        status,
+        avgPerSession,
+        lifetimeValue
       };
     }).sort((a, b) => b.totalSpent - a.totalSpent);
   }, [patients, filteredSessions, filteredInvoices, sessions]);
@@ -182,21 +308,39 @@ const AdvancedStatistics: React.FC = () => {
   // Max value for chart scaling
   const maxRevenue = Math.max(...monthlyData.map(m => m.total), 1);
 
-  const GradientCard = ({ title, value, subtitle, icon: Icon, gradient, trend }: any) => (
-    <div className={`relative overflow-hidden rounded-2xl p-6 text-white shadow-lg hover:shadow-xl transition-all transform hover:scale-105 cursor-pointer ${gradient}`}>
-      <div className="absolute top-0 right-0 -mt-4 -mr-4 h-24 w-24 opacity-20">
-        <Icon size={96} strokeWidth={1} />
+  const GlassCard = ({ title, value, subtitle, icon: Icon, gradient, trend, trendValue, sparkle }: any) => (
+    <div className={`group relative overflow-hidden rounded-3xl p-6 text-white shadow-2xl hover:shadow-3xl transition-all duration-500 transform hover:scale-105 hover:-translate-y-2 cursor-pointer backdrop-blur-xl border border-white/20 ${gradient}`}>
+      <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+      <div className="absolute top-0 right-0 -mt-8 -mr-8 h-32 w-32 opacity-20 group-hover:opacity-30 transition-opacity duration-500 group-hover:rotate-12">
+        <Icon size={128} strokeWidth={1} />
       </div>
-      <div className="relative z-10">
-        <div className="flex items-center justify-between mb-2">
-          <p className="text-sm font-medium opacity-90">{title}</p>
-          <Icon size={20} className="opacity-75" />
+      {sparkle && (
+        <div className="absolute top-4 right-4">
+          <Sparkles size={20} className="animate-pulse" />
         </div>
-        <h3 className="text-3xl font-bold mb-2">{value}</h3>
+      )}
+      <div className="relative z-10">
+        <div className="flex items-center justify-between mb-3">
+          <p className="text-sm font-bold opacity-90 uppercase tracking-wider">{title}</p>
+          <div className="p-2 bg-white/20 rounded-xl backdrop-blur-sm">
+            <Icon size={20} className="opacity-90" />
+          </div>
+        </div>
+        <h3 className="text-4xl font-black mb-3 tracking-tight">{value}</h3>
         {subtitle && (
-          <div className="flex items-center text-sm opacity-90">
-            {trend === 'up' ? <ArrowUpRight size={14} className="mr-1" /> : trend === 'down' ? <ArrowDownRight size={14} className="mr-1" /> : null}
-            <span>{subtitle}</span>
+          <div className="flex items-center text-sm font-semibold opacity-95">
+            {trend === 'up' ? (
+              <div className="flex items-center px-2 py-1 bg-green-500/30 rounded-full mr-2">
+                <ArrowUpRight size={14} className="mr-1" />
+                <span>+{trendValue}%</span>
+              </div>
+            ) : trend === 'down' ? (
+              <div className="flex items-center px-2 py-1 bg-red-500/30 rounded-full mr-2">
+                <ArrowDownRight size={14} className="mr-1" />
+                <span>{trendValue}%</span>
+              </div>
+            ) : null}
+            <span className="opacity-80">{subtitle}</span>
           </div>
         )}
       </div>
@@ -204,41 +348,56 @@ const AdvancedStatistics: React.FC = () => {
   );
 
   return (
-    <div className="space-y-6 pb-24 animate-fadeIn">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <div>
-          <h2 className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
-            Tableau de Bord Analytique
-          </h2>
-          <p className="text-slate-500 text-sm mt-1">Pilotage de l'activité et prévisionnel</p>
-        </div>
+    <div className="space-y-8 pb-24 animate-fadeIn">
+      {/* Ultra Modern Header with Glassmorphism */}
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-violet-600 via-purple-600 to-indigo-600 p-8 text-white shadow-2xl">
+        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAxMCAwIEwgMCAwIDAgMTAiIGZpbGw9Im5vbmUiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS1vcGFjaXR5PSIwLjEiIHN0cm9rZS13aWR0aD0iMSIvPjwvcGF0dGVybj48L2RlZnM+PHJlY3Qgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgZmlsbD0idXJsKCNncmlkKSIvPjwvc3ZnPg==')] opacity-30"></div>
+        <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+          <div>
+            <div className="flex items-center gap-3 mb-2">
+              <div className="p-3 bg-white/20 rounded-2xl backdrop-blur-sm">
+                <BarChart3 size={32} />
+              </div>
+              <div>
+                <h2 className="text-4xl font-black tracking-tight">
+                  Analytics Pro
+                </h2>
+                <p className="text-purple-100 text-sm font-semibold mt-1 flex items-center">
+                  <Sparkles size={14} className="mr-1" />
+                  Intelligence artificielle • Prévisionnel avancé
+                </p>
+              </div>
+            </div>
+          </div>
 
-        <div className="flex gap-2 bg-white border border-gray-200 rounded-xl p-1 shadow-sm">
-          {['week', 'month', 'quarter', 'year'].map((p) => (
-            <button
-              key={p}
-              onClick={() => setPeriod(p as Period)}
-              className={`px-4 py-2 text-sm font-bold rounded-lg transition-all ${
-                period === p
-                  ? 'bg-gradient-to-r from-purple-600 to-blue-600 text-white shadow-lg'
-                  : 'text-slate-600 hover:bg-gray-100'
-              }`}
-            >
-              {p === 'week' ? '7 jours' : p === 'month' ? 'Mois' : p === 'quarter' ? 'Trimestre' : 'Année'}
-            </button>
-          ))}
+          <div className="flex gap-2 bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl p-2 shadow-xl">
+            {['week', 'month', 'quarter', 'year'].map((p) => (
+              <button
+                key={p}
+                onClick={() => setPeriod(p as Period)}
+                className={`px-6 py-3 text-sm font-black rounded-xl transition-all duration-300 ${
+                  period === p
+                    ? 'bg-white text-purple-600 shadow-lg scale-105'
+                    : 'text-white hover:bg-white/10'
+                }`}
+              >
+                {p === 'week' ? '7J' : p === 'month' ? 'MOIS' : p === 'quarter' ? 'TRIM' : 'ANNÉE'}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
       {/* Period selector for month/year */}
-      {period === 'month' && (
-        <div className="flex gap-2 items-center bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
-          <Calendar size={18} className="text-purple-600" />
+      {(period === 'month' || period === 'year') && (
+        <div className="flex gap-3 items-center bg-white/80 backdrop-blur-xl p-5 rounded-2xl border border-purple-100 shadow-lg">
+          <div className="p-2 bg-gradient-to-br from-purple-500 to-indigo-500 rounded-xl text-white">
+            <Calendar size={20} />
+          </div>
           <select
             value={selectedMonth}
             onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
-            className="px-3 py-2 border border-gray-200 rounded-lg text-sm font-medium outline-none focus:ring-2 focus:ring-purple-500"
+            className="px-4 py-3 border-2 border-purple-200 rounded-xl text-sm font-bold outline-none focus:ring-4 focus:ring-purple-200 focus:border-purple-500 transition-all bg-white"
           >
             {Array.from({ length: 12 }, (_, i) => (
               <option key={i} value={i}>
@@ -249,257 +408,430 @@ const AdvancedStatistics: React.FC = () => {
           <select
             value={selectedYear}
             onChange={(e) => setSelectedYear(parseInt(e.target.value))}
-            className="px-3 py-2 border border-gray-200 rounded-lg text-sm font-medium outline-none focus:ring-2 focus:ring-purple-500"
+            className="px-4 py-3 border-2 border-purple-200 rounded-xl text-sm font-bold outline-none focus:ring-4 focus:ring-purple-200 focus:border-purple-500 transition-all bg-white"
           >
-            {[2024, 2025, 2026].map((y) => (
+            {[2023, 2024, 2025, 2026].map((y) => (
               <option key={y} value={y}>{y}</option>
             ))}
           </select>
         </div>
       )}
 
-      {/* KPI Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <GradientCard
-          title="CA Encaissé"
-          value={`${stats.totalRevenue.toFixed(0)} €`}
-          subtitle={`+${stats.totalPending.toFixed(0)}€ à encaisser`}
+      {/* Ultra Modern KPI Cards - Row 1 */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <GlassCard
+          title="Chiffre d'Affaires"
+          value={`${stats.totalRevenue.toFixed(0)}€`}
+          subtitle={`vs période précédente`}
           icon={DollarSign}
-          gradient="bg-gradient-to-br from-emerald-500 to-teal-600"
-          trend="up"
+          gradient="bg-gradient-to-br from-emerald-500 via-teal-500 to-cyan-600"
+          trend={stats.revenueGrowth >= 0 ? 'up' : 'down'}
+          trendValue={Math.abs(stats.revenueGrowth).toFixed(1)}
+          sparkle={stats.revenueGrowth > 20}
         />
-        <GradientCard
+        <GlassCard
           title="Séances Réalisées"
           value={stats.totalSessions}
-          subtitle={`Taux: ${stats.conversionRate.toFixed(0)}%`}
+          subtitle={`vs période précédente`}
           icon={Activity}
-          gradient="bg-gradient-to-br from-blue-500 to-indigo-600"
+          gradient="bg-gradient-to-br from-blue-500 via-indigo-500 to-purple-600"
+          trend={stats.sessionGrowth >= 0 ? 'up' : 'down'}
+          trendValue={Math.abs(stats.sessionGrowth).toFixed(1)}
+          sparkle={stats.sessionGrowth > 15}
         />
-        <GradientCard
-          title="Patients Actifs"
-          value={stats.activePatients}
-          subtitle={`${clientStats.filter(c => c.status === 'RISK').length} à risque`}
-          icon={Users}
-          gradient="bg-gradient-to-br from-purple-500 to-pink-600"
-          trend={clientStats.filter(c => c.status === 'RISK').length > 0 ? 'down' : 'up'}
-        />
-        <GradientCard
+        <GlassCard
           title="Panier Moyen"
-          value={`${stats.avgSessionPrice.toFixed(0)} €`}
-          subtitle={`Objectif: 85€`}
+          value={`${stats.avgSessionPrice.toFixed(0)}€`}
+          subtitle={`vs période précédente`}
           icon={TrendingUp}
-          gradient="bg-gradient-to-br from-amber-500 to-orange-600"
-          trend="up"
+          gradient="bg-gradient-to-br from-amber-500 via-orange-500 to-red-600"
+          trend={stats.avgPriceGrowth >= 0 ? 'up' : 'down'}
+          trendValue={Math.abs(stats.avgPriceGrowth).toFixed(1)}
+          sparkle={stats.avgPriceGrowth > 10}
+        />
+        <GlassCard
+          title="Revenu / Heure"
+          value={`${stats.revenuePerHour.toFixed(0)}€`}
+          subtitle="Rentabilité temps"
+          icon={Clock}
+          gradient="bg-gradient-to-br from-pink-500 via-rose-500 to-fuchsia-600"
+          sparkle={stats.revenuePerHour > 80}
         />
       </div>
 
-      {/* Overdue Invoices Alert */}
+      {/* Ultra Modern KPI Cards - Row 2 */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <GlassCard
+          title="Patients Actifs"
+          value={stats.activePatients}
+          subtitle={`${stats.retentionRate.toFixed(0)}% fidélisation`}
+          icon={Users}
+          gradient="bg-gradient-to-br from-violet-500 via-purple-500 to-indigo-600"
+          sparkle={stats.retentionRate > 70}
+        />
+        <GlassCard
+          title="Nouveaux Patients"
+          value={stats.newPatients}
+          subtitle="Cette période"
+          icon={Star}
+          gradient="bg-gradient-to-br from-yellow-500 via-amber-500 to-orange-600"
+          sparkle={stats.newPatients > 5}
+        />
+        <GlassCard
+          title="Taux de Remplissage"
+          value={`${stats.conversionRate.toFixed(0)}%`}
+          subtitle={`No-show: ${stats.noShowRate.toFixed(0)}%`}
+          icon={Percent}
+          gradient="bg-gradient-to-br from-green-500 via-emerald-500 to-teal-600"
+          trend={stats.conversionRate > 75 ? 'up' : 'down'}
+          sparkle={stats.conversionRate > 85}
+        />
+        <GlassCard
+          title="Prévision M+1"
+          value={`${stats.forecastNextMonth.toFixed(0)}€`}
+          subtitle="Forecast IA"
+          icon={Zap}
+          gradient="bg-gradient-to-br from-cyan-500 via-sky-500 to-blue-600"
+          sparkle={true}
+        />
+      </div>
+
+      {/* Overdue Alert - More Modern */}
       {stats.overdueCount > 0 && (
-        <div className="bg-gradient-to-r from-red-50 to-orange-50 border-l-4 border-red-500 p-4 rounded-xl shadow-sm">
-          <div className="flex items-center">
-            <AlertCircle size={24} className="text-red-600 mr-3" />
-            <div className="flex-1">
-              <h4 className="font-bold text-red-900">⚠️ Factures en Retard</h4>
-              <p className="text-sm text-red-700">
-                {stats.overdueCount} facture{stats.overdueCount > 1 ? 's' : ''} impayée{stats.overdueCount > 1 ? 's' : ''} •
-                <span className="font-bold ml-1">{stats.overdueAmount.toFixed(0)}€ à recouvrer</span>
-              </p>
+        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-red-500 via-rose-500 to-pink-600 p-6 text-white shadow-2xl border-2 border-red-300 animate-pulse">
+          <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMjAiIGN5PSIyMCIgcj0iMiIgZmlsbD0id2hpdGUiIG9wYWNpdHk9IjAuMSIvPjwvc3ZnPg==')] opacity-50"></div>
+          <div className="relative z-10 flex items-center justify-between">
+            <div className="flex items-center">
+              <div className="p-4 bg-white/20 rounded-2xl backdrop-blur-sm mr-4">
+                <AlertCircle size={32} />
+              </div>
+              <div>
+                <h4 className="font-black text-xl mb-1">🚨 Factures Impayées</h4>
+                <p className="text-sm font-bold opacity-90">
+                  {stats.overdueCount} facture{stats.overdueCount > 1 ? 's' : ''} en retard •
+                  <span className="ml-2 px-3 py-1 bg-white/30 rounded-full">{stats.overdueAmount.toFixed(0)}€</span>
+                </p>
+              </div>
             </div>
-            <button className="px-4 py-2 bg-red-600 text-white rounded-lg font-bold text-sm hover:bg-red-700 shadow-lg flex items-center">
-              Gérer les rappels <ChevronRight size={16} className="ml-1" />
+            <button className="px-6 py-3 bg-white text-red-600 rounded-xl font-black text-sm hover:bg-red-50 shadow-2xl flex items-center transition-all hover:scale-105">
+              Relancer <ChevronRight size={18} className="ml-2" />
             </button>
           </div>
         </div>
       )}
 
-      {/* Monthly Revenue Chart (Year view) */}
+      {/* Monthly Evolution Chart - Ultra Modern */}
       {period === 'year' && (
-        <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
-          <div className="flex justify-between items-center mb-6">
-            <h3 className="font-bold text-slate-800 flex items-center">
-              <BarChart3 size={20} className="mr-2 text-purple-600" />
-              Évolution Mensuelle {selectedYear}
-            </h3>
-            <div className="flex items-center gap-4 text-xs">
-              <div className="flex items-center"><div className="w-3 h-3 bg-gradient-to-r from-purple-500 to-blue-500 rounded mr-1"></div> CA Total</div>
-              <div className="flex items-center"><div className="w-3 h-3 bg-gradient-to-r from-emerald-500 to-teal-500 rounded mr-1"></div> Encaissé</div>
-              <div className="flex items-center"><div className="w-3 h-3 bg-orange-400 rounded mr-1"></div> En attente</div>
+        <div className="bg-white/80 backdrop-blur-xl p-8 rounded-3xl border border-purple-100 shadow-2xl">
+          <div className="flex justify-between items-center mb-8">
+            <div className="flex items-center gap-3">
+              <div className="p-3 bg-gradient-to-br from-purple-500 to-indigo-500 rounded-2xl text-white">
+                <BarChart3 size={24} />
+              </div>
+              <div>
+                <h3 className="font-black text-2xl text-slate-800">
+                  Évolution {selectedYear}
+                </h3>
+                <p className="text-sm text-slate-500 font-semibold">Performance mensuelle détaillée</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-6 text-xs font-bold">
+              <div className="flex items-center">
+                <div className="w-4 h-4 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full mr-2 shadow-lg"></div>
+                Total
+              </div>
+              <div className="flex items-center">
+                <div className="w-4 h-4 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-full mr-2 shadow-lg"></div>
+                Encaissé
+              </div>
+              <div className="flex items-center">
+                <div className="w-4 h-4 bg-orange-400 rounded-full mr-2 shadow-lg"></div>
+                Attente
+              </div>
             </div>
           </div>
-          <div className="flex items-end justify-between gap-2 h-64">
-            {monthlyData.map((m) => (
-              <div key={m.month} className="flex-1 flex flex-col items-center">
+          <div className="flex items-end justify-between gap-3 h-80">
+            {monthlyData.map((m, idx) => (
+              <div key={m.month} className="flex-1 flex flex-col items-center group">
                 <div className="w-full flex flex-col gap-1 items-center justify-end flex-1">
-                  {/* Total bar */}
                   <div
-                    className="w-full bg-gradient-to-t from-purple-500 to-blue-500 rounded-t-lg hover:shadow-lg transition-all relative group"
-                    style={{ height: `${(m.total / maxRevenue) * 100}%`, minHeight: m.total > 0 ? '8px' : '0' }}
+                    className="w-full bg-gradient-to-t from-purple-600 via-purple-500 to-blue-500 rounded-t-2xl hover:shadow-2xl transition-all duration-300 relative group/bar cursor-pointer transform hover:scale-105"
+                    style={{ height: `${(m.total / maxRevenue) * 100}%`, minHeight: m.total > 0 ? '12px' : '0' }}
                   >
-                    <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-slate-800 text-white px-2 py-1 rounded text-xs font-bold opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-                      {m.total.toFixed(0)}€
+                    <div className="absolute -top-16 left-1/2 -translate-x-1/2 bg-gradient-to-r from-slate-900 to-slate-800 text-white px-4 py-2 rounded-xl text-xs font-black opacity-0 group-hover/bar:opacity-100 transition-all duration-300 shadow-2xl whitespace-nowrap border border-white/10">
+                      <div className="text-center mb-1">{m.total.toFixed(0)}€</div>
+                      <div className="text-[10px] opacity-75">{m.sessions} séances</div>
                     </div>
-                    {/* Pending overlay */}
                     {m.pending > 0 && (
                       <div
-                        className="absolute bottom-0 w-full bg-orange-400 rounded-t-lg"
+                        className="absolute bottom-0 w-full bg-orange-400 rounded-t-2xl shadow-inner"
                         style={{ height: `${(m.pending / m.total) * 100}%` }}
                       />
                     )}
                   </div>
                 </div>
-                <div className="text-xs text-slate-500 font-medium mt-2">{m.name}</div>
-                <div className="text-[10px] text-slate-400">{m.sessions} séances</div>
+                <div className="text-sm text-slate-700 font-bold mt-3 uppercase">{m.name}</div>
+                <div className="text-[10px] text-slate-400 font-semibold">{m.sessions}s</div>
               </div>
             ))}
           </div>
         </div>
       )}
 
-      {/* Location & Revenue Mix */}
+      {/* Advanced Analytics Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
-          <h3 className="font-bold text-slate-800 mb-6 flex items-center">
-            <MapPin size={20} className="mr-2 text-purple-600" />
-            Répartition Géographique
-          </h3>
-          <div className="space-y-4">
-            <div>
-              <div className="flex justify-between text-sm mb-2">
-                <span className="font-bold text-slate-700">Cabinet</span>
-                <span className="text-slate-500">{stats.cabinetRevenue.toFixed(0)} €</span>
-              </div>
-              <div className="w-full bg-gray-100 rounded-full h-4 overflow-hidden">
-                <div
-                  className="h-full bg-gradient-to-r from-teal-400 to-teal-600 rounded-full transition-all"
-                  style={{ width: `${(stats.cabinetRevenue / (stats.cabinetRevenue + stats.externalRevenue || 1)) * 100}%` }}
-                ></div>
-              </div>
+        {/* Geographic Breakdown - Ultra Modern */}
+        <div className="bg-white/80 backdrop-blur-xl p-8 rounded-3xl border border-purple-100 shadow-2xl">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="p-3 bg-gradient-to-br from-teal-500 to-cyan-500 rounded-2xl text-white">
+              <MapPin size={24} />
             </div>
             <div>
-              <div className="flex justify-between text-sm mb-2">
-                <span className="font-bold text-slate-700">Déplacements</span>
-                <span className="text-slate-500">{stats.externalRevenue.toFixed(0)} €</span>
+              <h3 className="font-black text-xl text-slate-800">Répartition Lieux</h3>
+              <p className="text-xs text-slate-500 font-semibold">Cabinet vs Déplacements</p>
+            </div>
+          </div>
+          <div className="space-y-6">
+            <div className="group">
+              <div className="flex justify-between items-center mb-3">
+                <div className="flex items-center gap-2">
+                  <span className="font-black text-lg text-slate-700">🏥 Cabinet</span>
+                  <span className="px-3 py-1 bg-teal-100 text-teal-700 rounded-full text-xs font-black">{stats.cabinetCount} séances</span>
+                </div>
+                <span className="text-slate-900 font-black text-xl">{stats.cabinetRevenue.toFixed(0)}€</span>
               </div>
-              <div className="w-full bg-gray-100 rounded-full h-4 overflow-hidden">
+              <div className="relative w-full bg-slate-100 rounded-full h-6 overflow-hidden shadow-inner">
                 <div
-                  className="h-full bg-gradient-to-r from-amber-400 to-orange-600 rounded-full transition-all"
+                  className="absolute inset-y-0 left-0 bg-gradient-to-r from-teal-400 via-teal-500 to-cyan-600 rounded-full transition-all duration-1000 ease-out shadow-lg group-hover:shadow-xl"
+                  style={{ width: `${(stats.cabinetRevenue / (stats.cabinetRevenue + stats.externalRevenue || 1)) * 100}%` }}
+                >
+                  <div className="absolute inset-0 bg-white/20 animate-pulse"></div>
+                </div>
+                <div className="absolute inset-0 flex items-center justify-center text-xs font-black text-white drop-shadow-lg">
+                  {((stats.cabinetRevenue / (stats.cabinetRevenue + stats.externalRevenue || 1)) * 100).toFixed(0)}%
+                </div>
+              </div>
+            </div>
+
+            <div className="group">
+              <div className="flex justify-between items-center mb-3">
+                <div className="flex items-center gap-2">
+                  <span className="font-black text-lg text-slate-700">🚗 Déplacements</span>
+                  <span className="px-3 py-1 bg-orange-100 text-orange-700 rounded-full text-xs font-black">{stats.externalCount} séances</span>
+                </div>
+                <span className="text-slate-900 font-black text-xl">{stats.externalRevenue.toFixed(0)}€</span>
+              </div>
+              <div className="relative w-full bg-slate-100 rounded-full h-6 overflow-hidden shadow-inner">
+                <div
+                  className="absolute inset-y-0 left-0 bg-gradient-to-r from-amber-400 via-orange-500 to-red-600 rounded-full transition-all duration-1000 ease-out shadow-lg group-hover:shadow-xl"
                   style={{ width: `${(stats.externalRevenue / (stats.cabinetRevenue + stats.externalRevenue || 1)) * 100}%` }}
-                ></div>
+                >
+                  <div className="absolute inset-0 bg-white/20 animate-pulse"></div>
+                </div>
+                <div className="absolute inset-0 flex items-center justify-center text-xs font-black text-white drop-shadow-lg">
+                  {((stats.externalRevenue / (stats.cabinetRevenue + stats.externalRevenue || 1)) * 100).toFixed(0)}%
+                </div>
+              </div>
+            </div>
+
+            {/* Travel Stats */}
+            <div className="mt-6 pt-6 border-t-2 border-purple-100">
+              <div className="grid grid-cols-3 gap-4">
+                <div className="text-center p-4 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl border border-blue-100">
+                  <div className="text-3xl font-black text-blue-600 mb-1">{stats.totalDistance.toFixed(0)}</div>
+                  <div className="text-xs font-bold text-blue-700 uppercase">KM Total</div>
+                </div>
+                <div className="text-center p-4 bg-gradient-to-br from-purple-50 to-pink-50 rounded-2xl border border-purple-100">
+                  <div className="text-3xl font-black text-purple-600 mb-1">{stats.avgDistance.toFixed(1)}</div>
+                  <div className="text-xs font-bold text-purple-700 uppercase">KM Moyen</div>
+                </div>
+                <div className="text-center p-4 bg-gradient-to-br from-amber-50 to-orange-50 rounded-2xl border border-amber-100">
+                  <div className="text-3xl font-black text-amber-600 mb-1">{stats.totalTravelFees.toFixed(0)}€</div>
+                  <div className="text-xs font-bold text-amber-700 uppercase">Frais KM</div>
+                </div>
               </div>
             </div>
           </div>
         </div>
 
-        <div className="bg-gradient-to-br from-purple-500 to-blue-600 p-6 rounded-2xl text-white shadow-lg">
-          <h3 className="font-bold mb-4 flex items-center">
-            <Target size={20} className="mr-2" />
-            Objectifs & Performance
-          </h3>
-          <div className="space-y-3">
-            <div>
-              <div className="flex justify-between text-sm mb-1 opacity-90">
-                <span>CA Mensuel</span>
-                <span>{stats.totalRevenue.toFixed(0)}€ / 5000€</span>
-              </div>
-              <div className="w-full bg-white/20 rounded-full h-2">
-                <div
-                  className="h-full bg-white rounded-full transition-all"
-                  style={{ width: `${Math.min((stats.totalRevenue / 5000) * 100, 100)}%` }}
-                ></div>
-              </div>
+        {/* Patient Type Breakdown - Ultra Modern */}
+        <div className="bg-white/80 backdrop-blur-xl p-8 rounded-3xl border border-purple-100 shadow-2xl">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="p-3 bg-gradient-to-br from-purple-500 to-pink-500 rounded-2xl text-white">
+              <Users size={24} />
             </div>
             <div>
-              <div className="flex justify-between text-sm mb-1 opacity-90">
-                <span>Séances Réalisées</span>
-                <span>{stats.totalSessions} / 60</span>
+              <h3 className="font-black text-xl text-slate-800">CA par Type Patient</h3>
+              <p className="text-xs text-slate-500 font-semibold">Humain • Équin • Canin</p>
+            </div>
+          </div>
+          <div className="space-y-6">
+            <div className="group">
+              <div className="flex justify-between items-center mb-3">
+                <span className="font-black text-lg text-slate-700">👤 Humains</span>
+                <span className="text-slate-900 font-black text-xl">{stats.humanRevenue.toFixed(0)}€</span>
               </div>
-              <div className="w-full bg-white/20 rounded-full h-2">
+              <div className="relative w-full bg-slate-100 rounded-full h-6 overflow-hidden shadow-inner">
                 <div
-                  className="h-full bg-white rounded-full transition-all"
-                  style={{ width: `${Math.min((stats.totalSessions / 60) * 100, 100)}%` }}
-                ></div>
+                  className="absolute inset-y-0 left-0 bg-gradient-to-r from-teal-400 via-teal-500 to-emerald-600 rounded-full transition-all duration-1000 ease-out shadow-lg"
+                  style={{ width: `${(stats.humanRevenue / (stats.totalRevenue || 1)) * 100}%` }}
+                >
+                  <div className="absolute inset-0 bg-white/20 animate-pulse"></div>
+                </div>
+                <div className="absolute inset-0 flex items-center justify-center text-xs font-black text-white drop-shadow-lg">
+                  {((stats.humanRevenue / (stats.totalRevenue || 1)) * 100).toFixed(0)}%
+                </div>
               </div>
             </div>
-            <div>
-              <div className="flex justify-between text-sm mb-1 opacity-90">
-                <span>Taux de Remplissage</span>
-                <span>{stats.conversionRate.toFixed(0)}% / 80%</span>
+
+            <div className="group">
+              <div className="flex justify-between items-center mb-3">
+                <span className="font-black text-lg text-slate-700">🐴 Équins</span>
+                <span className="text-slate-900 font-black text-xl">{stats.equineRevenue.toFixed(0)}€</span>
               </div>
-              <div className="w-full bg-white/20 rounded-full h-2">
+              <div className="relative w-full bg-slate-100 rounded-full h-6 overflow-hidden shadow-inner">
                 <div
-                  className="h-full bg-white rounded-full transition-all"
-                  style={{ width: `${Math.min((stats.conversionRate / 80) * 100, 100)}%` }}
-                ></div>
+                  className="absolute inset-y-0 left-0 bg-gradient-to-r from-amber-400 via-orange-500 to-yellow-600 rounded-full transition-all duration-1000 ease-out shadow-lg"
+                  style={{ width: `${(stats.equineRevenue / (stats.totalRevenue || 1)) * 100}%` }}
+                >
+                  <div className="absolute inset-0 bg-white/20 animate-pulse"></div>
+                </div>
+                <div className="absolute inset-0 flex items-center justify-center text-xs font-black text-white drop-shadow-lg">
+                  {((stats.equineRevenue / (stats.totalRevenue || 1)) * 100).toFixed(0)}%
+                </div>
+              </div>
+            </div>
+
+            <div className="group">
+              <div className="flex justify-between items-center mb-3">
+                <span className="font-black text-lg text-slate-700">🐕 Canins</span>
+                <span className="text-slate-900 font-black text-xl">{stats.canineRevenue.toFixed(0)}€</span>
+              </div>
+              <div className="relative w-full bg-slate-100 rounded-full h-6 overflow-hidden shadow-inner">
+                <div
+                  className="absolute inset-y-0 left-0 bg-gradient-to-r from-blue-400 via-indigo-500 to-purple-600 rounded-full transition-all duration-1000 ease-out shadow-lg"
+                  style={{ width: `${(stats.canineRevenue / (stats.totalRevenue || 1)) * 100}%` }}
+                >
+                  <div className="absolute inset-0 bg-white/20 animate-pulse"></div>
+                </div>
+                <div className="absolute inset-0 flex items-center justify-center text-xs font-black text-white drop-shadow-lg">
+                  {((stats.canineRevenue / (stats.totalRevenue || 1)) * 100).toFixed(0)}%
+                </div>
+              </div>
+            </div>
+
+            {/* Extra Stats */}
+            <div className="mt-6 pt-6 border-t-2 border-purple-100">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="text-center p-4 bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl border border-green-100">
+                  <div className="flex items-center justify-center mb-2">
+                    <Heart size={20} className="text-green-600" />
+                  </div>
+                  <div className="text-2xl font-black text-green-600 mb-1">{stats.retentionRate.toFixed(0)}%</div>
+                  <div className="text-xs font-bold text-green-700 uppercase">Fidélité</div>
+                </div>
+                <div className="text-center p-4 bg-gradient-to-br from-yellow-50 to-amber-50 rounded-2xl border border-yellow-100">
+                  <div className="flex items-center justify-center mb-2">
+                    <Star size={20} className="text-yellow-600" />
+                  </div>
+                  <div className="text-2xl font-black text-yellow-600 mb-1">{stats.newPatients}</div>
+                  <div className="text-xs font-bold text-yellow-700 uppercase">Nouveaux</div>
+                </div>
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Client Ranking */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-        <div className="p-6 border-b border-gray-100 flex flex-col md:flex-row justify-between items-center gap-4">
-          <h3 className="font-bold text-slate-800 flex items-center">
-            <Award size={20} className="mr-2 text-yellow-500" />
-            Top Clients - Période Sélectionnée
-          </h3>
-          <div className="relative w-full md:w-64">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-            <input
-              type="text"
-              placeholder="Rechercher..."
-              className="w-full pl-9 p-2 bg-gray-50 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-purple-500"
-              value={clientSearch}
-              onChange={(e) => setClientSearch(e.target.value)}
-            />
+      {/* Client Ranking - Ultra Premium */}
+      <div className="bg-white/80 backdrop-blur-xl rounded-3xl border border-purple-100 shadow-2xl overflow-hidden">
+        <div className="bg-gradient-to-r from-yellow-400 via-amber-500 to-orange-600 p-6 text-white">
+          <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+            <div className="flex items-center gap-4">
+              <div className="p-4 bg-white/20 rounded-2xl backdrop-blur-sm">
+                <Trophy size={28} />
+              </div>
+              <div>
+                <h3 className="font-black text-2xl flex items-center gap-2">
+                  🏆 Top Clients VIP
+                  <Flame size={24} className="animate-pulse" />
+                </h3>
+                <p className="text-sm font-bold opacity-90">Classement par chiffre d'affaires généré</p>
+              </div>
+            </div>
+            <div className="relative w-full md:w-80">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-white/60" size={18} />
+              <input
+                type="text"
+                placeholder="Rechercher un client..."
+                className="w-full pl-12 pr-4 py-3 bg-white/20 backdrop-blur-sm border-2 border-white/30 rounded-xl text-sm font-bold text-white placeholder-white/60 outline-none focus:ring-4 focus:ring-white/30"
+                value={clientSearch}
+                onChange={(e) => setClientSearch(e.target.value)}
+              />
+            </div>
           </div>
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full text-sm text-left">
-            <thead className="bg-gradient-to-r from-purple-50 to-blue-50 text-slate-600 font-bold">
+          <table className="w-full text-sm">
+            <thead className="bg-gradient-to-r from-purple-100 via-pink-100 to-orange-100 text-slate-700">
               <tr>
-                <th className="p-4 w-16 text-center">#</th>
-                <th className="p-4">Patient</th>
-                <th className="p-4 text-center">Séances</th>
-                <th className="p-4 text-right">CA Généré</th>
-                <th className="p-4">Dernière Visite</th>
-                <th className="p-4 text-center">Statut</th>
+                <th className="p-5 w-20 text-center font-black uppercase text-xs tracking-wider">Rang</th>
+                <th className="p-5 font-black uppercase text-xs tracking-wider text-left">Patient</th>
+                <th className="p-5 text-center font-black uppercase text-xs tracking-wider">Séances</th>
+                <th className="p-5 text-right font-black uppercase text-xs tracking-wider">CA Total</th>
+                <th className="p-5 text-right font-black uppercase text-xs tracking-wider">Moy/Séance</th>
+                <th className="p-5 font-black uppercase text-xs tracking-wider">Dernière</th>
+                <th className="p-5 text-center font-black uppercase text-xs tracking-wider">Statut</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
+            <tbody className="divide-y-2 divide-purple-50">
               {clientStats
                 .filter(c => c.sessionCount > 0)
                 .filter(c => c.name.toLowerCase().includes(clientSearch.toLowerCase()) || (c.owner && c.owner.toLowerCase().includes(clientSearch.toLowerCase())))
-                .slice(0, 20)
+                .slice(0, 25)
                 .map((client, index) => (
-                  <tr key={client.id} className="hover:bg-purple-50/50 transition-colors">
-                    <td className="p-4 text-center">
+                  <tr key={client.id} className="hover:bg-gradient-to-r hover:from-purple-50 hover:to-pink-50 transition-all duration-300 group">
+                    <td className="p-5 text-center">
                       {index < 3 ? (
-                        <div className={`inline-flex items-center justify-center w-8 h-8 rounded-full text-white font-bold shadow-lg ${index === 0 ? 'bg-gradient-to-br from-yellow-400 to-yellow-600' : index === 1 ? 'bg-gradient-to-br from-gray-300 to-gray-500' : 'bg-gradient-to-br from-orange-400 to-orange-600'}`}>
-                          {index + 1}
+                        <div className={`inline-flex items-center justify-center w-12 h-12 rounded-2xl text-white font-black text-lg shadow-2xl transform group-hover:scale-110 transition-transform ${
+                          index === 0 ? 'bg-gradient-to-br from-yellow-400 via-yellow-500 to-amber-600 animate-pulse' :
+                          index === 1 ? 'bg-gradient-to-br from-gray-300 via-gray-400 to-gray-600' :
+                          'bg-gradient-to-br from-orange-400 via-orange-500 to-red-600'
+                        }`}>
+                          {index === 0 ? <Crown size={24} /> : index + 1}
                         </div>
                       ) : (
-                        <span className="font-bold text-slate-400">{index + 1}</span>
+                        <span className="font-black text-lg text-slate-400">{index + 1}</span>
                       )}
                     </td>
-                    <td className="p-4">
-                      <div className="font-bold text-slate-800">{client.name}</div>
-                      {client.type !== PatientType.HUMAN && <div className="text-xs text-slate-500">{client.owner}</div>}
+                    <td className="p-5">
+                      <div className="font-black text-base text-slate-800 group-hover:text-purple-600 transition-colors">{client.name}</div>
+                      {client.type !== PatientType.HUMAN && (
+                        <div className="text-xs text-slate-500 font-semibold mt-1">{client.owner}</div>
+                      )}
                     </td>
-                    <td className="p-4 text-center">
-                      <span className="px-3 py-1 bg-purple-100 rounded-full text-sm font-bold text-purple-700">
+                    <td className="p-5 text-center">
+                      <span className="inline-block px-4 py-2 bg-gradient-to-r from-purple-100 to-pink-100 rounded-xl text-sm font-black text-purple-700 shadow-sm">
                         {client.sessionCount}
                       </span>
                     </td>
-                    <td className="p-4 text-right font-bold text-slate-700">
-                      {client.totalSpent.toFixed(0)} €
+                    <td className="p-5 text-right font-black text-lg text-slate-800">
+                      {client.totalSpent.toFixed(0)}€
                     </td>
-                    <td className="p-4 text-slate-600">
-                      {client.lastVisit ? client.lastVisit.toLocaleDateString('fr-FR') : '-'}
+                    <td className="p-5 text-right font-bold text-sm text-slate-600">
+                      {client.avgPerSession.toFixed(0)}€
                     </td>
-                    <td className="p-4 text-center">
-                      <span className={`px-3 py-1 rounded-full text-xs uppercase font-bold tracking-wide ${client.status === 'ACTIVE' ? 'bg-green-100 text-green-700' : client.status === 'RISK' ? 'bg-orange-100 text-orange-700' : client.status === 'NEW' ? 'bg-blue-100 text-blue-700' : 'bg-red-100 text-red-700'}`}>
+                    <td className="p-5 text-slate-600 font-semibold text-sm">
+                      {client.lastVisit ? client.lastVisit.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' }) : '-'}
+                    </td>
+                    <td className="p-5 text-center">
+                      <span className={`inline-block px-4 py-2 rounded-xl text-xs uppercase font-black tracking-wider shadow-sm ${
+                        client.status === 'ACTIVE' ? 'bg-gradient-to-r from-green-100 to-emerald-100 text-green-700' :
+                        client.status === 'RISK' ? 'bg-gradient-to-r from-orange-100 to-amber-100 text-orange-700' :
+                        client.status === 'NEW' ? 'bg-gradient-to-r from-blue-100 to-indigo-100 text-blue-700' :
+                        'bg-gradient-to-r from-red-100 to-rose-100 text-red-700'
+                      }`}>
                         {client.status === 'RISK' ? '⚠️ Relancer' : client.status === 'LOST' ? '❌ Perdu' : client.status === 'NEW' ? '🆕 Nouveau' : '✅ Fidèle'}
                       </span>
                     </td>
