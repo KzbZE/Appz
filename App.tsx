@@ -10,7 +10,8 @@ import PatientList from './components/PatientList';
 import CalendarModule from './components/CalendarModule';
 import ClientBooking from './components/ClientBooking';
 import SettingsModule from './components/SettingsModule';
-import StatisticsModule from './components/StatisticsModule';
+import AdvancedStatistics from './components/AdvancedStatistics';
+import InvoiceReminders from './components/InvoiceReminders';
 import SessionHistory from './components/SessionHistory';
 import { checkAvailability, calculateLogistics, suggestOptimalTimeSlots } from './services/logisticsService';
 import { Patient, Appointment, ApptStatus, PatientType, Invoice, InvoiceStatus, Expense, AppSettings } from './types';
@@ -645,13 +646,9 @@ const App: React.FC = () => {
              <SettingsModule settings={appSettings} onSave={handleUpdateSettings} />
           )}
 
-          {currentView === 'stats' && (
-              <StatisticsModule 
-                  appointments={appointments || []}
-                  patients={patients || []}
-                  invoices={invoices || []}
-              />
-          )}
+          {currentView === 'stats' && <AdvancedStatistics />}
+
+          {currentView === 'reminders' && <InvoiceReminders />}
 
           {currentView === 'records' && <SessionHistory />}
         </div>

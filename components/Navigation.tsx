@@ -1,5 +1,5 @@
 import React from 'react';
-import { LayoutDashboard, Users, TrendingUp, Calendar, Settings, PieChart, BarChart, FileText } from 'lucide-react';
+import { LayoutDashboard, Users, TrendingUp, Calendar, Settings, PieChart, BarChart, FileText, Bell } from 'lucide-react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../db';
 
@@ -18,6 +18,7 @@ const Navigation: React.FC<NavigationProps> = ({ currentView, setView }) => {
     { id: 'records', label: 'Dossiers', icon: FileText },
     { id: 'coach', label: 'IA Coach', icon: TrendingUp },
     { id: 'finance', label: 'Finance', icon: PieChart },
+    { id: 'reminders', label: 'Rappels', icon: Bell },
     { id: 'stats', label: 'Stats', icon: BarChart },
   ];
 
