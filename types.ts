@@ -40,7 +40,9 @@ export interface Patient {
   avatarUrl?: string;
   medicalHistory?: MedicalHistory;
   distanceKm?: number;
-  customTariffs?: Record<string, number>; 
+  customTariffs?: Record<string, number>;
+  tags?: string[]; // Tags: VIP, REGULIER, SPORTIF, SENIOR, RISQUE, etc.
+  notes?: string; // Notes privées
 }
 
 export interface Appointment {
@@ -225,6 +227,72 @@ export interface SurveyConfig {
   enabled: boolean;
   sendAfterSession: boolean;
   questions: SurveyQuestion[];
+}
+
+export interface Goal {
+  id?: number;
+  type: 'REVENUE' | 'SESSIONS' | 'NEW_PATIENTS' | 'CUSTOM';
+  name: string;
+  period: 'MONTHLY' | 'QUARTERLY' | 'YEARLY';
+  targetValue: number;
+  currentValue: number;
+  startDate: string;
+  endDate: string;
+  isActive: boolean;
+  unit: 'EUR' | 'COUNT' | 'PERCENT';
+}
+
+export interface LoyaltyCard {
+  id?: number;
+  patientId: number | string;
+  patientName: string;
+  type: 'STAMP_CARD' | 'POINTS'; // Carte 10 séances ou Points
+  currentCount: number; // Séances effectuées ou points
+  targetCount: number; // Ex: 10 pour carte gratuite
+  createdDate: string;
+  expiryDate?: string;
+  isActive: boolean;
+  rewardClaimed: boolean;
+}
+
+export interface LoyaltyTransaction {
+  id?: number;
+  cardId: number;
+  patientId: number | string;
+  date: string;
+  type: 'EARN' | 'REDEEM';
+  points: number;
+  description: string;
+}
+
+export interface Referral {
+  id?: number;
+  referrerId: number | string; // Patient qui parraine
+  referrerName: string;
+  referredId?: number | string; // Patient parrainé
+  referredName: string;
+  referredPhone?: string;
+  referredEmail?: string;
+  status: 'PENDING' | 'COMPLETED' | 'REWARDED';
+  createdDate: string;
+  completedDate?: string;
+  referrerReward: number; // Récompense en €
+  referredReward: number;
+}
+
+export interface Promotion {
+  id?: number;
+  name: string;
+  code?: string; // Code promo
+  type: 'PERCENTAGE' | 'FIXED_AMOUNT' | 'FREE_SESSION';
+  value: number; // Ex: 20 pour 20% ou 10 pour 10€
+  startDate: string;
+  endDate: string;
+  isActive: boolean;
+  usageLimit?: number; // Nombre max d'utilisations
+  usageCount: number; // Nombre d'utilisations
+  targetSegment?: string; // Ex: "VIP", "NEW", "ALL"
+  minPurchase?: number; // Montant minimum requis
 }
 
 export interface AppSettings {

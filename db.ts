@@ -1,5 +1,5 @@
 import Dexie, { Table } from 'dexie';
-import { Patient, Appointment, Invoice, RecurringInvoice, Expense, AppSettings, PatientType, ApptStatus, InvoiceStatus, Session, SMSLog, SurveyResponse } from './types';
+import { Patient, Appointment, Invoice, RecurringInvoice, Expense, AppSettings, PatientType, ApptStatus, InvoiceStatus, Session, SMSLog, SurveyResponse, Goal, LoyaltyCard, LoyaltyTransaction, Referral, Promotion } from './types';
 
 class TheraFlowDB extends Dexie {
   patients!: Table<Patient>;
@@ -11,10 +11,15 @@ class TheraFlowDB extends Dexie {
   sessions!: Table<Session>;
   smsLogs!: Table<SMSLog>;
   surveyResponses!: Table<SurveyResponse>;
+  goals!: Table<Goal>;
+  loyaltyCards!: Table<LoyaltyCard>;
+  loyaltyTransactions!: Table<LoyaltyTransaction>;
+  referrals!: Table<Referral>;
+  promotions!: Table<Promotion>;
 
   constructor() {
     super('TheraFlowDB');
-    (this as any).version(4).stores({
+    (this as any).version(6).stores({
       patients: '++id, name, type',
       appointments: '++id, patientId, startTime, status',
       invoices: '++id, number, status, patientName',
@@ -23,7 +28,12 @@ class TheraFlowDB extends Dexie {
       settings: '++id',
       sessions: '++id, patientId, date, type',
       smsLogs: '++id, date, status',
-      surveyResponses: '++id, patientId, date, npsScore'
+      surveyResponses: '++id, patientId, date, npsScore',
+      goals: '++id, type, period, isActive, endDate',
+      loyaltyCards: '++id, patientId, isActive, type',
+      loyaltyTransactions: '++id, cardId, patientId, date, type',
+      referrals: '++id, referrerId, status, createdDate',
+      promotions: '++id, code, isActive, startDate, endDate'
     });
   }
 
