@@ -22,81 +22,239 @@ interface SessionTemplate {
 
 const SessionTemplates: React.FC = () => {
   const [templates, setTemplates] = useState<SessionTemplate[]>([
+    // KINÉSIOLOGIE HUMAIN
     {
       id: 1,
-      name: 'Lombalgie Aiguë',
-      category: 'Kinésithérapie',
+      name: 'Gestion Stress & Anxiété',
+      category: 'Kinésiologie Humain',
       patientType: 'HUMAN',
       anamnesis: {
-        mainComplaint: 'Douleur lombaire aiguë depuis X jours',
-        observations: 'Limitation amplitude flexion/extension. Contracture paravertébrale.',
-        objectives: 'Réduction douleur, récupération amplitude, reprise activités'
+        mainComplaint: 'Stress chronique, anxiété, difficultés sommeil',
+        observations: 'Tension généralisée. Respiration courte. Switching énergétique.',
+        objectives: 'Réduction stress, amélioration sommeil, équilibre émotionnel'
       },
-      treatmentNotes: `1. Mise en décharge - Position antalgique\n2. Massage décontracturant paravertébraux\n3. Mobilisations douces rachis lombaire\n4. Renforcement gainage progressif\n5. Éducation thérapeutique postures`,
-      duration: 45,
-      exercises: `À domicile (2x/jour):\n- Étirement psoas: 3x30sec chaque côté\n- Gainage planche: 3x20sec\n- Chat-chameau: 10 répétitions`,
-      recommendations: 'Éviter port de charges lourdes. Maintenir activité physique adaptée. Glace si douleur.',
+      treatmentNotes: `1. Test musculaire - Identification déséquilibres\n2. Brain Gym - Cross Crawl pour intégration hémisphères\n3. Libération émotionnelle Three In One Concepts\n4. Équilibration chakras et méridiens\n5. Points neuro-vasculaires pour apaisement\n6. Ancrage et recentrage énergétique`,
+      duration: 60,
+      exercises: `Exercices quotidiens:\n- Cross Crawl: 2min matin/soir\n- Respiration cohérence cardiaque: 5min 3x/jour\n- Auto-massage points neuro-lymphatiques`,
+      recommendations: 'Hydratation régulière. Limiter caféine. Marche quotidienne 20min.',
       favorite: true
     },
     {
       id: 2,
-      name: 'Tendinite Membre Antérieur',
-      category: 'Équine',
-      patientType: 'EQUINE',
+      name: 'Difficultés Apprentissage Enfant',
+      category: 'Kinésiologie Humain',
+      patientType: 'HUMAN',
       anamnesis: {
-        mainComplaint: 'Boiterie membre antérieur, chaleur tendon',
-        observations: 'Œdème tendon fléchisseur. Sensibilité palpation.',
-        objectives: 'Réduction inflammation, cicatrisation tendineuse, reprise travail progressive'
+        mainComplaint: 'Difficultés concentration, troubles apprentissage',
+        observations: 'Réflexes archaïques non intégrés. Stress scolaire.',
+        objectives: 'Amélioration concentration, intégration réflexes, confiance'
       },
-      treatmentNotes: `1. Cryothérapie 15min\n2. Massage drainant lymphatique membre\n3. Ultrasons pulsés zone tendineuse\n4. Mobilisations passives articulations\n5. Pose bandes de contention`,
-      duration: 60,
-      recommendations: 'Repos box strict 10j. Contrôle vétérinaire J+7. Reprise au pas en main.',
-      favorite: false
+      treatmentNotes: `1. Test musculaire spécifique apprentissage\n2. Brain Gym - ECAP (Énergétique, Clair, Actif, Positif)\n3. RMTi - Intégration réflexes archaïques\n4. Touch For Health - Équilibration 14 méridiens\n5. Formatage Oreille pour écoute\n6. Baromètre du comportement`,
+      duration: 45,
+      exercises: `Programme à la maison (10min/jour):\n- Mouvements croisés\n- Huit couché (lazy 8)\n- Boire de l'eau régulièrement`,
+      recommendations: 'Encouragements positifs. Pauses régulières durant devoirs. Jeux extérieurs.',
+      favorite: true
     },
     {
       id: 3,
-      name: 'Rééducation Post-Chirurgie LCA',
-      category: 'Kinésithérapie',
+      name: 'Soin Reiki Harmonisation Complète',
+      category: 'Kinésiologie Humain',
       patientType: 'HUMAN',
       anamnesis: {
-        mainComplaint: 'Post-op LCA J+30',
-        observations: 'Cicatrice en cours. Amplitude limitée genou. Amyotrophie quadriceps.',
-        objectives: 'Récupération amplitude complète, renforcement musculaire, proprioception'
+        mainComplaint: 'Fatigue chronique, besoin de rééquilibrage énergétique',
+        observations: 'Déséquilibres énergétiques multiples. Chakras bloqués.',
+        objectives: 'Harmonisation énergétique globale, vitalité, bien-être'
       },
-      treatmentNotes: `1. Mobilisations passives puis actives genou\n2. Renforcement quadriceps isométrique\n3. Travail proprioceptif plateau instable\n4. Mobilisation patella\n5. Massage cicatrice`,
-      duration: 60,
-      exercises: `Programme domicile quotidien:\n- Flexion/extension genou: 3x20\n- Squats partiels: 3x15\n- Équilibre unipodal: 3x30sec`,
-      recommendations: 'Port attelle selon protocole. Glace post-séance. Pas de course avant J+90.',
+      treatmentNotes: `1. Scan énergétique complet du corps\n2. Reiki Usui - Positions classiques\n3. Harmonisation 7 chakras principaux\n4. Nettoyage énergétique aura\n5. LaHoChi pour élévation vibratoire\n6. Ancrage et protection énergétique`,
+      duration: 75,
+      recommendations: 'Repos après séance. Boire beaucoup d\'eau. Observer ressentis 48h.',
       favorite: true
     },
     {
       id: 4,
-      name: 'Dorsalgie Équine',
-      category: 'Équine',
-      patientType: 'EQUINE',
+      name: 'Libération Traumatisme Émotionnel',
+      category: 'Kinésiologie Humain',
+      patientType: 'HUMAN',
       anamnesis: {
-        mainComplaint: 'Raideur dorsale, défense au pansage',
-        observations: 'Contractures musculaires longissimus dorsi. Limitation flexion latérale.',
-        objectives: 'Relâchement musculaire, récupération souplesse, amélioration locomotion'
+        mainComplaint: 'Blocage émotionnel, trauma passé non résolu',
+        observations: 'Émotions refoulées. Mémoires corporelles.',
+        objectives: 'Libération émotionnelle, apaisement, reconstruction'
       },
-      treatmentNotes: `1. Stretching myofascial encolure/dos\n2. Massage profond muscles dorsaux\n3. Mobilisations articulaires vertébrales\n4. Travail en longe assouplissement\n5. Électrostimulation si disponible`,
-      duration: 45,
-      recommendations: 'Vérification selle/harnachement. Échauffement progressif avant travail.',
+      treatmentNotes: `1. Test musculaire identification émotion\n2. Récession d'âge - Retour à l'événement\n3. One Brain - Baromètre comportement\n4. Libération stress émotionnel\n5. EFT (Emotional Freedom Technique)\n6. Réintégration et ancrage positif`,
+      duration: 90,
+      recommendations: 'Bienveillance envers soi. Journal émotions. Soutien psychologique si besoin.',
       favorite: false
     },
     {
       id: 5,
-      name: 'Massage Sportif Pré-Compétition',
-      category: 'Massage',
-      patientType: 'ALL',
+      name: 'Préparation Mentale Sportif',
+      category: 'Kinésiologie Humain',
+      patientType: 'HUMAN',
       anamnesis: {
-        mainComplaint: 'Préparation compétition',
-        observations: 'Bon état général. Pas de douleur particulière.',
-        objectives: 'Optimisation performance, prévention blessures, récupération'
+        mainComplaint: 'Stress compétition, baisse performance',
+        observations: 'Tension pré-compétitive. Doutes capacités.',
+        objectives: 'Confiance, concentration, optimisation performance'
       },
-      treatmentNotes: `1. Échauffement tissulaire effleurages\n2. Pétrissages musculaires membres\n3. Frictions transversales tendons\n4. Percussions toniques\n5. Étirements activo-passifs`,
+      treatmentNotes: `1. Test musculaire objectifs sportifs\n2. Kinésiologie sport - Visualisation positive\n3. Équilibration énergétique performance\n4. Gestion stress compétition\n5. Ancrage confiance\n6. Mode Sabotage - Élimination auto-sabotage`,
+      duration: 60,
+      exercises: `Routine pré-compétition:\n- Visualisation succès: 5min\n- Cross Crawl: 2min\n- Ancrage confiance`,
+      recommendations: 'Sommeil qualité. Nutrition adaptée. Rituel pré-compétition.',
+      favorite: false
+    },
+
+    // KINÉSIOLOGIE ANIMAL
+    {
+      id: 6,
+      name: 'Anxiété Séparation Chien',
+      category: 'Kinésiologie Animal',
+      patientType: 'CANINE',
+      anamnesis: {
+        mainComplaint: 'Aboiements, destruction en absence maître',
+        observations: 'Stress visible. Attachement excessif.',
+        objectives: 'Apaisement, autonomie, équilibre émotionnel'
+      },
+      treatmentNotes: `1. Test musculaire animal - Communication\n2. Scan énergétique corps\n3. Équilibration chakras (spéc. plexus solaire)\n4. Libération émotionnelle stress\n5. Fleurs de Bach personnalisées\n6. Reiki canin harmonisation`,
+      duration: 45,
+      recommendations: 'Départ progressif. Jouets occupationnels. Routine stable.',
+      favorite: true
+    },
+    {
+      id: 7,
+      name: 'Performance Cheval Compétition',
+      category: 'Kinésiologie Animal',
+      patientType: 'EQUINE',
+      anamnesis: {
+        mainComplaint: 'Baisse performance, stress compétition',
+        observations: 'Tension musculaire. Méridiens déséquilibrés.',
+        objectives: 'Optimisation performance, concentration, vitalité'
+      },
+      treatmentNotes: `1. Test musculaire équin complet\n2. Méthode Masterson - Relâchement tensions\n3. Équilibration 12 méridiens principaux\n4. Chakras - Focus chakra racine et sacré\n5. Gestion stress pré-compétition\n6. Reiki équin vitalité`,
+      duration: 60,
+      recommendations: 'Échauffement progressif. Hydratation. Vérification matériel.',
+      favorite: true
+    },
+    {
+      id: 8,
+      name: 'Troubles Comportement Chien',
+      category: 'Kinésiologie Animal',
+      patientType: 'CANINE',
+      anamnesis: {
+        mainComplaint: 'Agressivité, peurs, réactivité',
+        observations: 'Trauma possible. Déséquilibres émotionnels.',
+        objectives: 'Apaisement, confiance, comportement équilibré'
+      },
+      treatmentNotes: `1. Communication animale - Identification cause\n2. Test musculaire émotions\n3. Libération stress post-traumatique\n4. Tellington TTouch - Apaisement nerveux\n5. Équilibration énergétique globale\n6. Fleurs de Bach trauma/peur`,
+      duration: 50,
+      recommendations: 'Environnement calme. Renforcement positif. Patience.',
+      favorite: false
+    },
+    {
+      id: 9,
+      name: 'Douleurs Chroniques Cheval Âgé',
+      category: 'Kinésiologie Animal',
+      patientType: 'EQUINE',
+      anamnesis: {
+        mainComplaint: 'Raideur, douleurs articulaires, vieillissement',
+        observations: 'Mobilité réduite. Énergie basse.',
+        objectives: 'Soulagement douleur, mobilité, qualité vie'
+      },
+      treatmentNotes: `1. Scan énergétique zones douloureuses\n2. Reiki équin - Soulagement douleur\n3. Touch For Health animal\n4. Points d'acupression antalgiques\n5. Harmonisation méridiens\n6. Magnétisme zones affectées`,
+      duration: 60,
+      recommendations: 'Mouvement régulier adapté. Confort litière. Suivi vétérinaire.',
+      favorite: false
+    },
+
+    // MASSAGE ÉQUIN
+    {
+      id: 10,
+      name: 'Massage Pré-Compétition Équin',
+      category: 'Massage Équin',
+      patientType: 'EQUINE',
+      anamnesis: {
+        mainComplaint: 'Préparation épreuve sportive',
+        observations: 'Bon état général. Tonus musculaire correct.',
+        objectives: 'Optimisation performance, prévention blessures, échauffement'
+      },
+      treatmentNotes: `1. Effleurage global - Échauffement tissus\n2. Pétrissage encolure et dos\n3. Friction transversale tendons membres\n4. Stretching passif membres\n5. Percussions tonifiantes muscles\n6. Mobilisations articulaires douces`,
       duration: 30,
-      recommendations: 'Hydratation optimale. Échauffement dynamique avant épreuve.',
+      recommendations: 'Hydratation optimale. Échauffement progressif avant épreuve. Vérifier matériel.',
+      favorite: true
+    },
+    {
+      id: 11,
+      name: 'Récupération Post-Effort Équin',
+      category: 'Massage Équin',
+      patientType: 'EQUINE',
+      anamnesis: {
+        mainComplaint: 'Récupération après compétition/effort intense',
+        observations: 'Fatigue musculaire. Possibles courbatures.',
+        objectives: 'Récupération optimale, drainage, relaxation'
+      },
+      treatmentNotes: `1. Drainage lymphatique membres\n2. Effleurage relaxant global\n3. Pétrissage doux muscles sollicités\n4. Points trigger zones contractées\n5. Stretching passif doux\n6. Cryothérapie si inflammation`,
+      duration: 45,
+      recommendations: 'Repos box 24h. Hydratation. Marche en main légère.',
+      favorite: true
+    },
+    {
+      id: 12,
+      name: 'Traitement Dorsalgie Équine',
+      category: 'Massage Équin',
+      patientType: 'EQUINE',
+      anamnesis: {
+        mainComplaint: 'Douleur dorsale, raideur, défense pansage',
+        observations: 'Contractures longissimus dorsi. Mobilité limitée.',
+        objectives: 'Soulagement douleur, relâchement musculaire, mobilité'
+      },
+      treatmentNotes: `1. Thermothérapie préparatoire\n2. Massage myofascial dos profond\n3. Points trigger paravertébraux\n4. Stretching encolure et dos\n5. Mobilisations vertébrales douces\n6. Shiatsu équin méridiens dos`,
+      duration: 60,
+      recommendations: 'Vérification selle urgente. Repos 48h. Travail progressif.',
+      favorite: true
+    },
+    {
+      id: 13,
+      name: 'Massage Bien-être Équin',
+      category: 'Massage Équin',
+      patientType: 'EQUINE',
+      anamnesis: {
+        mainComplaint: 'Entretien, prévention, détente',
+        observations: 'État général bon. Pas de pathologie.',
+        objectives: 'Relaxation, bien-être, prévention tensions'
+      },
+      treatmentNotes: `1. Effleurage global relaxant\n2. Pétrissage doux ensemble corps\n3. Acupression points de détente\n4. Shiatsu équin harmonisation\n5. Stretching passif membres\n6. Mobilisations articulaires confort`,
+      duration: 45,
+      recommendations: 'Séances régulières mensuelles. Observation comportement.',
+      favorite: false
+    },
+
+    // MASSAGE CANIN
+    {
+      id: 14,
+      name: 'Massage Sportif Canin',
+      category: 'Massage Canin',
+      patientType: 'CANINE',
+      anamnesis: {
+        mainComplaint: 'Chien sportif - Entretien musculaire',
+        observations: 'Activité intense régulière. Tonus musculaire.',
+        objectives: 'Performance, récupération, prévention blessures'
+      },
+      treatmentNotes: `1. Effleurage échauffement\n2. Pétrissage membres et dos\n3. Friction tendons et ligaments\n4. Drainage lymphatique pattes\n5. Stretching passif membres\n6. Percussions tonifiantes`,
+      duration: 30,
+      recommendations: 'Hydratation post-effort. Repos après séance. Échauffement avant activité.',
+      favorite: true
+    },
+    {
+      id: 15,
+      name: 'Massage Thérapeutique Chien Âgé',
+      category: 'Massage Canin',
+      patientType: 'CANINE',
+      anamnesis: {
+        mainComplaint: 'Arthrose, raideur, mobilité réduite',
+        observations: 'Douleurs articulaires. Difficulté lever.',
+        objectives: 'Soulagement douleur, mobilité, confort vie'
+      },
+      treatmentNotes: `1. Thermothérapie douce zones raides\n2. Effleurage très doux global\n3. Mobilisations passives articulations\n4. Points d'acupression antalgiques\n5. Drainage lymphatique doux\n6. Massage confort zones douloureuses`,
+      duration: 40,
+      recommendations: 'Couchage orthopédique. Exercice doux quotidien. Suppléments articulaires.',
       favorite: true
     }
   ]);
@@ -108,7 +266,7 @@ const SessionTemplates: React.FC = () => {
   const [selectedTemplate, setSelectedTemplate] = useState<SessionTemplate | null>(null);
   const [editForm, setEditForm] = useState<SessionTemplate | null>(null);
 
-  const categories = ['Kinésithérapie', 'Équine', 'Massage', 'Ostéopathie', 'Autre'];
+  const categories = ['Kinésiologie Humain', 'Kinésiologie Animal', 'Massage Équin', 'Massage Canin', 'Autre'];
 
   const filteredTemplates = templates.filter(t => {
     const matchesSearch = t.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -122,7 +280,7 @@ const SessionTemplates: React.FC = () => {
   const handleCreate = () => {
     setEditForm({
       name: '',
-      category: 'Kinésithérapie',
+      category: 'Kinésiologie Humain',
       patientType: 'ALL',
       anamnesis: {
         mainComplaint: '',
