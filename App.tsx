@@ -21,6 +21,7 @@ import SatisfactionSurvey from './components/SatisfactionSurvey';
 import GoalsWidget from './components/GoalsWidget';
 import LoyaltyPromoModule from './components/LoyaltyPromoModule';
 import RGPDModule from './components/RGPDModule';
+import MigrationWizard from './components/MigrationWizard';
 import { checkAvailability, calculateLogistics, suggestOptimalTimeSlots } from './services/logisticsService';
 import { Patient, Appointment, ApptStatus, PatientType, Invoice, InvoiceStatus, Expense, AppSettings } from './types';
 import { X, Save, Clock, MapPin, User, Globe, AlertTriangle, Search, Zap, Plus, ChevronLeft } from 'lucide-react';
@@ -677,6 +678,8 @@ const App: React.FC = () => {
           {currentView === 'rgpd' && <RGPDModule />}
 
           {currentView === 'goals' && <GoalsWidget />}
+
+          {currentView === 'migration' && <MigrationWizard />}
         </div>
 
         {isNewApptModalOpen && renderNewApptModal()}
