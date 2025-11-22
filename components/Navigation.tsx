@@ -25,7 +25,7 @@ const Navigation: React.FC<NavigationProps> = ({ currentView, setView }) => {
     { id: 'dashboard', label: 'Accueil', icon: LayoutDashboard },
     { id: 'calendar', label: 'Agenda', icon: Calendar },
     { id: 'patients', label: 'Patients', icon: Users },
-    { id: 'coach', label: 'Coach IA', icon: TrendingUp },
+    { id: 'records', label: 'Dossiers', icon: FileText },
     { id: 'finance', label: 'Finance', icon: PieChart },
     { id: 'settings', label: 'Réglages', icon: Settings },
   ];

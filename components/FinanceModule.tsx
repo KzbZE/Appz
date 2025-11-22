@@ -41,6 +41,10 @@ const FinanceModule: React.FC<FinanceModuleProps> = ({ invoices: initialInvoices
   const [selectedFolder, setSelectedFolder] = useState('');
   const [invoiceToExport, setInvoiceToExport] = useState<Invoice | null>(null);
 
+  // Mail State
+  const [showMailModal, setShowMailModal] = useState(false);
+  const [mailForm, setMailForm] = useState({ to: '', subject: '', message: '' });
+
   const PAYMENT_METHODS: Record<string, string> = {
       'CASH': 'Espèces',
       'CHECK': 'Chèque',
@@ -246,7 +250,7 @@ const FinanceModule: React.FC<FinanceModuleProps> = ({ invoices: initialInvoices
 
   const submitPayment = async () => {
       if (!selectedInvoice?.id) return;
-      
+
       const amount = parseFloat(paymentForm.amount);
       if (isNaN(amount) || amount <= 0) {
           alert("Montant invalide");
@@ -255,7 +259,7 @@ const FinanceModule: React.FC<FinanceModuleProps> = ({ invoices: initialInvoices
 
       const newPaid = selectedInvoice.amountPaid + amount;
       const newStatus = newPaid >= (selectedInvoice.amountTTC - 0.01) ? InvoiceStatus.PAID : InvoiceStatus.PARTIAL;
-      
+
       const newPayment: PaymentRecord = {
           date: new Date(paymentForm.date).toISOString(),
           amount: amount,
@@ -277,8 +281,49 @@ const FinanceModule: React.FC<FinanceModuleProps> = ({ invoices: initialInvoices
           status: newStatus,
           payments: updatedPayments
       });
-      
+
       setIsPaymentModalOpen(false);
+  };
+
+  // Mail Functions
+  const handleSendInvoiceByMail = () => {
+      if (!selectedInvoice) return;
+      const remaining = selectedInvoice.amountTTC - selectedInvoice.amountPaid;
+      setMailForm({
+          to: '',
+          subject: `Facture ${selectedInvoice.number} - ${currentSettings?.practitionerName || 'Praticien'}`,
+          message: `Bonjour ${selectedInvoice.patientName},\n\nVeuillez trouver ci-joint votre facture n°${selectedInvoice.number} d'un montant de ${selectedInvoice.amountTTC.toFixed(2)}€.\n\n${remaining > 0 ? `Montant restant à régler : ${remaining.toFixed(2)}€\nÉchéance : ${new Date(selectedInvoice.dueDate).toLocaleDateString()}\n\n` : ''}Cordialement,\n${currentSettings?.practitionerName || 'Votre Praticien'}`
+      });
+      setShowMailModal(true);
+  };
+
+  const confirmSendInvoiceMail = async () => {
+      if (!selectedInvoice || !mailForm.to) return;
+
+      const doc = generateInvoicePDF(selectedInvoice);
+      const blob = doc.output('blob');
+
+      const mailtoLink = `mailto:${mailForm.to}?subject=${encodeURIComponent(mailForm.subject)}&body=${encodeURIComponent(mailForm.message)}`;
+
+      window.open(mailtoLink, '_blank');
+      alert("Note : Les pièces jointes ne sont pas supportées via mailto. Le PDF a été téléchargé. Attachez-le manuellement à votre client mail.");
+
+      // Télécharger le PDF automatiquement
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `Facture_${selectedInvoice.number}.pdf`;
+      link.click();
+      URL.revokeObjectURL(url);
+
+      // Marquer le rappel comme envoyé
+      if (selectedInvoice.id) {
+          await db.invoices.update(selectedInvoice.id, {
+              reminderSentAt: new Date().toISOString()
+          });
+      }
+
+      setShowMailModal(false);
   };
 
   // --- Renders ---
@@ -516,12 +561,15 @@ const FinanceModule: React.FC<FinanceModuleProps> = ({ invoices: initialInvoices
                                 </button>
                             )}
                             
-                            <div className="grid grid-cols-2 gap-3">
+                            <div className="grid grid-cols-3 gap-2">
                                 <button onClick={() => handleDownloadPDF(selectedInvoice)} className="flex items-center justify-center py-2.5 bg-white border border-gray-200 rounded-lg text-sm font-bold text-slate-700 hover:bg-gray-100">
                                     <Download size={16} className="mr-2" /> PDF
                                 </button>
                                 <button onClick={() => handleExportToDrive(selectedInvoice)} className="flex items-center justify-center py-2.5 bg-white border border-gray-200 rounded-lg text-sm font-bold text-slate-700 hover:bg-gray-100">
                                     <HardDrive size={16} className="mr-2" /> Drive
+                                </button>
+                                <button onClick={handleSendInvoiceByMail} className="flex items-center justify-center py-2.5 bg-white border border-gray-200 rounded-lg text-sm font-bold text-slate-700 hover:bg-gray-100">
+                                    <Send size={16} className="mr-2" /> Email
                                 </button>
                             </div>
                             
@@ -631,6 +679,51 @@ const FinanceModule: React.FC<FinanceModuleProps> = ({ invoices: initialInvoices
                 <div className="flex justify-end space-x-2">
                     <button onClick={() => setShowDriveModal(false)} className="px-3 py-1.5 text-slate-500 text-sm">Annuler</button>
                     <button onClick={confirmExportToDrive} className="px-3 py-1.5 bg-blue-600 text-white rounded-lg text-sm">Sauvegarder</button>
+                </div>
+            </div>
+        </div>
+      )}
+
+      {/* Mail Modal */}
+      {showMailModal && (
+          <div className="fixed inset-0 bg-black/60 z-[70] flex items-center justify-center p-4">
+            <div className="bg-white rounded-xl p-6 w-full max-w-md">
+                <div className="flex justify-between items-center mb-4">
+                    <h3 className="font-bold text-lg flex items-center"><Send size={20} className="mr-2 text-blue-600"/> Envoyer Facture par Email</h3>
+                    <button onClick={() => setShowMailModal(false)}><X size={20} className="text-slate-400"/></button>
+                </div>
+                <div className="space-y-4">
+                    <div>
+                        <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Destinataire</label>
+                        <input
+                            type="email"
+                            placeholder="email@example.com"
+                            className="w-full p-2.5 border border-gray-300 rounded-lg text-sm"
+                            value={mailForm.to}
+                            onChange={e => setMailForm({...mailForm, to: e.target.value})}
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Objet</label>
+                        <input
+                            type="text"
+                            className="w-full p-2.5 border border-gray-300 rounded-lg text-sm"
+                            value={mailForm.subject}
+                            onChange={e => setMailForm({...mailForm, subject: e.target.value})}
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Message</label>
+                        <textarea
+                            rows={6}
+                            className="w-full p-2.5 border border-gray-300 rounded-lg text-sm"
+                            value={mailForm.message}
+                            onChange={e => setMailForm({...mailForm, message: e.target.value})}
+                        />
+                    </div>
+                    <button onClick={confirmSendInvoiceMail} disabled={!mailForm.to} className="w-full py-2.5 bg-blue-600 text-white rounded-lg font-bold disabled:opacity-50 hover:bg-blue-700">
+                        Envoyer
+                    </button>
                 </div>
             </div>
         </div>
