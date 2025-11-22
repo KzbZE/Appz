@@ -1,5 +1,5 @@
 import React from 'react';
-import { LayoutDashboard, Users, TrendingUp, Calendar, Settings, PieChart, BarChart, FileText, Bell, CalendarDays, FileCode, Send, Package, Sparkles } from 'lucide-react';
+import { LayoutDashboard, Users, TrendingUp, Calendar, Settings, PieChart, BarChart, FileText, Bell, CalendarDays, FileCode, Send, Package, Zap } from 'lucide-react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../db';
 
@@ -14,21 +14,21 @@ const Navigation: React.FC<NavigationProps> = ({ currentView, setView }) => {
   const navItems = [
     { id: 'dashboard', label: 'Pilotage', icon: LayoutDashboard, gradient: 'from-teal-500 to-cyan-600' },
     { id: 'calendar', label: 'Agenda', icon: Calendar, gradient: 'from-blue-500 to-indigo-600' },
-    { id: 'planner', label: 'Planning', icon: CalendarDays, gradient: 'from-purple-500 to-pink-600' },
+    { id: 'planner', label: 'Planning', icon: CalendarDays, gradient: 'from-cyan-500 to-teal-600' },
     { id: 'patients', label: 'Patients', icon: Users, gradient: 'from-emerald-500 to-teal-600' },
     { id: 'records', label: 'Dossiers', icon: FileText, gradient: 'from-amber-500 to-orange-600' },
-    { id: 'templates', label: 'Templates', icon: FileCode, gradient: 'from-violet-500 to-purple-600' },
-    { id: 'coach', label: 'IA Coach', icon: TrendingUp, gradient: 'from-rose-500 to-pink-600' },
+    { id: 'templates', label: 'Templates', icon: FileCode, gradient: 'from-blue-600 to-cyan-600' },
+    { id: 'coach', label: 'IA Coach', icon: TrendingUp, gradient: 'from-indigo-500 to-blue-600' },
     { id: 'finance', label: 'Finance', icon: PieChart, gradient: 'from-green-500 to-emerald-600' },
     { id: 'inventory', label: 'Produits', icon: Package, gradient: 'from-yellow-500 to-amber-600' },
-    { id: 'marketing', label: 'Marketing', icon: Send, gradient: 'from-cyan-500 to-blue-600' },
-    { id: 'reminders', label: 'Rappels', icon: Bell, gradient: 'from-red-500 to-rose-600' },
-    { id: 'stats', label: 'Stats', icon: BarChart, gradient: 'from-indigo-500 to-purple-600' },
+    { id: 'marketing', label: 'Marketing', icon: Send, gradient: 'from-teal-500 to-cyan-500' },
+    { id: 'reminders', label: 'Rappels', icon: Bell, gradient: 'from-red-500 to-orange-600' },
+    { id: 'stats', label: 'Stats', icon: BarChart, gradient: 'from-blue-600 to-indigo-600' },
   ];
 
   const mobileNavItems = [
     { id: 'dashboard', label: 'Accueil', icon: LayoutDashboard, gradient: 'from-teal-500 to-cyan-600' },
-    { id: 'stats', label: 'Stats', icon: BarChart, gradient: 'from-indigo-500 to-purple-600' },
+    { id: 'stats', label: 'Stats', icon: BarChart, gradient: 'from-blue-600 to-indigo-600' },
     { id: 'patients', label: 'Patients', icon: Users, gradient: 'from-emerald-500 to-teal-600' },
     { id: 'finance', label: 'Finance', icon: PieChart, gradient: 'from-green-500 to-emerald-600' },
     { id: 'records', label: 'Dossiers', icon: FileText, gradient: 'from-amber-500 to-orange-600' },
@@ -37,8 +37,8 @@ const Navigation: React.FC<NavigationProps> = ({ currentView, setView }) => {
 
   return (
     <>
-      {/* MOBILE NAVIGATION - Ultra Modern */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-xl border-t border-purple-100 pb-safe z-50 shadow-2xl">
+      {/* MOBILE NAVIGATION - Zoho Style */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 pb-safe z-50 shadow-2xl">
         <div className="flex justify-around items-center h-16 px-2">
           {mobileNavItems.map((item) => {
             const Icon = item.icon;
@@ -52,7 +52,7 @@ const Navigation: React.FC<NavigationProps> = ({ currentView, setView }) => {
                 }`}
               >
                 {isActive && (
-                  <div className={`absolute inset-0 bg-gradient-to-br ${item.gradient} opacity-10 rounded-2xl m-1 animate-pulse`}></div>
+                  <div className={`absolute inset-0 bg-gradient-to-br ${item.gradient} opacity-10 rounded-2xl m-1`}></div>
                 )}
                 <div className={`relative z-10 flex flex-col items-center ${
                   isActive ? '' : 'opacity-60'
@@ -65,7 +65,7 @@ const Navigation: React.FC<NavigationProps> = ({ currentView, setView }) => {
                     <Icon size={20} strokeWidth={isActive ? 2.5 : 2} />
                   </div>
                   <span className={`text-[10px] font-bold mt-1 ${
-                    isActive ? 'text-transparent bg-gradient-to-r ' + item.gradient + ' bg-clip-text' : 'text-gray-500'
+                    isActive ? 'text-slate-800' : 'text-gray-500'
                   }`}>
                     {item.label}
                   </span>
@@ -76,27 +76,27 @@ const Navigation: React.FC<NavigationProps> = ({ currentView, setView }) => {
         </div>
       </div>
 
-      {/* DESKTOP NAVIGATION - Ultra Modern */}
-      <div className="hidden md:flex flex-col w-64 bg-gradient-to-b from-slate-900 via-slate-850 to-slate-900 text-white h-full fixed left-0 top-0 shadow-2xl z-50 border-r border-slate-700/50">
-        {/* Header avec effet glassmorphism */}
-        <div className="relative p-6 flex flex-col items-start overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-br from-purple-600/20 to-blue-600/20 backdrop-blur-sm"></div>
-          <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-purple-500/30 to-pink-500/30 rounded-full blur-3xl"></div>
+      {/* DESKTOP NAVIGATION - Zoho Style: Blue Marine */}
+      <div className="hidden md:flex flex-col w-64 bg-gradient-to-b from-slate-900 via-blue-950 to-slate-900 text-white h-full fixed left-0 top-0 shadow-2xl z-50 border-r border-slate-700/50">
+        {/* Header avec effet moderne */}
+        <div className="relative p-6 flex flex-col items-start overflow-hidden border-b border-slate-800/50">
+          <div className="absolute inset-0 bg-gradient-to-br from-teal-600/10 to-cyan-600/5"></div>
+          <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-teal-500/20 to-cyan-500/10 rounded-full blur-3xl"></div>
 
           <div className="relative z-10 w-full">
             {settings?.branding?.logoUrl ? (
-              <img src={settings.branding.logoUrl} alt="Logo" className="h-16 w-auto mb-3 object-contain bg-white/10 rounded-xl p-2 backdrop-blur-sm border border-white/10" />
+              <img src={settings.branding.logoUrl} alt="Logo" className="h-16 w-auto mb-3 object-contain bg-white/5 rounded-xl p-2 border border-white/10" />
             ) : (
-              <div className="h-14 w-14 bg-gradient-to-br from-purple-600 to-blue-600 rounded-2xl mb-3 flex items-center justify-center text-2xl font-black text-white shadow-xl transform hover:scale-105 transition-transform">
+              <div className="h-14 w-14 bg-gradient-to-br from-teal-500 to-cyan-600 rounded-2xl mb-3 flex items-center justify-center text-2xl font-black text-white shadow-xl transform hover:scale-105 transition-transform">
                 {settings?.appName?.substring(0,1) || 'T'}
               </div>
             )}
-            <h1 className="text-2xl font-black tracking-tight bg-gradient-to-r from-white to-purple-200 bg-clip-text text-transparent">
+            <h1 className="text-2xl font-black tracking-tight text-white">
               {settings?.appName || 'TheraFlow'}
             </h1>
             <div className="flex items-center gap-1 mt-1">
-              <Sparkles size={12} className="text-purple-400" />
-              <p className="text-xs font-bold text-purple-300">Edition Pro</p>
+              <Zap size={12} className="text-teal-400" />
+              <p className="text-xs font-bold text-teal-300">Edition Pro</p>
             </div>
           </div>
         </div>
@@ -113,7 +113,7 @@ const Navigation: React.FC<NavigationProps> = ({ currentView, setView }) => {
                 className={`group relative flex items-center w-full px-4 py-3 rounded-xl transition-all duration-300 overflow-hidden ${
                   isActive
                     ? 'shadow-lg transform scale-105'
-                    : 'hover:bg-slate-800/50 hover:scale-102'
+                    : 'hover:bg-slate-800/50'
                 }`}
               >
                 {isActive && (
@@ -127,7 +127,7 @@ const Navigation: React.FC<NavigationProps> = ({ currentView, setView }) => {
                   isActive ? 'text-white' : 'text-slate-300'
                 }`}>
                   <div className={`mr-3 p-1.5 rounded-lg transition-all ${
-                    isActive ? 'bg-white/20 backdrop-blur-sm' : 'group-hover:bg-slate-700/50'
+                    isActive ? 'bg-white/20' : 'group-hover:bg-slate-700/50'
                   }`}>
                     <Icon size={20} strokeWidth={isActive ? 2.5 : 2} />
                   </div>
@@ -147,7 +147,7 @@ const Navigation: React.FC<NavigationProps> = ({ currentView, setView }) => {
         </nav>
 
         {/* Settings Button */}
-        <div className="p-3 border-t border-slate-700/50 bg-slate-900/50 backdrop-blur-sm">
+        <div className="p-3 border-t border-slate-800/50">
           <button
             onClick={() => setView('settings')}
             className={`group flex items-center w-full px-4 py-3 rounded-xl transition-all duration-300 ${
