@@ -23,8 +23,8 @@ const Navigation: React.FC<NavigationProps> = ({ currentView, setView }) => {
 
   const mobileNavItems = [
     { id: 'dashboard', label: 'Pilotage', icon: LayoutDashboard },
-    { id: 'calendar', label: 'Agenda', icon: Calendar },
     { id: 'patients', label: 'Patients', icon: Users },
+    { id: 'coach', label: 'IA Coach', icon: TrendingUp },
     { id: 'finance', label: 'Finance', icon: PieChart },
     { id: 'settings', label: 'Réglages', icon: Settings },
   ];
