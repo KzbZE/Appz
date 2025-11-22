@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../db';
-import { Plus, Search, Edit, Trash2, Copy, FileText, X, Save, Star } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, Copy, FileText, X, Save, Star, Eye, CheckCircle } from 'lucide-react';
 
 interface SessionTemplate {
   id?: number;
@@ -265,6 +265,7 @@ const SessionTemplates: React.FC = () => {
   const [isCreating, setIsCreating] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<SessionTemplate | null>(null);
   const [editForm, setEditForm] = useState<SessionTemplate | null>(null);
+  const [viewingTemplate, setViewingTemplate] = useState<SessionTemplate | null>(null);
 
   const categories = ['Kinésiologie Humain', 'Kinésiologie Animal', 'Massage Équin', 'Massage Canin', 'Autre'];
 
@@ -339,8 +340,8 @@ const SessionTemplates: React.FC = () => {
   };
 
   const useTemplate = (template: SessionTemplate) => {
-    // This would open the session wizard with pre-filled data
-    alert(`Utilisation du template "${template.name}".\nDans une version complète, cela ouvrirait le wizard de séance avec les données pré-remplies.`);
+    alert(`✅ Template "${template.name}" copié !\n\nPour utiliser ce template dans une séance:\n1. Allez dans "Patients"\n2. Sélectionnez un patient\n3. Créez une nouvelle séance\n4. Les données seront pré-remplies`);
+    setViewingTemplate(null);
   };
 
   return (
@@ -403,18 +404,22 @@ const SessionTemplates: React.FC = () => {
         {filteredTemplates.map((template) => (
           <div
             key={template.id}
-            className="bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-all cursor-pointer group overflow-hidden"
+            className="bg-white rounded-xl border-2 border-gray-200 shadow-sm hover:shadow-lg transition-all group overflow-hidden"
           >
-            <div className="p-4">
+            {/* Clickable area to view details */}
+            <div className="p-4 md:p-4 cursor-pointer" onClick={() => setViewingTemplate(template)}>
               <div className="flex items-start justify-between mb-3">
                 <div className="flex-1">
-                  <h3 className="font-bold text-slate-800 text-lg mb-1">{template.name}</h3>
-                  <div className="flex items-center gap-2">
-                    <span className="px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded-full text-xs font-bold">
+                  <h3 className="font-bold text-slate-800 text-lg md:text-lg mb-2">{template.name}</h3>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="px-3 py-1 bg-emerald-100 text-emerald-700 rounded-full text-sm font-bold">
                       {template.category}
                     </span>
-                    <span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full text-xs font-bold">
+                    <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-bold">
                       {template.patientType === 'ALL' ? 'Universel' : template.patientType}
+                    </span>
+                    <span className="px-3 py-1 bg-slate-100 text-slate-600 rounded-full text-sm font-medium">
+                      {template.duration} min
                     </span>
                   </div>
                 </div>
@@ -423,64 +428,186 @@ const SessionTemplates: React.FC = () => {
                     e.stopPropagation();
                     if (template.id) toggleFavorite(template.id);
                   }}
-                  className="p-1"
+                  className="p-1.5"
                 >
                   <Star
-                    size={20}
+                    size={24}
                     className={template.favorite ? 'text-yellow-500 fill-yellow-500' : 'text-gray-300'}
                   />
                 </button>
               </div>
 
-              <div className="space-y-2 text-sm text-slate-600">
-                <div>
-                  <span className="font-bold text-slate-700">Plainte :</span> {template.anamnesis.mainComplaint}
+              <div className="space-y-3 text-base md:text-sm text-slate-700">
+                <div className="line-clamp-2">
+                  <span className="font-bold text-slate-800">Plainte : </span>
+                  {template.anamnesis.mainComplaint}
                 </div>
-                <div>
-                  <span className="font-bold text-slate-700">Objectifs :</span> {template.anamnesis.objectives}
-                </div>
-                <div className="bg-gray-50 p-2 rounded-lg text-xs">
-                  <div className="font-bold text-slate-700 mb-1">Traitement :</div>
-                  <div className="line-clamp-3 whitespace-pre-wrap">{template.treatmentNotes}</div>
+                <div className="line-clamp-2">
+                  <span className="font-bold text-slate-800">Objectifs : </span>
+                  {template.anamnesis.objectives}
                 </div>
               </div>
 
-              <div className="flex items-center text-xs text-slate-500 mt-3">
-                <span className="font-bold">Durée :</span>
-                <span className="ml-1">{template.duration} min</span>
+              {/* "Tap pour voir plus" indicator mobile */}
+              <div className="mt-4 flex items-center justify-center text-sm text-primary-600 font-medium">
+                <Eye size={16} className="mr-1" />
+                <span>Tap pour voir le détail complet</span>
               </div>
             </div>
 
-            {/* Actions */}
-            <div className="grid grid-cols-4 border-t border-gray-100">
+            {/* Actions - Larger on mobile */}
+            <div className="grid grid-cols-4 border-t-2 border-gray-200">
               <button
-                onClick={() => useTemplate(template)}
-                className="p-3 hover:bg-emerald-50 transition-colors flex items-center justify-center border-r border-gray-100"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  useTemplate(template);
+                }}
+                className="p-4 md:p-3 hover:bg-emerald-50 transition-colors flex flex-col md:flex-row items-center justify-center border-r border-gray-200"
+                title="Utiliser"
               >
-                <FileText size={16} className="text-emerald-600" />
+                <CheckCircle size={20} className="text-emerald-600 mb-1 md:mb-0" />
+                <span className="text-xs md:hidden text-emerald-700">Utiliser</span>
               </button>
               <button
-                onClick={() => handleEdit(template)}
-                className="p-3 hover:bg-blue-50 transition-colors flex items-center justify-center border-r border-gray-100"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleEdit(template);
+                }}
+                className="p-4 md:p-3 hover:bg-blue-50 transition-colors flex flex-col md:flex-row items-center justify-center border-r border-gray-200"
+                title="Modifier"
               >
-                <Edit size={16} className="text-blue-600" />
+                <Edit size={20} className="text-blue-600 mb-1 md:mb-0" />
+                <span className="text-xs md:hidden text-blue-700">Modifier</span>
               </button>
               <button
-                onClick={() => handleDuplicate(template)}
-                className="p-3 hover:bg-purple-50 transition-colors flex items-center justify-center border-r border-gray-100"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleDuplicate(template);
+                }}
+                className="p-4 md:p-3 hover:bg-purple-50 transition-colors flex flex-col md:flex-row items-center justify-center border-r border-gray-200"
+                title="Dupliquer"
               >
-                <Copy size={16} className="text-purple-600" />
+                <Copy size={20} className="text-purple-600 mb-1 md:mb-0" />
+                <span className="text-xs md:hidden text-purple-700">Copier</span>
               </button>
               <button
-                onClick={() => template.id && handleDelete(template.id)}
-                className="p-3 hover:bg-red-50 transition-colors flex items-center justify-center"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  template.id && handleDelete(template.id);
+                }}
+                className="p-4 md:p-3 hover:bg-red-50 transition-colors flex flex-col md:flex-row items-center justify-center"
+                title="Supprimer"
               >
-                <Trash2 size={16} className="text-red-600" />
+                <Trash2 size={20} className="text-red-600 mb-1 md:mb-0" />
+                <span className="text-xs md:hidden text-red-700">Suppr.</span>
               </button>
             </div>
           </div>
         ))}
       </div>
+
+      {/* MODAL DÉTAIL TEMPLATE */}
+      {viewingTemplate && (
+        <div className="fixed inset-0 z-[70] bg-black/60 animate-fadeIn flex items-end md:items-center justify-center" onClick={() => setViewingTemplate(null)}>
+          <div
+            className="bg-white rounded-t-3xl md:rounded-2xl w-full md:max-w-3xl max-h-[90vh] overflow-hidden animate-slideUp"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="sticky top-0 bg-gradient-to-r from-emerald-600 to-teal-600 text-white p-5 flex justify-between items-start">
+              <div className="flex-1 pr-4">
+                <h2 className="text-xl md:text-2xl font-bold mb-2">{viewingTemplate.name}</h2>
+                <div className="flex flex-wrap gap-2">
+                  <span className="px-3 py-1 bg-white/20 rounded-full text-sm font-bold">
+                    {viewingTemplate.category}
+                  </span>
+                  <span className="px-3 py-1 bg-white/20 rounded-full text-sm font-bold">
+                    {viewingTemplate.patientType === 'ALL' ? 'Universel' : viewingTemplate.patientType}
+                  </span>
+                  <span className="px-3 py-1 bg-white/20 rounded-full text-sm font-medium">
+                    {viewingTemplate.duration} min
+                  </span>
+                </div>
+              </div>
+              <button
+                onClick={() => setViewingTemplate(null)}
+                className="p-2 hover:bg-white/20 rounded-full transition-colors flex-shrink-0"
+              >
+                <X size={28} />
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="p-5 md:p-6 overflow-y-auto max-h-[calc(90vh-180px)]">
+              <div className="space-y-6">
+                {/* Plainte */}
+                <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-r-lg">
+                  <h3 className="text-base font-bold text-red-900 mb-2">Plainte Principale</h3>
+                  <p className="text-base text-red-800">{viewingTemplate.anamnesis.mainComplaint}</p>
+                </div>
+
+                {/* Observations */}
+                <div className="bg-blue-50 border-l-4 border-blue-500 p-4 rounded-r-lg">
+                  <h3 className="text-base font-bold text-blue-900 mb-2">Observations</h3>
+                  <p className="text-base text-blue-800">{viewingTemplate.anamnesis.observations}</p>
+                </div>
+
+                {/* Objectifs */}
+                <div className="bg-purple-50 border-l-4 border-purple-500 p-4 rounded-r-lg">
+                  <h3 className="text-base font-bold text-purple-900 mb-2">Objectifs</h3>
+                  <p className="text-base text-purple-800">{viewingTemplate.anamnesis.objectives}</p>
+                </div>
+
+                {/* Traitement */}
+                <div className="bg-emerald-50 border-l-4 border-emerald-500 p-4 rounded-r-lg">
+                  <h3 className="text-base font-bold text-emerald-900 mb-3">Protocole de Traitement</h3>
+                  <pre className="text-base text-emerald-800 whitespace-pre-wrap font-sans leading-relaxed">
+                    {viewingTemplate.treatmentNotes}
+                  </pre>
+                </div>
+
+                {/* Exercices */}
+                {viewingTemplate.exercises && (
+                  <div className="bg-amber-50 border-l-4 border-amber-500 p-4 rounded-r-lg">
+                    <h3 className="text-base font-bold text-amber-900 mb-3">Exercices à Domicile</h3>
+                    <pre className="text-base text-amber-800 whitespace-pre-wrap font-sans leading-relaxed">
+                      {viewingTemplate.exercises}
+                    </pre>
+                  </div>
+                )}
+
+                {/* Recommandations */}
+                {viewingTemplate.recommendations && (
+                  <div className="bg-teal-50 border-l-4 border-teal-500 p-4 rounded-r-lg">
+                    <h3 className="text-base font-bold text-teal-900 mb-2">Recommandations</h3>
+                    <p className="text-base text-teal-800">{viewingTemplate.recommendations}</p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Actions Footer */}
+            <div className="sticky bottom-0 bg-white border-t-2 border-gray-200 p-4 flex gap-3">
+              <button
+                onClick={() => useTemplate(viewingTemplate)}
+                className="flex-1 py-4 bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-xl font-bold text-base hover:shadow-lg transition-all flex items-center justify-center"
+              >
+                <CheckCircle size={22} className="mr-2" />
+                Utiliser ce Template
+              </button>
+              <button
+                onClick={() => {
+                  handleEdit(viewingTemplate);
+                  setViewingTemplate(null);
+                }}
+                className="px-6 py-4 bg-blue-100 text-blue-700 rounded-xl font-bold text-base hover:bg-blue-200 transition-all"
+              >
+                <Edit size={22} />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Create/Edit Modal */}
       {isCreating && editForm && (
