@@ -22,7 +22,8 @@ const SessionWizard: React.FC<SessionWizardProps> = ({ patient, settings, onComp
   const [videoUploaded, setVideoUploaded] = useState(false);
   const [generatedReport, setGeneratedReport] = useState("");
   const [documents, setDocuments] = useState<SessionDocument[]>([]);
-  const [sessionType, setSessionType] = useState<string>('KINESIO'); 
+  const [sessionType, setSessionType] = useState<string>('KINESIO');
+  const [selectedTechniques, setSelectedTechniques] = useState<string[]>([]);
   const [calculatedPrice, setCalculatedPrice] = useState<number>(0);
   
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
@@ -40,6 +41,7 @@ const SessionWizard: React.FC<SessionWizardProps> = ({ patient, settings, onComp
     generatedReport,
     documents,
     sessionType,
+    selectedTechniques,
     step
   });
 
@@ -52,9 +54,10 @@ const SessionWizard: React.FC<SessionWizardProps> = ({ patient, settings, onComp
       generatedReport,
       documents,
       sessionType,
+      selectedTechniques,
       step
     };
-  }, [anamnesis, tensions, treatmentNotes, videoUploaded, generatedReport, documents, sessionType, step]);
+  }, [anamnesis, tensions, treatmentNotes, videoUploaded, generatedReport, documents, sessionType, selectedTechniques, step]);
 
   useEffect(() => {
     const savedDraft = localStorage.getItem(STORAGE_KEY);
@@ -71,6 +74,7 @@ const SessionWizard: React.FC<SessionWizardProps> = ({ patient, settings, onComp
                 if (data.generatedReport) setGeneratedReport(data.generatedReport);
                 if (data.documents) setDocuments(data.documents);
                 if (data.sessionType) setSessionType(data.sessionType);
+                if (data.selectedTechniques) setSelectedTechniques(data.selectedTechniques);
                 if (data.step) setStep(data.step);
                 setLastSaved(new Date(data.timestamp));
             }
@@ -225,10 +229,14 @@ const SessionWizard: React.FC<SessionWizardProps> = ({ patient, settings, onComp
           patientId: patient.id,
           date: new Date().toISOString(),
           type: sessionType,
-          anamnesis: { ...anamnesis, generatedReport },
+          anamnesis: {
+            ...anamnesis,
+            generatedReport,
+            techniques: selectedTechniques.join(', ')
+          },
           tensions: tensions,
           treatmentNotes: treatmentNotes,
-          exercises: ['Repos', 'Hydratation'], 
+          exercises: ['Repos', 'Hydratation'],
           documents: documents,
           price: calculatedPrice,
       };
@@ -237,15 +245,139 @@ const SessionWizard: React.FC<SessionWizardProps> = ({ patient, settings, onComp
       onComplete();
   };
 
+  // Définir les techniques disponibles selon le type de patient et de séance
+  const getTechniquesByType = (): { category: string; techniques: string[] }[] => {
+    if (sessionType === 'MASSAGE' && (patient.type === PatientType.EQUINE || patient.type === PatientType.CANINE)) {
+      return [
+        {
+          category: 'Massage Sportif',
+          techniques: ['Pré-compétition', 'Post-compétition', 'Récupération', 'Entretien']
+        },
+        {
+          category: 'Massage Thérapeutique',
+          techniques: ['Relaxant', 'Drainage lymphatique', 'Points trigger', 'Myofascial']
+        },
+        {
+          category: 'Techniques Spécialisées',
+          techniques: ['Stretching', 'Mobilisations articulaires', 'Shiatsu équin']
+        }
+      ];
+    } else if (sessionType === 'KINESIO' && patient.type === PatientType.HUMAN) {
+      return [
+        {
+          category: 'Kinésiologie Educative',
+          techniques: ['Brain Gym', 'Touch For Health', 'Santé par le Toucher', 'RMTi (réflexes archaïques)']
+        },
+        {
+          category: 'Kinésiologie Émotionnelle',
+          techniques: ['Three In One Concepts', 'Libération émotionnelle', 'Baromètre du comportement', 'Récession d\'âge']
+        },
+        {
+          category: 'Kinésiologie Structurelle',
+          techniques: ['Équilibration énergétique', 'Test musculaire', 'Points neuro-lymphatiques', 'Points neuro-vasculaires']
+        }
+      ];
+    } else if (sessionType === 'KINESIO' && (patient.type === PatientType.EQUINE || patient.type === PatientType.CANINE)) {
+      return [
+        {
+          category: 'Kinésiologie Animale',
+          techniques: ['Test musculaire', 'Équilibration énergétique', 'Méridiens', 'Chakras']
+        },
+        {
+          category: 'Travail Émotionnel',
+          techniques: ['Libération émotionnelle', 'Fleurs de Bach', 'Stress post-traumatique']
+        }
+      ];
+    }
+    return [];
+  };
+
+  const toggleTechnique = (technique: string) => {
+    if (selectedTechniques.includes(technique)) {
+      setSelectedTechniques(selectedTechniques.filter(t => t !== technique));
+    } else {
+      setSelectedTechniques([...selectedTechniques, technique]);
+    }
+  };
+
   // Renders...
-  const renderAnamnesis = () => (
+  const renderAnamnesis = () => {
+    const availableTechniques = getTechniquesByType();
+
+    return (
     <div className="space-y-4 animate-fadeIn">
-      <h3 className="text-lg font-semibold text-slate-800 mb-4">1. Anamnèse & Contexte</h3>
+      <h3 className="text-lg font-semibold text-slate-800 mb-4">1. Type de Séance & Techniques</h3>
+
+      {/* Sélection Type de Séance */}
       <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 space-y-4">
         <div className="flex justify-center mb-4 bg-gray-100 p-1 rounded-lg">
-            <button onClick={() => setSessionType('KINESIO')} className={`flex-1 py-2 text-xs font-bold rounded-md transition-colors ${sessionType === 'KINESIO' ? 'bg-white shadow text-primary-600' : 'text-gray-500'}`}>Kinésiologie</button>
-            <button onClick={() => setSessionType('MASSAGE')} className={`flex-1 py-2 text-xs font-bold rounded-md transition-colors ${sessionType === 'MASSAGE' ? 'bg-white shadow text-primary-600' : 'text-gray-500'}`}>Massage</button>
+            <button
+              onClick={() => {
+                setSessionType('KINESIO');
+                setSelectedTechniques([]);
+              }}
+              className={`flex-1 py-2 text-xs font-bold rounded-md transition-colors ${sessionType === 'KINESIO' ? 'bg-white shadow text-primary-600' : 'text-gray-500'}`}
+            >
+              Kinésiologie
+            </button>
+            <button
+              onClick={() => {
+                setSessionType('MASSAGE');
+                setSelectedTechniques([]);
+              }}
+              className={`flex-1 py-2 text-xs font-bold rounded-md transition-colors ${sessionType === 'MASSAGE' ? 'bg-white shadow text-primary-600' : 'text-gray-500'}`}
+            >
+              Massage
+            </button>
         </div>
+
+        {/* Sélection des Techniques */}
+        {availableTechniques.length > 0 && (
+          <div className="space-y-3">
+            <h4 className="text-sm font-bold text-slate-700 flex items-center">
+              <span className="w-2 h-2 bg-primary-500 rounded-full mr-2"></span>
+              Techniques utilisées (cliquez pour sélectionner)
+            </h4>
+
+            {availableTechniques.map((category, idx) => (
+              <div key={idx} className="bg-gradient-to-r from-slate-50 to-white p-3 rounded-lg border border-slate-200">
+                <p className="text-xs font-bold text-slate-600 uppercase mb-2">{category.category}</p>
+                <div className="flex flex-wrap gap-2">
+                  {category.techniques.map((tech) => (
+                    <button
+                      key={tech}
+                      onClick={() => toggleTechnique(tech)}
+                      className={`px-3 py-1.5 text-xs font-medium rounded-full border-2 transition-all ${
+                        selectedTechniques.includes(tech)
+                          ? 'bg-primary-500 text-white border-primary-600 shadow-md'
+                          : 'bg-white text-slate-600 border-slate-300 hover:border-primary-400'
+                      }`}
+                    >
+                      {selectedTechniques.includes(tech) && '✓ '}
+                      {tech}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ))}
+
+            {selectedTechniques.length > 0 && (
+              <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                <p className="text-xs font-bold text-green-800 mb-1">
+                  ✓ {selectedTechniques.length} technique(s) sélectionnée(s)
+                </p>
+                <p className="text-xs text-green-700">
+                  {selectedTechniques.join(' • ')}
+                </p>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Anamnèse */}
+      <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 space-y-4">
+        <h4 className="text-sm font-bold text-slate-700">Anamnèse & Contexte</h4>
         <div>
              <label className="block text-sm font-medium text-slate-600 mb-1">Notes libres</label>
              <textarea className="w-full p-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-primary-500 outline-none text-sm" rows={3} placeholder="Observations générales..." value={anamnesis.notes || ''} onChange={(e) => setAnamnesis({...anamnesis, notes: e.target.value})} />
@@ -253,6 +385,7 @@ const SessionWizard: React.FC<SessionWizardProps> = ({ patient, settings, onComp
       </div>
     </div>
   );
+  };
 
   const renderObservation = () => (
     <div className="space-y-4 animate-fadeIn">
