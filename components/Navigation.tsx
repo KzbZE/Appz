@@ -1,5 +1,5 @@
 import React from 'react';
-import { LayoutDashboard, Users, TrendingUp, Calendar, Settings, PieChart, BarChart, FileText, Bell, CalendarDays, FileCode, Send, Package } from 'lucide-react';
+import { LayoutDashboard, Users, TrendingUp, Calendar, Settings, PieChart, BarChart, FileText, Bell, CalendarDays, FileCode, Send, Package, Sparkles } from 'lucide-react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../db';
 
@@ -12,33 +12,34 @@ const Navigation: React.FC<NavigationProps> = ({ currentView, setView }) => {
   const settings = useLiveQuery(() => db.settings.toArray())?.[0];
 
   const navItems = [
-    { id: 'dashboard', label: 'Pilotage', icon: LayoutDashboard },
-    { id: 'calendar', label: 'Agenda', icon: Calendar },
-    { id: 'planner', label: 'Planning', icon: CalendarDays },
-    { id: 'patients', label: 'Patients', icon: Users },
-    { id: 'records', label: 'Dossiers', icon: FileText },
-    { id: 'templates', label: 'Templates', icon: FileCode },
-    { id: 'coach', label: 'IA Coach', icon: TrendingUp },
-    { id: 'finance', label: 'Finance', icon: PieChart },
-    { id: 'inventory', label: 'Produits', icon: Package },
-    { id: 'marketing', label: 'Marketing', icon: Send },
-    { id: 'reminders', label: 'Rappels', icon: Bell },
-    { id: 'stats', label: 'Stats', icon: BarChart },
+    { id: 'dashboard', label: 'Pilotage', icon: LayoutDashboard, gradient: 'from-teal-500 to-cyan-600' },
+    { id: 'calendar', label: 'Agenda', icon: Calendar, gradient: 'from-blue-500 to-indigo-600' },
+    { id: 'planner', label: 'Planning', icon: CalendarDays, gradient: 'from-purple-500 to-pink-600' },
+    { id: 'patients', label: 'Patients', icon: Users, gradient: 'from-emerald-500 to-teal-600' },
+    { id: 'records', label: 'Dossiers', icon: FileText, gradient: 'from-amber-500 to-orange-600' },
+    { id: 'templates', label: 'Templates', icon: FileCode, gradient: 'from-violet-500 to-purple-600' },
+    { id: 'coach', label: 'IA Coach', icon: TrendingUp, gradient: 'from-rose-500 to-pink-600' },
+    { id: 'finance', label: 'Finance', icon: PieChart, gradient: 'from-green-500 to-emerald-600' },
+    { id: 'inventory', label: 'Produits', icon: Package, gradient: 'from-yellow-500 to-amber-600' },
+    { id: 'marketing', label: 'Marketing', icon: Send, gradient: 'from-cyan-500 to-blue-600' },
+    { id: 'reminders', label: 'Rappels', icon: Bell, gradient: 'from-red-500 to-rose-600' },
+    { id: 'stats', label: 'Stats', icon: BarChart, gradient: 'from-indigo-500 to-purple-600' },
   ];
 
   const mobileNavItems = [
-    { id: 'dashboard', label: 'Accueil', icon: LayoutDashboard },
-    { id: 'planner', label: 'Planning', icon: CalendarDays },
-    { id: 'patients', label: 'Patients', icon: Users },
-    { id: 'records', label: 'Dossiers', icon: FileText },
-    { id: 'finance', label: 'Finance', icon: PieChart },
-    { id: 'settings', label: 'Réglages', icon: Settings },
+    { id: 'dashboard', label: 'Accueil', icon: LayoutDashboard, gradient: 'from-teal-500 to-cyan-600' },
+    { id: 'stats', label: 'Stats', icon: BarChart, gradient: 'from-indigo-500 to-purple-600' },
+    { id: 'patients', label: 'Patients', icon: Users, gradient: 'from-emerald-500 to-teal-600' },
+    { id: 'finance', label: 'Finance', icon: PieChart, gradient: 'from-green-500 to-emerald-600' },
+    { id: 'records', label: 'Dossiers', icon: FileText, gradient: 'from-amber-500 to-orange-600' },
+    { id: 'settings', label: 'Réglages', icon: Settings, gradient: 'from-slate-500 to-gray-600' },
   ];
 
   return (
     <>
-      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 pb-safe z-50">
-        <div className="flex justify-around items-center h-16">
+      {/* MOBILE NAVIGATION - Ultra Modern */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-xl border-t border-purple-100 pb-safe z-50 shadow-2xl">
+        <div className="flex justify-around items-center h-16 px-2">
           {mobileNavItems.map((item) => {
             const Icon = item.icon;
             const isActive = currentView === item.id;
@@ -46,34 +47,62 @@ const Navigation: React.FC<NavigationProps> = ({ currentView, setView }) => {
               <button
                 key={item.id}
                 onClick={() => setView(item.id)}
-                className={`flex flex-col items-center justify-center w-full h-full space-y-1 ${
-                  isActive ? 'text-primary-600' : 'text-gray-400'
+                className={`relative flex flex-col items-center justify-center flex-1 h-full transition-all duration-300 ${
+                  isActive ? 'scale-110' : 'scale-100'
                 }`}
               >
-                <Icon size={20} strokeWidth={isActive ? 2.5 : 2} />
-                <span className="text-[10px] font-medium">{item.label}</span>
+                {isActive && (
+                  <div className={`absolute inset-0 bg-gradient-to-br ${item.gradient} opacity-10 rounded-2xl m-1 animate-pulse`}></div>
+                )}
+                <div className={`relative z-10 flex flex-col items-center ${
+                  isActive ? '' : 'opacity-60'
+                }`}>
+                  <div className={`p-2 rounded-xl transition-all duration-300 ${
+                    isActive
+                      ? `bg-gradient-to-br ${item.gradient} text-white shadow-lg`
+                      : 'text-gray-500'
+                  }`}>
+                    <Icon size={20} strokeWidth={isActive ? 2.5 : 2} />
+                  </div>
+                  <span className={`text-[10px] font-bold mt-1 ${
+                    isActive ? 'text-transparent bg-gradient-to-r ' + item.gradient + ' bg-clip-text' : 'text-gray-500'
+                  }`}>
+                    {item.label}
+                  </span>
+                </div>
               </button>
             );
           })}
         </div>
       </div>
 
-      <div className="hidden md:flex flex-col w-64 bg-slate-850 text-white h-full fixed left-0 top-0 shadow-xl z-50">
-        <div className="p-6 flex flex-col items-start">
+      {/* DESKTOP NAVIGATION - Ultra Modern */}
+      <div className="hidden md:flex flex-col w-64 bg-gradient-to-b from-slate-900 via-slate-850 to-slate-900 text-white h-full fixed left-0 top-0 shadow-2xl z-50 border-r border-slate-700/50">
+        {/* Header avec effet glassmorphism */}
+        <div className="relative p-6 flex flex-col items-start overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-br from-purple-600/20 to-blue-600/20 backdrop-blur-sm"></div>
+          <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-purple-500/30 to-pink-500/30 rounded-full blur-3xl"></div>
+
+          <div className="relative z-10 w-full">
             {settings?.branding?.logoUrl ? (
-                 <img src={settings.branding.logoUrl} alt="Logo" className="h-16 w-auto mb-3 object-contain bg-white/10 rounded p-1" />
+              <img src={settings.branding.logoUrl} alt="Logo" className="h-16 w-auto mb-3 object-contain bg-white/10 rounded-xl p-2 backdrop-blur-sm border border-white/10" />
             ) : (
-                <div className="h-12 w-12 bg-primary-600 rounded-lg mb-3 flex items-center justify-center text-xl font-bold text-white">
-                    {settings?.appName?.substring(0,1) || 'T'}
-                </div>
+              <div className="h-14 w-14 bg-gradient-to-br from-purple-600 to-blue-600 rounded-2xl mb-3 flex items-center justify-center text-2xl font-black text-white shadow-xl transform hover:scale-105 transition-transform">
+                {settings?.appName?.substring(0,1) || 'T'}
+              </div>
             )}
-            <h1 className="text-xl font-bold tracking-tight text-primary-100">
-                {settings?.appName || 'TheraFlow'}
-                <span className="text-primary-500">.</span>
+            <h1 className="text-2xl font-black tracking-tight bg-gradient-to-r from-white to-purple-200 bg-clip-text text-transparent">
+              {settings?.appName || 'TheraFlow'}
             </h1>
-            <p className="text-xs text-slate-400 mt-1">Edition Hybride</p>
+            <div className="flex items-center gap-1 mt-1">
+              <Sparkles size={12} className="text-purple-400" />
+              <p className="text-xs font-bold text-purple-300">Edition Pro</p>
+            </div>
+          </div>
         </div>
-        <nav className="flex-1 px-4 space-y-2">
+
+        {/* Navigation Items */}
+        <nav className="flex-1 px-3 space-y-1 overflow-y-auto py-4">
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = currentView === item.id;
@@ -81,26 +110,59 @@ const Navigation: React.FC<NavigationProps> = ({ currentView, setView }) => {
               <button
                 key={item.id}
                 onClick={() => setView(item.id)}
-                className={`flex items-center w-full px-4 py-3 rounded-lg transition-all ${
-                  isActive 
-                    ? 'bg-primary-600 text-white shadow-lg' 
-                    : 'text-slate-300 hover:bg-slate-700'
+                className={`group relative flex items-center w-full px-4 py-3 rounded-xl transition-all duration-300 overflow-hidden ${
+                  isActive
+                    ? 'shadow-lg transform scale-105'
+                    : 'hover:bg-slate-800/50 hover:scale-102'
                 }`}
               >
-                <Icon size={20} className="mr-3" />
-                <span className="text-sm font-medium">{item.label}</span>
+                {isActive && (
+                  <>
+                    <div className={`absolute inset-0 bg-gradient-to-r ${item.gradient} opacity-100`}></div>
+                    <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMjAiIGN5PSIyMCIgcj0iMiIgZmlsbD0id2hpdGUiIG9wYWNpdHk9IjAuMSIvPjwvc3ZnPg==')] opacity-50"></div>
+                  </>
+                )}
+
+                <div className={`relative z-10 flex items-center w-full ${
+                  isActive ? 'text-white' : 'text-slate-300'
+                }`}>
+                  <div className={`mr-3 p-1.5 rounded-lg transition-all ${
+                    isActive ? 'bg-white/20 backdrop-blur-sm' : 'group-hover:bg-slate-700/50'
+                  }`}>
+                    <Icon size={20} strokeWidth={isActive ? 2.5 : 2} />
+                  </div>
+                  <span className={`text-sm font-bold ${
+                    isActive ? 'text-white' : 'text-slate-300 group-hover:text-white'
+                  }`}>
+                    {item.label}
+                  </span>
+                </div>
+
+                {isActive && (
+                  <div className="absolute right-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-white rounded-l-full shadow-lg"></div>
+                )}
               </button>
             );
           })}
         </nav>
-        <div className="p-4 border-t border-slate-700">
-            <button 
-                onClick={() => setView('settings')}
-                className={`flex items-center w-full px-4 py-2 rounded-lg transition-colors ${currentView === 'settings' ? 'text-white bg-slate-700' : 'text-slate-400 hover:text-white'}`}
-            >
-                <Settings size={18} className="mr-2" />
-                <span className="text-sm">Paramètres</span>
-            </button>
+
+        {/* Settings Button */}
+        <div className="p-3 border-t border-slate-700/50 bg-slate-900/50 backdrop-blur-sm">
+          <button
+            onClick={() => setView('settings')}
+            className={`group flex items-center w-full px-4 py-3 rounded-xl transition-all duration-300 ${
+              currentView === 'settings'
+                ? 'bg-gradient-to-r from-slate-700 to-slate-600 text-white shadow-xl'
+                : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
+            }`}
+          >
+            <div className={`mr-3 p-1.5 rounded-lg transition-all ${
+              currentView === 'settings' ? 'bg-white/20' : 'group-hover:bg-slate-700/50'
+            }`}>
+              <Settings size={18} strokeWidth={currentView === 'settings' ? 2.5 : 2} />
+            </div>
+            <span className="text-sm font-bold">Paramètres</span>
+          </button>
         </div>
       </div>
     </>
