@@ -1,5 +1,5 @@
-import React from 'react';
-import { LayoutDashboard, Users, TrendingUp, Calendar, Settings, PieChart, BarChart, FileText, Bell, CalendarDays, FileCode, Send, Package, Zap, Star, Gift, Shield, Target, Cloud } from 'lucide-react';
+import React, { useState } from 'react';
+import { LayoutDashboard, Users, TrendingUp, Calendar, Settings, PieChart, BarChart, FileText, Bell, CalendarDays, FileCode, Send, Package, Zap, Star, Gift, Shield, Target, Cloud, Menu, X } from 'lucide-react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../db';
 
@@ -10,6 +10,7 @@ interface NavigationProps {
 
 const Navigation: React.FC<NavigationProps> = ({ currentView, setView }) => {
   const settings = useLiveQuery(() => db.settings.toArray())?.[0];
+  const [showFullMenu, setShowFullMenu] = useState(false);
 
   const navItems = [
     { id: 'dashboard', label: 'Pilotage', icon: LayoutDashboard, gradient: 'from-teal-500 to-cyan-600' },
@@ -33,12 +34,15 @@ const Navigation: React.FC<NavigationProps> = ({ currentView, setView }) => {
 
   const mobileNavItems = [
     { id: 'dashboard', label: 'Accueil', icon: LayoutDashboard, gradient: 'from-teal-500 to-cyan-600' },
-    { id: 'stats', label: 'Stats', icon: BarChart, gradient: 'from-blue-600 to-indigo-600' },
     { id: 'patients', label: 'Patients', icon: Users, gradient: 'from-emerald-500 to-teal-600' },
+    { id: 'calendar', label: 'Agenda', icon: Calendar, gradient: 'from-blue-500 to-indigo-600' },
     { id: 'finance', label: 'Finance', icon: PieChart, gradient: 'from-green-500 to-emerald-600' },
-    { id: 'records', label: 'Dossiers', icon: FileText, gradient: 'from-amber-500 to-orange-600' },
-    { id: 'settings', label: 'Réglages', icon: Settings, gradient: 'from-slate-500 to-gray-600' },
   ];
+
+  const handleMenuItemClick = (id: string) => {
+    setView(id);
+    setShowFullMenu(false);
+  };
 
   return (
     <>
@@ -78,8 +82,92 @@ const Navigation: React.FC<NavigationProps> = ({ currentView, setView }) => {
               </button>
             );
           })}
+
+          {/* Menu Button */}
+          <button
+            onClick={() => setShowFullMenu(true)}
+            className="relative flex flex-col items-center justify-center flex-1 h-full transition-all duration-300"
+          >
+            <div className="relative z-10 flex flex-col items-center opacity-60">
+              <div className="p-2 rounded-xl transition-all duration-300 text-gray-500">
+                <Menu size={20} strokeWidth={2} />
+              </div>
+              <span className="text-[10px] font-bold mt-1 text-gray-500">
+                Menu
+              </span>
+            </div>
+          </button>
         </div>
       </div>
+
+      {/* FULL MENU DRAWER - Mobile */}
+      {showFullMenu && (
+        <div className="md:hidden fixed inset-0 z-[60] bg-black/60 animate-fadeIn" onClick={() => setShowFullMenu(false)}>
+          <div
+            className="absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl max-h-[80vh] overflow-hidden animate-slideUp"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="sticky top-0 bg-gradient-to-r from-slate-800 to-slate-700 text-white p-4 flex justify-between items-center">
+              <div>
+                <h3 className="text-lg font-bold">Menu Complet</h3>
+                <p className="text-xs text-slate-300">Toutes les sections</p>
+              </div>
+              <button
+                onClick={() => setShowFullMenu(false)}
+                className="p-2 hover:bg-white/20 rounded-full transition-colors"
+              >
+                <X size={24} />
+              </button>
+            </div>
+
+            {/* Menu Grid */}
+            <div className="p-4 overflow-y-auto max-h-[calc(80vh-80px)]">
+              <div className="grid grid-cols-3 gap-3">
+                {navItems.map((item) => {
+                  const Icon = item.icon;
+                  const isActive = currentView === item.id;
+                  return (
+                    <button
+                      key={item.id}
+                      onClick={() => handleMenuItemClick(item.id)}
+                      className={`flex flex-col items-center p-3 rounded-2xl transition-all ${
+                        isActive
+                          ? 'bg-gradient-to-br from-slate-100 to-slate-50 shadow-md'
+                          : 'bg-slate-50 hover:bg-slate-100'
+                      }`}
+                    >
+                      <div className={`p-3 rounded-xl mb-2 bg-gradient-to-br ${item.gradient} text-white shadow-lg`}>
+                        <Icon size={24} strokeWidth={2} />
+                      </div>
+                      <span className="text-xs font-bold text-center text-slate-700 leading-tight">
+                        {item.label}
+                      </span>
+                    </button>
+                  );
+                })}
+
+                {/* Settings */}
+                <button
+                  onClick={() => handleMenuItemClick('settings')}
+                  className={`flex flex-col items-center p-3 rounded-2xl transition-all ${
+                    currentView === 'settings'
+                      ? 'bg-gradient-to-br from-slate-100 to-slate-50 shadow-md'
+                      : 'bg-slate-50 hover:bg-slate-100'
+                  }`}
+                >
+                  <div className="p-3 rounded-xl mb-2 bg-gradient-to-br from-slate-500 to-gray-600 text-white shadow-lg">
+                    <Settings size={24} strokeWidth={2} />
+                  </div>
+                  <span className="text-xs font-bold text-center text-slate-700 leading-tight">
+                    Paramètres
+                  </span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* DESKTOP NAVIGATION - Zoho Style: Blue Marine */}
       <div className="hidden md:flex flex-col w-64 bg-gradient-to-b from-slate-900 via-blue-950 to-slate-900 text-white h-full fixed left-0 top-0 shadow-2xl z-50 border-r border-slate-700/50">

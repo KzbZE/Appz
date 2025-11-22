@@ -49,6 +49,24 @@
       .no-scrollbar::-webkit-scrollbar { display: none; }
       .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
       .pb-safe { padding-bottom: env(safe-area-inset-bottom); }
+
+      @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+      }
+
+      @keyframes slideUp {
+        from { transform: translateY(100%); }
+        to { transform: translateY(0); }
+      }
+
+      .animate-fadeIn {
+        animation: fadeIn 0.2s ease-out;
+      }
+
+      .animate-slideUp {
+        animation: slideUp 0.3s ease-out;
+      }
     </style>
   </head>
   <body class="bg-gray-50 text-slate-900 h-screen w-screen overflow-hidden font-sans">
