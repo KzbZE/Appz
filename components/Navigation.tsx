@@ -21,11 +21,19 @@ const Navigation: React.FC<NavigationProps> = ({ currentView, setView }) => {
     { id: 'stats', label: 'Stats', icon: BarChart },
   ];
 
+  const mobileNavItems = [
+    { id: 'dashboard', label: 'Pilotage', icon: LayoutDashboard },
+    { id: 'calendar', label: 'Agenda', icon: Calendar },
+    { id: 'patients', label: 'Patients', icon: Users },
+    { id: 'finance', label: 'Finance', icon: PieChart },
+    { id: 'settings', label: 'Réglages', icon: Settings },
+  ];
+
   return (
     <>
       <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 pb-safe z-50">
         <div className="flex justify-around items-center h-16">
-          {navItems.slice(0, 5).map((item) => { 
+          {mobileNavItems.map((item) => {
             const Icon = item.icon;
             const isActive = currentView === item.id;
             return (
