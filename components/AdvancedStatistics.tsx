@@ -349,9 +349,10 @@ const AdvancedStatistics: React.FC = () => {
 
   return (
     <div className="space-y-8 pb-24 animate-fadeIn">
-      {/* Ultra Modern Header with Glassmorphism */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-violet-600 via-purple-600 to-indigo-600 p-8 text-white shadow-2xl">
-        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAxMCAwIEwgMCAwIDAgMTAiIGZpbGw9Im5vbmUiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS1vcGFjaXR5PSIwLjEiIHN0cm9rZS13aWR0aD0iMSIvPjwvcGF0dGVybj48L2RlZnM+PHJlY3Qgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgZmlsbD0idXJsKCNncmlkKSIvPjwvc3ZnPg==')] opacity-30"></div>
+      {/* Ultra Modern Header with Glassmorphism - Zoho Style */}
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-blue-900 to-slate-800 p-8 text-white shadow-2xl">
+        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAxMCAwIEwgMCAwIDAgMTAiIGZpbGw9Im5vbmUiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS1vcGFjaXR5PSIwLjA1IiBzdHJva2Utd2lkdGg9IjEiLz48L3BhdHRlcm4+PC9kZWZzPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9InVybCgjZ3JpZCkiLz48L3N2Zz4=')] opacity-40"></div>
+        <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-teal-500/20 to-cyan-500/10 rounded-full blur-3xl"></div>
         <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
           <div>
             <div className="flex items-center gap-3 mb-2">
@@ -362,7 +363,7 @@ const AdvancedStatistics: React.FC = () => {
                 <h2 className="text-4xl font-black tracking-tight">
                   Analytics Pro
                 </h2>
-                <p className="text-purple-100 text-sm font-semibold mt-1 flex items-center">
+                <p className="text-teal-100 text-sm font-semibold mt-1 flex items-center">
                   <Sparkles size={14} className="mr-1" />
                   Intelligence artificielle • Prévisionnel avancé
                 </p>
@@ -377,7 +378,7 @@ const AdvancedStatistics: React.FC = () => {
                 onClick={() => setPeriod(p as Period)}
                 className={`px-6 py-3 text-sm font-black rounded-xl transition-all duration-300 ${
                   period === p
-                    ? 'bg-white text-purple-600 shadow-lg scale-105'
+                    ? 'bg-white text-teal-600 shadow-lg scale-105'
                     : 'text-white hover:bg-white/10'
                 }`}
               >
@@ -390,14 +391,14 @@ const AdvancedStatistics: React.FC = () => {
 
       {/* Period selector for month/year */}
       {(period === 'month' || period === 'year') && (
-        <div className="flex gap-3 items-center bg-white/80 backdrop-blur-xl p-5 rounded-2xl border border-purple-100 shadow-lg">
-          <div className="p-2 bg-gradient-to-br from-purple-500 to-indigo-500 rounded-xl text-white">
+        <div className="flex gap-3 items-center bg-white/80 backdrop-blur-xl p-5 rounded-2xl border border-slate-200 shadow-lg">
+          <div className="p-2 bg-gradient-to-br from-teal-500 to-cyan-600 rounded-xl text-white">
             <Calendar size={20} />
           </div>
           <select
             value={selectedMonth}
             onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
-            className="px-4 py-3 border-2 border-purple-200 rounded-xl text-sm font-bold outline-none focus:ring-4 focus:ring-purple-200 focus:border-purple-500 transition-all bg-white"
+            className="px-4 py-3 border-2 border-slate-200 rounded-xl text-sm font-bold outline-none focus:ring-4 focus:ring-teal-200 focus:border-teal-500 transition-all bg-white"
           >
             {Array.from({ length: 12 }, (_, i) => (
               <option key={i} value={i}>
@@ -408,7 +409,7 @@ const AdvancedStatistics: React.FC = () => {
           <select
             value={selectedYear}
             onChange={(e) => setSelectedYear(parseInt(e.target.value))}
-            className="px-4 py-3 border-2 border-purple-200 rounded-xl text-sm font-bold outline-none focus:ring-4 focus:ring-purple-200 focus:border-purple-500 transition-all bg-white"
+            className="px-4 py-3 border-2 border-slate-200 rounded-xl text-sm font-bold outline-none focus:ring-4 focus:ring-teal-200 focus:border-teal-500 transition-all bg-white"
           >
             {[2023, 2024, 2025, 2026].map((y) => (
               <option key={y} value={y}>{y}</option>
@@ -434,7 +435,7 @@ const AdvancedStatistics: React.FC = () => {
           value={stats.totalSessions}
           subtitle={`vs période précédente`}
           icon={Activity}
-          gradient="bg-gradient-to-br from-blue-500 via-indigo-500 to-purple-600"
+          gradient="bg-gradient-to-br from-blue-500 via-cyan-500 to-blue-600"
           trend={stats.sessionGrowth >= 0 ? 'up' : 'down'}
           trendValue={Math.abs(stats.sessionGrowth).toFixed(1)}
           sparkle={stats.sessionGrowth > 15}
@@ -454,7 +455,7 @@ const AdvancedStatistics: React.FC = () => {
           value={`${stats.revenuePerHour.toFixed(0)}€`}
           subtitle="Rentabilité temps"
           icon={Clock}
-          gradient="bg-gradient-to-br from-pink-500 via-rose-500 to-fuchsia-600"
+          gradient="bg-gradient-to-br from-teal-500 via-cyan-500 to-teal-600"
           sparkle={stats.revenuePerHour > 80}
         />
       </div>
@@ -466,7 +467,7 @@ const AdvancedStatistics: React.FC = () => {
           value={stats.activePatients}
           subtitle={`${stats.retentionRate.toFixed(0)}% fidélisation`}
           icon={Users}
-          gradient="bg-gradient-to-br from-violet-500 via-purple-500 to-indigo-600"
+          gradient="bg-gradient-to-br from-blue-500 via-indigo-500 to-blue-600"
           sparkle={stats.retentionRate > 70}
         />
         <GlassCard
@@ -496,9 +497,9 @@ const AdvancedStatistics: React.FC = () => {
         />
       </div>
 
-      {/* Overdue Alert - More Modern */}
+      {/* Overdue Alert - Zoho Style */}
       {stats.overdueCount > 0 && (
-        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-red-500 via-rose-500 to-pink-600 p-6 text-white shadow-2xl border-2 border-red-300 animate-pulse">
+        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-orange-500 via-red-500 to-red-600 p-6 text-white shadow-2xl border-2 border-orange-300 animate-pulse">
           <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMjAiIGN5PSIyMCIgcj0iMiIgZmlsbD0id2hpdGUiIG9wYWNpdHk9IjAuMSIvPjwvc3ZnPg==')] opacity-50"></div>
           <div className="relative z-10 flex items-center justify-between">
             <div className="flex items-center">
@@ -520,12 +521,12 @@ const AdvancedStatistics: React.FC = () => {
         </div>
       )}
 
-      {/* Monthly Evolution Chart - Ultra Modern */}
+      {/* Monthly Evolution Chart - Zoho Style */}
       {period === 'year' && (
-        <div className="bg-white/80 backdrop-blur-xl p-8 rounded-3xl border border-purple-100 shadow-2xl">
+        <div className="bg-white/80 backdrop-blur-xl p-8 rounded-3xl border border-slate-200 shadow-2xl">
           <div className="flex justify-between items-center mb-8">
             <div className="flex items-center gap-3">
-              <div className="p-3 bg-gradient-to-br from-purple-500 to-indigo-500 rounded-2xl text-white">
+              <div className="p-3 bg-gradient-to-br from-teal-500 to-cyan-600 rounded-2xl text-white">
                 <BarChart3 size={24} />
               </div>
               <div>
@@ -537,7 +538,7 @@ const AdvancedStatistics: React.FC = () => {
             </div>
             <div className="flex items-center gap-6 text-xs font-bold">
               <div className="flex items-center">
-                <div className="w-4 h-4 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full mr-2 shadow-lg"></div>
+                <div className="w-4 h-4 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full mr-2 shadow-lg"></div>
                 Total
               </div>
               <div className="flex items-center">
@@ -555,7 +556,7 @@ const AdvancedStatistics: React.FC = () => {
               <div key={m.month} className="flex-1 flex flex-col items-center group">
                 <div className="w-full flex flex-col gap-1 items-center justify-end flex-1">
                   <div
-                    className="w-full bg-gradient-to-t from-purple-600 via-purple-500 to-blue-500 rounded-t-2xl hover:shadow-2xl transition-all duration-300 relative group/bar cursor-pointer transform hover:scale-105"
+                    className="w-full bg-gradient-to-t from-blue-600 via-cyan-500 to-blue-500 rounded-t-2xl hover:shadow-2xl transition-all duration-300 relative group/bar cursor-pointer transform hover:scale-105"
                     style={{ height: `${(m.total / maxRevenue) * 100}%`, minHeight: m.total > 0 ? '12px' : '0' }}
                   >
                     <div className="absolute -top-16 left-1/2 -translate-x-1/2 bg-gradient-to-r from-slate-900 to-slate-800 text-white px-4 py-2 rounded-xl text-xs font-black opacity-0 group-hover/bar:opacity-100 transition-all duration-300 shadow-2xl whitespace-nowrap border border-white/10">
@@ -580,8 +581,8 @@ const AdvancedStatistics: React.FC = () => {
 
       {/* Advanced Analytics Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Geographic Breakdown - Ultra Modern */}
-        <div className="bg-white/80 backdrop-blur-xl p-8 rounded-3xl border border-purple-100 shadow-2xl">
+        {/* Geographic Breakdown - Zoho Style */}
+        <div className="bg-white/80 backdrop-blur-xl p-8 rounded-3xl border border-slate-200 shadow-2xl">
           <div className="flex items-center gap-3 mb-6">
             <div className="p-3 bg-gradient-to-br from-teal-500 to-cyan-500 rounded-2xl text-white">
               <MapPin size={24} />
@@ -635,15 +636,15 @@ const AdvancedStatistics: React.FC = () => {
             </div>
 
             {/* Travel Stats */}
-            <div className="mt-6 pt-6 border-t-2 border-purple-100">
+            <div className="mt-6 pt-6 border-t-2 border-slate-200">
               <div className="grid grid-cols-3 gap-4">
-                <div className="text-center p-4 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl border border-blue-100">
+                <div className="text-center p-4 bg-gradient-to-br from-blue-50 to-cyan-50 rounded-2xl border border-blue-100">
                   <div className="text-3xl font-black text-blue-600 mb-1">{stats.totalDistance.toFixed(0)}</div>
                   <div className="text-xs font-bold text-blue-700 uppercase">KM Total</div>
                 </div>
-                <div className="text-center p-4 bg-gradient-to-br from-purple-50 to-pink-50 rounded-2xl border border-purple-100">
-                  <div className="text-3xl font-black text-purple-600 mb-1">{stats.avgDistance.toFixed(1)}</div>
-                  <div className="text-xs font-bold text-purple-700 uppercase">KM Moyen</div>
+                <div className="text-center p-4 bg-gradient-to-br from-teal-50 to-cyan-50 rounded-2xl border border-teal-100">
+                  <div className="text-3xl font-black text-teal-600 mb-1">{stats.avgDistance.toFixed(1)}</div>
+                  <div className="text-xs font-bold text-teal-700 uppercase">KM Moyen</div>
                 </div>
                 <div className="text-center p-4 bg-gradient-to-br from-amber-50 to-orange-50 rounded-2xl border border-amber-100">
                   <div className="text-3xl font-black text-amber-600 mb-1">{stats.totalTravelFees.toFixed(0)}€</div>
@@ -654,10 +655,10 @@ const AdvancedStatistics: React.FC = () => {
           </div>
         </div>
 
-        {/* Patient Type Breakdown - Ultra Modern */}
-        <div className="bg-white/80 backdrop-blur-xl p-8 rounded-3xl border border-purple-100 shadow-2xl">
+        {/* Patient Type Breakdown - Zoho Style */}
+        <div className="bg-white/80 backdrop-blur-xl p-8 rounded-3xl border border-slate-200 shadow-2xl">
           <div className="flex items-center gap-3 mb-6">
-            <div className="p-3 bg-gradient-to-br from-purple-500 to-pink-500 rounded-2xl text-white">
+            <div className="p-3 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl text-white">
               <Users size={24} />
             </div>
             <div>
@@ -709,7 +710,7 @@ const AdvancedStatistics: React.FC = () => {
               </div>
               <div className="relative w-full bg-slate-100 rounded-full h-6 overflow-hidden shadow-inner">
                 <div
-                  className="absolute inset-y-0 left-0 bg-gradient-to-r from-blue-400 via-indigo-500 to-purple-600 rounded-full transition-all duration-1000 ease-out shadow-lg"
+                  className="absolute inset-y-0 left-0 bg-gradient-to-r from-blue-400 via-blue-500 to-indigo-600 rounded-full transition-all duration-1000 ease-out shadow-lg"
                   style={{ width: `${(stats.canineRevenue / (stats.totalRevenue || 1)) * 100}%` }}
                 >
                   <div className="absolute inset-0 bg-white/20 animate-pulse"></div>
@@ -721,7 +722,7 @@ const AdvancedStatistics: React.FC = () => {
             </div>
 
             {/* Extra Stats */}
-            <div className="mt-6 pt-6 border-t-2 border-purple-100">
+            <div className="mt-6 pt-6 border-t-2 border-slate-200">
               <div className="grid grid-cols-2 gap-4">
                 <div className="text-center p-4 bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl border border-green-100">
                   <div className="flex items-center justify-center mb-2">
@@ -743,9 +744,9 @@ const AdvancedStatistics: React.FC = () => {
         </div>
       </div>
 
-      {/* Client Ranking - Ultra Premium */}
-      <div className="bg-white/80 backdrop-blur-xl rounded-3xl border border-purple-100 shadow-2xl overflow-hidden">
-        <div className="bg-gradient-to-r from-yellow-400 via-amber-500 to-orange-600 p-6 text-white">
+      {/* Client Ranking - Zoho Style */}
+      <div className="bg-white/80 backdrop-blur-xl rounded-3xl border border-slate-200 shadow-2xl overflow-hidden">
+        <div className="bg-gradient-to-r from-amber-500 via-orange-500 to-red-600 p-6 text-white">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
             <div className="flex items-center gap-4">
               <div className="p-4 bg-white/20 rounded-2xl backdrop-blur-sm">
@@ -774,7 +775,7 @@ const AdvancedStatistics: React.FC = () => {
 
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
-            <thead className="bg-gradient-to-r from-purple-100 via-pink-100 to-orange-100 text-slate-700">
+            <thead className="bg-gradient-to-r from-teal-100 via-cyan-100 to-blue-100 text-slate-700">
               <tr>
                 <th className="p-5 w-20 text-center font-black uppercase text-xs tracking-wider">Rang</th>
                 <th className="p-5 font-black uppercase text-xs tracking-wider text-left">Patient</th>
@@ -785,13 +786,13 @@ const AdvancedStatistics: React.FC = () => {
                 <th className="p-5 text-center font-black uppercase text-xs tracking-wider">Statut</th>
               </tr>
             </thead>
-            <tbody className="divide-y-2 divide-purple-50">
+            <tbody className="divide-y-2 divide-slate-100">
               {clientStats
                 .filter(c => c.sessionCount > 0)
                 .filter(c => c.name.toLowerCase().includes(clientSearch.toLowerCase()) || (c.owner && c.owner.toLowerCase().includes(clientSearch.toLowerCase())))
                 .slice(0, 25)
                 .map((client, index) => (
-                  <tr key={client.id} className="hover:bg-gradient-to-r hover:from-purple-50 hover:to-pink-50 transition-all duration-300 group">
+                  <tr key={client.id} className="hover:bg-gradient-to-r hover:from-teal-50 hover:to-cyan-50 transition-all duration-300 group">
                     <td className="p-5 text-center">
                       {index < 3 ? (
                         <div className={`inline-flex items-center justify-center w-12 h-12 rounded-2xl text-white font-black text-lg shadow-2xl transform group-hover:scale-110 transition-transform ${
@@ -806,13 +807,13 @@ const AdvancedStatistics: React.FC = () => {
                       )}
                     </td>
                     <td className="p-5">
-                      <div className="font-black text-base text-slate-800 group-hover:text-purple-600 transition-colors">{client.name}</div>
+                      <div className="font-black text-base text-slate-800 group-hover:text-teal-600 transition-colors">{client.name}</div>
                       {client.type !== PatientType.HUMAN && (
                         <div className="text-xs text-slate-500 font-semibold mt-1">{client.owner}</div>
                       )}
                     </td>
                     <td className="p-5 text-center">
-                      <span className="inline-block px-4 py-2 bg-gradient-to-r from-purple-100 to-pink-100 rounded-xl text-sm font-black text-purple-700 shadow-sm">
+                      <span className="inline-block px-4 py-2 bg-gradient-to-r from-teal-100 to-cyan-100 rounded-xl text-sm font-black text-teal-700 shadow-sm">
                         {client.sessionCount}
                       </span>
                     </td>

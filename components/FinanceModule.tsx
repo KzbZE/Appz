@@ -347,7 +347,7 @@ const FinanceModule: React.FC<FinanceModuleProps> = ({ invoices: initialInvoices
                         <span className="text-sm text-slate-500">jours</span>
                       </div>
                   </div>
-                  <button onClick={handleSaveConfig} className="w-full py-3 bg-primary-600 text-white font-bold rounded-xl shadow-lg">Enregistrer</button>
+                  <button onClick={handleSaveConfig} className="w-full py-3 bg-gradient-to-r from-teal-500 to-cyan-600 hover:from-teal-600 hover:to-cyan-700 text-white font-bold rounded-xl shadow-lg transition-all duration-300">Enregistrer</button>
               </div>
           </div>
       </div>
@@ -549,7 +549,7 @@ const FinanceModule: React.FC<FinanceModuleProps> = ({ invoices: initialInvoices
                             <button onClick={() => setIsEditingInvoice(false)} className="flex-1 py-3 bg-white border border-gray-300 text-slate-600 rounded-xl font-bold hover:bg-gray-50">
                                 Annuler
                             </button>
-                            <button onClick={handleSaveEditedInvoice} className="flex-1 py-3 bg-primary-600 text-white rounded-xl font-bold hover:bg-primary-700 shadow-lg">
+                            <button onClick={handleSaveEditedInvoice} className="flex-1 py-3 bg-gradient-to-r from-teal-500 to-cyan-600 hover:from-teal-600 hover:to-cyan-700 text-white rounded-xl font-bold shadow-lg transition-all duration-300">
                                 Enregistrer Modifications
                             </button>
                         </div>
@@ -575,7 +575,7 @@ const FinanceModule: React.FC<FinanceModuleProps> = ({ invoices: initialInvoices
                             
                             {!isPaid && (
                                 <div className="flex justify-center mt-2">
-                                    <button onClick={() => setIsEditingInvoice(true)} className="text-xs text-slate-400 flex items-center hover:text-primary-600 hover:underline">
+                                    <button onClick={() => setIsEditingInvoice(true)} className="text-xs text-slate-400 flex items-center hover:text-teal-600 hover:underline transition-colors">
                                         <Edit2 size={12} className="mr-1"/> Modifier la facture
                                     </button>
                                 </div>
@@ -594,7 +594,7 @@ const FinanceModule: React.FC<FinanceModuleProps> = ({ invoices: initialInvoices
             <div className="flex items-center space-x-2"><h3 className="font-bold text-slate-800">Factures & Paiements</h3></div>
             <div className="flex gap-2">
                 <button onClick={() => setIsConfigOpen(true)} className="p-2 bg-gray-100 text-slate-600 hover:bg-gray-200 rounded-lg"><SettingsIcon size={20} /></button>
-                <button onClick={async () => { await db.invoices.add({ number: `F${Date.now()}`, date: new Date().toISOString(), dueDate: new Date(Date.now() + 30*24*60*60*1000).toISOString(), patientName: 'Nouveau Client', amountHT: 0, vatRate: 0, amountTTC: 0, amountPaid: 0, status: InvoiceStatus.DRAFT, items: [], payments: [] }); }} className="px-4 py-2 bg-slate-800 text-white text-sm rounded-lg font-medium">+ Créer Facture</button>
+                <button onClick={async () => { await db.invoices.add({ number: `F${Date.now()}`, date: new Date().toISOString(), dueDate: new Date(Date.now() + 30*24*60*60*1000).toISOString(), patientName: 'Nouveau Client', amountHT: 0, vatRate: 0, amountTTC: 0, amountPaid: 0, status: InvoiceStatus.DRAFT, items: [], payments: [] }); }} className="px-4 py-2 bg-gradient-to-r from-teal-500 to-cyan-600 hover:from-teal-600 hover:to-cyan-700 text-white text-sm rounded-lg font-bold shadow-lg transition-all duration-300 hover:scale-105">+ Créer Facture</button>
             </div>
         </div>
         <div className="bg-white rounded-xl border border-gray-100 overflow-hidden shadow-sm">
@@ -612,7 +612,7 @@ const FinanceModule: React.FC<FinanceModuleProps> = ({ invoices: initialInvoices
                                     <td className="p-4"><div className="font-bold">{inv.patientName}</div><div className="text-xs">{inv.number}</div></td>
                                     <td className="p-4 text-slate-600">{new Date(inv.dueDate).toLocaleDateString()}</td>
                                     <td className="p-4 font-bold">{inv.amountTTC.toFixed(2)} €</td>
-                                    <td className="p-4"><div className="w-full bg-gray-200 rounded-full h-2.5 mb-1"><div className="h-2.5 rounded-full bg-primary-500" style={{width: `${percentPaid}%`}}></div></div></td>
+                                    <td className="p-4"><div className="w-full bg-gray-200 rounded-full h-2.5 mb-1"><div className="h-2.5 rounded-full bg-gradient-to-r from-teal-500 to-cyan-600" style={{width: `${percentPaid}%`}}></div></div></td>
                                     <td className="p-4"><span className="px-2 py-1 rounded bg-gray-100 text-xs">{inv.status}</span></td>
                                     <td className="p-4 text-right">
                                         <button className="p-2 text-slate-400 hover:bg-slate-100 rounded-full"><Eye size={18}/></button>
@@ -628,18 +628,59 @@ const FinanceModule: React.FC<FinanceModuleProps> = ({ invoices: initialInvoices
   );
 
   const renderOverview = () => (
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
-              <h3 className="text-slate-500 text-sm">CA Encaissé</h3>
-              <p className="text-3xl font-bold">{totalCA.toFixed(2)} €</p>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {/* CA Encaissé - Zoho Style */}
+          <div className="relative overflow-hidden rounded-3xl p-6 text-white shadow-2xl hover:shadow-3xl transition-all duration-500 transform hover:scale-105 cursor-pointer backdrop-blur-xl border border-white/20 bg-gradient-to-br from-emerald-500 via-teal-500 to-cyan-600 group">
+              <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+              <div className="absolute top-0 right-0 -mt-8 -mr-8 h-32 w-32 opacity-20 group-hover:opacity-30 transition-opacity duration-500 group-hover:rotate-12">
+                  <TrendingUp size={128} strokeWidth={1} />
+              </div>
+              <div className="relative z-10">
+                  <div className="flex items-center justify-between mb-3">
+                      <p className="text-sm font-bold opacity-90 uppercase tracking-wider">CA Encaissé</p>
+                      <div className="p-2 bg-white/20 rounded-xl backdrop-blur-sm">
+                          <Euro size={20} className="opacity-90" />
+                      </div>
+                  </div>
+                  <h3 className="text-4xl font-black mb-2 tracking-tight">{totalCA.toFixed(2)} €</h3>
+                  <p className="text-sm font-semibold opacity-80">Revenus encaissés</p>
+              </div>
           </div>
-          <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
-              <h3 className="text-slate-500 text-sm">Reste à percevoir</h3>
-              <p className="text-3xl font-bold text-orange-600">{pendingCA.toFixed(2)} €</p>
+
+          {/* Reste à percevoir - Zoho Style */}
+          <div className="relative overflow-hidden rounded-3xl p-6 text-white shadow-2xl hover:shadow-3xl transition-all duration-500 transform hover:scale-105 cursor-pointer backdrop-blur-xl border border-white/20 bg-gradient-to-br from-amber-500 via-orange-500 to-red-600 group">
+              <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+              <div className="absolute top-0 right-0 -mt-8 -mr-8 h-32 w-32 opacity-20 group-hover:opacity-30 transition-opacity duration-500 group-hover:rotate-12">
+                  <AlertTriangle size={128} strokeWidth={1} />
+              </div>
+              <div className="relative z-10">
+                  <div className="flex items-center justify-between mb-3">
+                      <p className="text-sm font-bold opacity-90 uppercase tracking-wider">Reste à percevoir</p>
+                      <div className="p-2 bg-white/20 rounded-xl backdrop-blur-sm">
+                          <Bell size={20} className="opacity-90" />
+                      </div>
+                  </div>
+                  <h3 className="text-4xl font-black mb-2 tracking-tight">{pendingCA.toFixed(2)} €</h3>
+                  <p className="text-sm font-semibold opacity-80">Impayés en attente</p>
+              </div>
           </div>
-          <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
-              <h3 className="text-slate-500 text-sm">Charges</h3>
-              <p className="text-3xl font-bold text-red-600">{totalExpenses.toFixed(2)} €</p>
+
+          {/* Charges - Zoho Style */}
+          <div className="relative overflow-hidden rounded-3xl p-6 text-white shadow-2xl hover:shadow-3xl transition-all duration-500 transform hover:scale-105 cursor-pointer backdrop-blur-xl border border-white/20 bg-gradient-to-br from-blue-500 via-indigo-500 to-blue-600 group">
+              <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+              <div className="absolute top-0 right-0 -mt-8 -mr-8 h-32 w-32 opacity-20 group-hover:opacity-30 transition-opacity duration-500 group-hover:rotate-12">
+                  <TrendingDown size={128} strokeWidth={1} />
+              </div>
+              <div className="relative z-10">
+                  <div className="flex items-center justify-between mb-3">
+                      <p className="text-sm font-bold opacity-90 uppercase tracking-wider">Charges</p>
+                      <div className="p-2 bg-white/20 rounded-xl backdrop-blur-sm">
+                          <CreditCard size={20} className="opacity-90" />
+                      </div>
+                  </div>
+                  <h3 className="text-4xl font-black mb-2 tracking-tight">{totalExpenses.toFixed(2)} €</h3>
+                  <p className="text-sm font-semibold opacity-80">Dépenses totales</p>
+              </div>
           </div>
       </div>
   );
@@ -648,10 +689,10 @@ const FinanceModule: React.FC<FinanceModuleProps> = ({ invoices: initialInvoices
     <div className="h-full flex flex-col space-y-6 pb-20 md:pb-0">
       <div className="flex items-center justify-between">
          <h2 className="text-2xl font-bold text-slate-800">Finance & Compta</h2>
-         <div className="flex bg-white rounded-lg p-1 shadow-sm border border-gray-200">
-            <button onClick={() => setActiveTab('overview')} className={`px-4 py-1.5 text-sm rounded-md ${activeTab === 'overview' ? 'bg-slate-800 text-white' : 'text-slate-500'}`}>Vue d'ensemble</button>
-            <button onClick={() => setActiveTab('invoices')} className={`px-4 py-1.5 text-sm rounded-md ${activeTab === 'invoices' ? 'bg-slate-800 text-white' : 'text-slate-500'}`}>Factures</button>
-            <button onClick={() => setActiveTab('expenses')} className={`px-4 py-1.5 text-sm rounded-md ${activeTab === 'expenses' ? 'bg-slate-800 text-white' : 'text-slate-500'}`}>Charges</button>
+         <div className="flex bg-white rounded-xl p-1.5 shadow-lg border border-slate-200">
+            <button onClick={() => setActiveTab('overview')} className={`px-5 py-2.5 text-sm font-bold rounded-lg transition-all duration-300 ${activeTab === 'overview' ? 'bg-gradient-to-r from-teal-500 to-cyan-600 text-white shadow-lg scale-105' : 'text-slate-500 hover:bg-slate-50'}`}>Vue d'ensemble</button>
+            <button onClick={() => setActiveTab('invoices')} className={`px-5 py-2.5 text-sm font-bold rounded-lg transition-all duration-300 ${activeTab === 'invoices' ? 'bg-gradient-to-r from-teal-500 to-cyan-600 text-white shadow-lg scale-105' : 'text-slate-500 hover:bg-slate-50'}`}>Factures</button>
+            <button onClick={() => setActiveTab('expenses')} className={`px-5 py-2.5 text-sm font-bold rounded-lg transition-all duration-300 ${activeTab === 'expenses' ? 'bg-gradient-to-r from-teal-500 to-cyan-600 text-white shadow-lg scale-105' : 'text-slate-500 hover:bg-slate-50'}`}>Charges</button>
          </div>
       </div>
 
