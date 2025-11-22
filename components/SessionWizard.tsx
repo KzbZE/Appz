@@ -251,41 +251,81 @@ const SessionWizard: React.FC<SessionWizardProps> = ({ patient, settings, onComp
       return [
         {
           category: 'Massage Sportif',
-          techniques: ['Pré-compétition', 'Post-compétition', 'Récupération', 'Entretien']
+          techniques: ['Pré-compétition', 'Post-compétition', 'Récupération musculaire', 'Entretien régulier', 'Préparation physique', 'Optimisation performance']
         },
         {
           category: 'Massage Thérapeutique',
-          techniques: ['Relaxant', 'Drainage lymphatique', 'Points trigger', 'Myofascial']
+          techniques: ['Relaxant/Bien-être', 'Drainage lymphatique', 'Points trigger/gâchettes', 'Myofascial', 'Tissus profonds', 'Décontractant']
         },
         {
-          category: 'Techniques Spécialisées',
-          techniques: ['Stretching', 'Mobilisations articulaires', 'Shiatsu équin']
+          category: 'Techniques Manuelles',
+          techniques: ['Stretching passif', 'Stretching actif', 'Mobilisations articulaires', 'Shiatsu équin', 'Acupression', 'Effleurage', 'Pétrissage', 'Friction']
+        },
+        {
+          category: 'Spécialisations',
+          techniques: ['Massage dos/colonne', 'Massage membres', 'Massage encolure', 'Traitement tendinites', 'Traitement contractures', 'Soin sabots/pieds']
+        },
+        {
+          category: 'Approches Complémentaires',
+          techniques: ['Thermothérapie (chaud)', 'Cryothérapie (froid)', 'Ventouses', 'Kinésiotaping', 'Laser thérapeutique', 'Ultrasons']
         }
       ];
     } else if (sessionType === 'KINESIO' && patient.type === PatientType.HUMAN) {
       return [
         {
-          category: 'Kinésiologie Educative',
-          techniques: ['Brain Gym', 'Touch For Health', 'Santé par le Toucher', 'RMTi (réflexes archaïques)']
+          category: 'Kinésiologie Éducative',
+          techniques: ['Brain Gym (Edu-K)', 'Touch For Health (TFH)', 'Santé par le Toucher', 'RMTi (Réflexes archaïques)', 'Edu-Kinésiologie', 'LEAP (Learning Enhancement)', 'Kinésiologie apprentissage']
         },
         {
           category: 'Kinésiologie Émotionnelle',
-          techniques: ['Three In One Concepts', 'Libération émotionnelle', 'Baromètre du comportement', 'Récession d\'âge']
+          techniques: ['Three In One Concepts', 'One Brain', 'Libération émotionnelle', 'Baromètre du comportement', 'Récession d\'âge', 'Stress Release', 'PKP (Professional Kinesiology)', 'SIPS (Stress Indicator Point System)']
         },
         {
           category: 'Kinésiologie Structurelle',
-          techniques: ['Équilibration énergétique', 'Test musculaire', 'Points neuro-lymphatiques', 'Points neuro-vasculaires']
+          techniques: ['Équilibration énergétique', 'Test musculaire', 'Points neuro-lymphatiques', 'Points neuro-vasculaires', 'Correctifs méridiens', 'Mode Sabotage', 'Formatage Oreille', 'Cross Crawl']
+        },
+        {
+          category: 'Techniques Énergétiques',
+          techniques: ['Équilibration chakras', 'Travail méridiens', 'Harmonisation énergétique', 'Ancrage/enracinement', 'Nettoyage énergétique', 'Protection énergétique']
+        },
+        {
+          category: 'Kinésiologie Spécialisée',
+          techniques: ['Kinésiologie périnatale', 'Kinésiologie enfants', 'Kinésiologie sport', 'Kinésiologie nutrition', 'TFH métaphores', 'Wellness Kinesiology']
+        },
+        {
+          category: 'Soins Énergétiques & Reiki',
+          techniques: ['Reiki Usui', 'Reiki Karuna', 'Reiki tibétain', 'LaHoChi', 'Magnétisme', 'Soin énergétique global', 'Harmonisation énergétique Reiki']
+        },
+        {
+          category: 'Techniques Complémentaires',
+          techniques: ['EFT (Emotional Freedom)', 'TAT (Tapas Acupressure)', 'Fleurs de Bach', 'Chromothérapie', 'Lithothérapie', 'Aromathérapie énergétique']
         }
       ];
     } else if (sessionType === 'KINESIO' && (patient.type === PatientType.EQUINE || patient.type === PatientType.CANINE)) {
       return [
         {
-          category: 'Kinésiologie Animale',
-          techniques: ['Test musculaire', 'Équilibration énergétique', 'Méridiens', 'Chakras']
+          category: 'Kinésiologie Animale Base',
+          techniques: ['Test musculaire animal', 'Équilibration énergétique', 'Travail méridiens', 'Équilibration chakras', 'Harmonisation corps énergétique', 'Scan corporel énergétique']
         },
         {
-          category: 'Travail Émotionnel',
-          techniques: ['Libération émotionnelle', 'Fleurs de Bach', 'Stress post-traumatique']
+          category: 'Travail Émotionnel Animal',
+          techniques: ['Libération émotionnelle', 'Fleurs de Bach', 'Stress post-traumatique', 'Anxiété séparation', 'Peurs/phobies', 'Comportement', 'Communication animale']
+        },
+        {
+          category: 'Techniques Spécialisées',
+          techniques: ['Touch For Health animal', 'Méthode Masterson (équin)', 'Tellington TTouch', 'Shiatsu animal', 'Acupression animale', 'Ostéo-kinésio']
+        },
+        {
+          category: 'Énergétique & Performance',
+          techniques: ['Optimisation performance', 'Préparation compétition', 'Récupération', 'Gestion stress', 'Vitalité/tonus', 'Concentration']
+        },
+        {
+          category: 'Soins Énergétiques & Reiki',
+          techniques: ['Reiki animal', 'Reiki équin', 'Reiki canin', 'Magnétisme animal', 'LaHoChi animal', 'Soin énergétique global', 'Harmonisation Reiki']
+        },
+        {
+          category: 'Problématiques Spécifiques',
+          techniques: ['Douleurs chroniques', 'Boiteries énergétiques', 'Troubles digestifs', 'Problèmes dermatologiques', 'Vieillissement', 'Fin de vie/accompagnement']
         }
       ];
     }
@@ -421,6 +461,31 @@ const SessionWizard: React.FC<SessionWizardProps> = ({ patient, settings, onComp
             <svg viewBox="0 0 100 100" className="h-full w-full cursor-crosshair" onClick={handleMapClick}>
                 {patient.type === PatientType.EQUINE ? (
                     <path d="M20,50 Q25,30 40,35 T60,35 T80,45 L80,80 L70,80 L70,55 L50,55 L50,80 L40,80 L40,55 L25,55 Z" fill="#f1f5f9" stroke="#64748b" strokeWidth="1.5" />
+                ) : patient.type === PatientType.CANINE ? (
+                    <g>
+                      {/* Chien en profil - Tête */}
+                      <ellipse cx="20" cy="35" rx="8" ry="10" fill="#f1f5f9" stroke="#64748b" strokeWidth="1.5"/>
+                      {/* Oreille */}
+                      <path d="M18,28 Q15,22 18,26" fill="#f1f5f9" stroke="#64748b" strokeWidth="1.5"/>
+                      {/* Museau */}
+                      <ellipse cx="14" cy="36" rx="4" ry="3" fill="#f1f5f9" stroke="#64748b" strokeWidth="1.2"/>
+                      {/* Corps */}
+                      <ellipse cx="45" cy="45" rx="25" ry="15" fill="#f1f5f9" stroke="#64748b" strokeWidth="1.5"/>
+                      {/* Encolure */}
+                      <path d="M28,35 Q35,38 35,45" fill="#f1f5f9" stroke="#64748b" strokeWidth="1.5"/>
+                      {/* Pattes avant gauche */}
+                      <line x1="35" y1="60" x2="35" y2="78" stroke="#64748b" strokeWidth="2.5"/>
+                      {/* Pattes avant droite */}
+                      <line x1="40" y1="60" x2="40" y2="78" stroke="#64748b" strokeWidth="2"/>
+                      {/* Pattes arrière gauche */}
+                      <line x1="58" y1="60" x2="58" y2="78" stroke="#64748b" strokeWidth="2.5"/>
+                      {/* Pattes arrière droite */}
+                      <line x1="53" y1="60" x2="53" y2="78" stroke="#64748b" strokeWidth="2"/>
+                      {/* Queue */}
+                      <path d="M68,42 Q75,38 78,45" fill="none" stroke="#64748b" strokeWidth="2"/>
+                      {/* Colonne vertébrale (zone importante) */}
+                      <line x1="30" y1="38" x2="65" y2="38" stroke="#94a3b8" strokeWidth="1" strokeDasharray="2,2"/>
+                    </g>
                 ) : (
                     <g transform="translate(25, 10) scale(0.5)">
                        <path d="M50,10 Q60,10 60,20 L65,45 L90,40 L95,50 L70,60 L70,100 L80,150 L60,150 L55,100 L45,100 L40,150 L20,150 L30,100 L30,60 L5,50 L10,40 L35,45 L40,20 Q40,10 50,10 Z" fill="#f1f5f9" stroke="#64748b" strokeWidth="3"/>
