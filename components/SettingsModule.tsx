@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { AppSettings } from '../types';
-import { Save, MapPin, DollarSign, Share2, Instagram, Facebook, Palette, Image, User, Type, Upload, Settings as SettingsIcon, Briefcase, Cloud } from 'lucide-react';
+import { Save, MapPin, DollarSign, Share2, Instagram, Facebook, Palette, Image, User, Type, Upload, Settings as SettingsIcon, Briefcase, Cloud, Database, Download, UploadCloud, AlertTriangle, CheckCircle } from 'lucide-react';
 import { signInToGoogle } from '../services/googleApiService';
+import { downloadBackup, importBackup, getLastBackupDate, restoreFromAutoBackup } from '../services/backupService';
 
 interface SettingsModuleProps {
   settings: AppSettings;
@@ -11,6 +12,7 @@ interface SettingsModuleProps {
 const SettingsModule: React.FC<SettingsModuleProps> = ({ settings, onSave }) => {
   const [localSettings, setLocalSettings] = useState<AppSettings>(settings);
   const [isConnecting, setIsConnecting] = useState(false);
+  const [lastBackupDate, setLastBackupDate] = useState<string | null>(getLastBackupDate());
 
   const handleSave = () => {
     onSave(localSettings);
@@ -41,6 +43,52 @@ const SettingsModule: React.FC<SettingsModuleProps> = ({ settings, onSave }) => 
           console.error(error);
       }
       setIsConnecting(false);
+  };
+
+  const handleDownloadBackup = async () => {
+      try {
+          await downloadBackup();
+          setLastBackupDate(getLastBackupDate());
+          alert("✅ Backup téléchargé avec succès !");
+      } catch (error) {
+          alert("❌ Erreur lors du téléchargement du backup");
+          console.error(error);
+      }
+  };
+
+  const handleImportBackup = async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+
+      const result = await importBackup(file);
+
+      if (result.success) {
+          alert("✅ Backup importé avec succès ! La page va se recharger.");
+          window.location.reload();
+      } else {
+          alert(`❌ Erreur lors de l'importation: ${result.error}`);
+      }
+
+      // Reset input
+      e.target.value = '';
+  };
+
+  const handleRestoreAutoBackup = async () => {
+      const confirmed = confirm(
+          "⚠️ Voulez-vous restaurer la sauvegarde automatique ?\n\n" +
+          "Cette opération va remplacer toutes vos données actuelles."
+      );
+
+      if (!confirmed) return;
+
+      const result = await restoreFromAutoBackup();
+
+      if (result.success) {
+          alert("✅ Sauvegarde automatique restaurée ! La page va se recharger.");
+          window.location.reload();
+      } else {
+          alert(`❌ ${result.error}`);
+      }
   };
 
   return (
@@ -331,6 +379,134 @@ const SettingsModule: React.FC<SettingsModuleProps> = ({ settings, onSave }) => 
                             value={localSettings.social.facebookPage}
                             onChange={(e) => setLocalSettings({...localSettings, social: {...localSettings.social, facebookPage: e.target.value}})}
                         />
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <hr className="border-gray-100" />
+
+        {/* SECTION: SAUVEGARDE & RESTAURATION */}
+        <section className="animate-fadeIn">
+            <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center">
+                <div className="p-2 bg-blue-50 text-blue-600 rounded-lg mr-3"><Database size={20}/></div>
+                Sauvegarde & Restauration
+            </h3>
+
+            {/* Auto Backup Status */}
+            <div className="bg-gradient-to-r from-blue-50 to-cyan-50 border border-blue-200 rounded-xl p-4 mb-6">
+                <div className="flex items-start gap-3">
+                    <CheckCircle size={24} className="text-blue-600 flex-shrink-0 mt-0.5" />
+                    <div>
+                        <h4 className="font-bold text-blue-900 mb-1">✓ Sauvegarde Automatique Activée</h4>
+                        <p className="text-sm text-blue-700 mb-2">
+                            Vos données sont automatiquement sauvegardées quotidiennement dans votre navigateur.
+                        </p>
+                        {lastBackupDate && (
+                            <p className="text-xs text-blue-600 font-semibold">
+                                Dernière sauvegarde : {new Date(lastBackupDate).toLocaleDateString('fr-FR')}
+                            </p>
+                        )}
+                    </div>
+                </div>
+            </div>
+
+            {/* Manual Backup Actions */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Export Backup */}
+                <div className="bg-white border-2 border-slate-200 rounded-xl p-5 hover:border-blue-400 transition-all hover:shadow-lg">
+                    <div className="flex items-center gap-3 mb-3">
+                        <div className="p-2 bg-blue-100 rounded-lg">
+                            <Download size={20} className="text-blue-600" />
+                        </div>
+                        <div>
+                            <h4 className="font-bold text-slate-800">Télécharger Backup</h4>
+                            <p className="text-xs text-slate-500">Export manuel complet</p>
+                        </div>
+                    </div>
+                    <button
+                        onClick={handleDownloadBackup}
+                        className="w-full px-4 py-3 bg-gradient-to-r from-blue-500 to-cyan-600 hover:from-blue-600 hover:to-cyan-700 text-white rounded-lg font-bold shadow-lg transition-all duration-300 hover:scale-105 flex items-center justify-center gap-2"
+                    >
+                        <Download size={18} />
+                        Télécharger Backup (.json)
+                    </button>
+                    <p className="text-xs text-slate-500 mt-2">
+                        Télécharge toutes vos données au format JSON. Conservez ce fichier en lieu sûr.
+                    </p>
+                </div>
+
+                {/* Import Backup */}
+                <div className="bg-white border-2 border-slate-200 rounded-xl p-5 hover:border-orange-400 transition-all hover:shadow-lg">
+                    <div className="flex items-center gap-3 mb-3">
+                        <div className="p-2 bg-orange-100 rounded-lg">
+                            <UploadCloud size={20} className="text-orange-600" />
+                        </div>
+                        <div>
+                            <h4 className="font-bold text-slate-800">Restaurer Backup</h4>
+                            <p className="text-xs text-slate-500">Importer un fichier de sauvegarde</p>
+                        </div>
+                    </div>
+                    <label className="w-full block">
+                        <input
+                            type="file"
+                            accept=".json"
+                            onChange={handleImportBackup}
+                            className="hidden"
+                        />
+                        <div className="cursor-pointer w-full px-4 py-3 bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 text-white rounded-lg font-bold shadow-lg transition-all duration-300 hover:scale-105 flex items-center justify-center gap-2">
+                            <UploadCloud size={18} />
+                            Importer Backup (.json)
+                        </div>
+                    </label>
+                    <p className="text-xs text-slate-500 mt-2">
+                        ⚠️ Attention : Remplacera toutes vos données actuelles par celles du backup.
+                    </p>
+                </div>
+
+                {/* Restore Auto Backup */}
+                <div className="bg-white border-2 border-slate-200 rounded-xl p-5 hover:border-green-400 transition-all hover:shadow-lg md:col-span-2">
+                    <div className="flex items-center gap-3 mb-3">
+                        <div className="p-2 bg-green-100 rounded-lg">
+                            <Database size={20} className="text-green-600" />
+                        </div>
+                        <div>
+                            <h4 className="font-bold text-slate-800">Restaurer Sauvegarde Automatique</h4>
+                            <p className="text-xs text-slate-500">Revenir à la dernière sauvegarde automatique quotidienne</p>
+                        </div>
+                    </div>
+                    <button
+                        onClick={handleRestoreAutoBackup}
+                        disabled={!lastBackupDate}
+                        className={`w-full md:w-auto px-6 py-3 rounded-lg font-bold shadow-lg transition-all duration-300 flex items-center justify-center gap-2 ${
+                            lastBackupDate
+                                ? 'bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white hover:scale-105'
+                                : 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                        }`}
+                    >
+                        <Database size={18} />
+                        Restaurer Backup Auto
+                    </button>
+                    {!lastBackupDate && (
+                        <p className="text-xs text-orange-600 font-semibold mt-2">
+                            Aucune sauvegarde automatique disponible pour le moment.
+                        </p>
+                    )}
+                </div>
+            </div>
+
+            {/* Warning Box */}
+            <div className="bg-red-50 border-l-4 border-red-500 rounded-lg p-4 mt-6">
+                <div className="flex items-start gap-3">
+                    <AlertTriangle size={20} className="text-red-600 flex-shrink-0 mt-0.5" />
+                    <div>
+                        <h4 className="font-bold text-red-800 mb-1">⚠️ Important</h4>
+                        <ul className="text-sm text-red-700 space-y-1 list-disc list-inside">
+                            <li>Les sauvegardes automatiques sont stockées dans votre navigateur (localStorage)</li>
+                            <li>Téléchargez régulièrement des backups manuels pour sécuriser vos données</li>
+                            <li>La restauration d'un backup remplace TOUTES vos données actuelles</li>
+                            <li>Conservez vos fichiers de backup en lieu sûr (cloud, disque externe...)</li>
+                        </ul>
                     </div>
                 </div>
             </div>

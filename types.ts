@@ -98,6 +98,13 @@ export interface PaymentRecord {
   method: string;
 }
 
+export interface ReminderRecord {
+  date: string;
+  stage: 'J+7' | 'J+15' | 'J+30' | 'J+45' | 'J+60_FORMAL';
+  message: string;
+  method: 'EMAIL' | 'SMS' | 'MAIL';
+}
+
 export interface Invoice {
   id?: number | string;
   number: string;
@@ -110,16 +117,35 @@ export interface Invoice {
   amountPaid: number;
   status: InvoiceStatus;
   items: { description: string; price: number }[];
-  reminderSentAt?: string;
+  reminderSentAt?: string; // Legacy field - will be replaced by reminders array
+  reminders?: ReminderRecord[]; // New multi-stage reminder tracking
   payments?: PaymentRecord[];
+}
+
+export interface RecurringInvoice {
+  id?: number | string;
+  patientName: string;
+  subscriptionType: string; // ex: "Suivi mensuel", "Abonnement hebdomadaire"
+  frequency: 'WEEKLY' | 'MONTHLY' | 'QUARTERLY' | 'YEARLY';
+  amountHT: number;
+  vatRate: number;
+  items: { description: string; price: number }[];
+  startDate: string;
+  nextDueDate: string;
+  endDate?: string;
+  isActive: boolean;
+  lastGeneratedDate?: string;
+  totalGenerated?: number; // Nombre de factures générées
 }
 
 export interface Expense {
   id?: number | string;
   date: string;
-  category: 'MATERIEL' | 'DEPLACEMENT' | 'FORMATION' | 'AUTRE';
+  category: 'CARBURANT' | 'MATERIEL' | 'FORMATION' | 'ASSURANCES' | 'LOYER' | 'AUTRE';
   description: string;
   amount: number;
+  receiptUrl?: string; // URL ou nom du fichier reçu
+  notes?: string;
 }
 
 export interface BrandingConfig {
@@ -132,9 +158,17 @@ export interface SocialConfig {
     facebookPage: string;
 }
 
+export interface ReminderStageConfig {
+    stage: 'J+7' | 'J+15' | 'J+30' | 'J+45' | 'J+60_FORMAL';
+    daysAfterDue: number;
+    message: string;
+    enabled: boolean;
+}
+
 export interface FinanceSettings {
-    firstReminderDays: number;
-    nextReminderFreq: number;
+    firstReminderDays: number; // Legacy
+    nextReminderFreq: number; // Legacy
+    reminderStages?: ReminderStageConfig[]; // New multi-stage system
 }
 
 export interface GoogleConfig {
@@ -144,10 +178,59 @@ export interface GoogleConfig {
   tokenExpiry?: number;
 }
 
+export interface SMSTemplate {
+  id: string;
+  name: string;
+  trigger: 'REMINDER_J1' | 'REMINDER_H2' | 'POST_SESSION' | 'BIRTHDAY' | 'CUSTOM';
+  message: string;
+  enabled: boolean;
+}
+
+export interface SMSLog {
+  id?: number;
+  date: string;
+  patientName: string;
+  phone: string;
+  message: string;
+  trigger: string;
+  status: 'QUEUED' | 'SENT' | 'FAILED';
+}
+
+export interface SMSConfig {
+  enabled: boolean;
+  templates: SMSTemplate[];
+}
+
+export interface SurveyQuestion {
+  id: string;
+  question: string;
+  type: 'NPS' | 'RATING' | 'TEXT' | 'YES_NO';
+  required: boolean;
+}
+
+export interface SurveyResponse {
+  id?: number;
+  sessionId?: number | string;
+  patientId: number | string;
+  patientName: string;
+  date: string;
+  npsScore?: number; // 0-10
+  rating?: number; // 1-5 stars
+  answers: Record<string, string | number>;
+  feedback: string;
+  wouldRecommend: boolean;
+}
+
+export interface SurveyConfig {
+  enabled: boolean;
+  sendAfterSession: boolean;
+  questions: SurveyQuestion[];
+}
+
 export interface AppSettings {
   id?: number;
-  appName: string; 
-  practitionerName: string; 
+  appName: string;
+  practitionerName: string;
   cabinetAddress: string;
   kmRate: number;
   defaultTariffs: {
@@ -160,4 +243,6 @@ export interface AppSettings {
   social: SocialConfig;
   branding: BrandingConfig;
   google?: GoogleConfig;
+  sms?: SMSConfig;
+  survey?: SurveyConfig;
 }
