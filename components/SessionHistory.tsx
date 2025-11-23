@@ -3,7 +3,10 @@ import React, { useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../db';
 import { Session, Patient, PatientType, TensionPoint } from '../types';
-import { Search, FileText, Edit, X, Save, Printer, Filter, Trash2 } from 'lucide-react';
+import { Search, FileText, Edit, X, Save, Printer, Filter, Trash2, HardDrive, Mail, Download } from 'lucide-react';
+import { jsPDF } from 'jspdf';
+import html2canvas from 'html2canvas';
+import { checkAuth, listDriveFolders, uploadToDriveReal } from '../services/googleApiService';
 
 const SessionHistory: React.FC = () => {
   const sessions = useLiveQuery(() => db.sessions.toArray());
@@ -12,10 +15,19 @@ const SessionHistory: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState<string>('ALL');
   const [selectedSession, setSelectedSession] = useState<Session | null>(null);
-  
+
   const [isEditing, setIsEditing] = useState(false);
   const [editNotes, setEditNotes] = useState('');
   const [editTensions, setEditTensions] = useState<TensionPoint[]>([]);
+
+  // Drive & Mail States
+  const [showDriveModal, setShowDriveModal] = useState(false);
+  const [driveFolders, setDriveFolders] = useState<{id:string, name:string}[]>([]);
+  const [selectedFolder, setSelectedFolder] = useState('');
+  const [showMailModal, setShowMailModal] = useState(false);
+  const [mailForm, setMailForm] = useState({ to: '', subject: '', message: '' });
+  const settings = useLiveQuery(() => db.settings.toArray());
+  const currentSettings = settings?.[0];
 
   if (!sessions || !patients) return <div className="p-8 text-center text-slate-400">Chargement des dossiers...</div>;
 
@@ -77,8 +89,102 @@ const SessionHistory: React.FC = () => {
       setEditTensions(editTensions.filter(t => t.id !== pointId));
   };
 
+  const generateSessionPDF = async (): Promise<Blob> => {
+      const printArea = document.getElementById('printable-area');
+      if (!printArea) throw new Error('Zone d\'impression introuvable');
+
+      const canvas = await html2canvas(printArea, { scale: 2 });
+      const imgData = canvas.toDataURL('image/png');
+
+      const doc = new jsPDF('p', 'mm', 'a4');
+      const imgWidth = 190;
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+      doc.addImage(imgData, 'PNG', 10, 10, imgWidth, imgHeight);
+      return doc.output('blob');
+  };
+
   const handlePrintPDF = () => {
       window.print();
+  };
+
+  const handleDownloadPDF = async () => {
+      if (!selectedSession) return;
+      const patient = getPatient(selectedSession.patientId);
+      const blob = await generateSessionPDF();
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `Seance_${patient?.name}_${new Date(selectedSession.date).toLocaleDateString()}.pdf`;
+      link.click();
+      URL.revokeObjectURL(url);
+  };
+
+  const handleExportToDrive = async () => {
+      const authed = await checkAuth();
+      if (authed) {
+          const folders = await listDriveFolders();
+          setDriveFolders(folders);
+          setShowDriveModal(true);
+      } else {
+          alert("Veuillez d'abord connecter votre compte Google dans les Réglages");
+      }
+  };
+
+  const confirmExportToDrive = async () => {
+      if (!selectedFolder || !selectedSession) return;
+      const patient = getPatient(selectedSession.patientId);
+      const blob = await generateSessionPDF();
+      const fileName = `Seance_${patient?.name}_${new Date(selectedSession.date).toLocaleDateString()}.pdf`;
+
+      try {
+          await uploadToDriveReal(blob, fileName, selectedFolder);
+          alert(`Séance sauvegardée sur Drive !`);
+          setShowDriveModal(false);
+      } catch (error) {
+          alert("Erreur upload Drive");
+          console.error(error);
+      }
+  };
+
+  const handleSendByMail = () => {
+      if (!selectedSession) return;
+      const patient = getPatient(selectedSession.patientId);
+      setMailForm({
+          to: '',
+          subject: `Compte-Rendu de Séance - ${patient?.name}`,
+          message: `Bonjour,\n\nVeuillez trouver ci-joint le compte-rendu de votre séance du ${new Date(selectedSession.date).toLocaleDateString()}.\n\nCordialement,\n${currentSettings?.practitionerName || 'Votre Praticien'}`
+      });
+      setShowMailModal(true);
+  };
+
+  const confirmSendMail = async () => {
+      if (!selectedSession || !mailForm.to) return;
+
+      const patient = getPatient(selectedSession.patientId);
+      const blob = await generateSessionPDF();
+      const reader = new FileReader();
+
+      reader.readAsDataURL(blob);
+      reader.onloadend = () => {
+          const base64data = reader.result as string;
+          const mailtoLink = `mailto:${mailForm.to}?subject=${encodeURIComponent(mailForm.subject)}&body=${encodeURIComponent(mailForm.message)}`;
+
+          // Note: Les pièces jointes ne sont pas supportées via mailto
+          // Dans une vraie app, il faudrait un backend pour l'envoi SMTP
+          window.open(mailtoLink, '_blank');
+          alert("Note : Les pièces jointes ne sont pas supportées via mailto. Le PDF a été téléchargé. Attachez-le manuellement à votre client mail.");
+
+          // Télécharger le PDF automatiquement
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = `Seance_${patient?.name}_${new Date(selectedSession.date).toLocaleDateString()}.pdf`;
+          link.click();
+          URL.revokeObjectURL(url);
+
+          setShowMailModal(false);
+      };
   };
 
   const renderSessionDetail = (session: Session, patient: Patient) => (
@@ -196,10 +302,23 @@ const SessionHistory: React.FC = () => {
                   )}
               </div>
 
-              <div className="bg-gray-50 p-4 border-t border-gray-200 flex justify-between items-center print:hidden">
-                  <button onClick={() => setSelectedSession(null)} className="px-4 py-2 text-slate-600 hover:bg-gray-200 rounded-lg font-medium">Fermer</button>
-                  <button onClick={handlePrintPDF} className="px-4 py-2 bg-slate-800 text-white rounded-lg font-bold flex items-center hover:bg-slate-700 shadow-lg">
-                      <Printer size={18} className="mr-2" /> Imprimer / PDF
+              <div className="bg-gray-50 p-4 border-t border-gray-200 print:hidden space-y-3">
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                      <button onClick={handleDownloadPDF} className="flex items-center justify-center px-3 py-2.5 bg-white border border-gray-200 rounded-lg text-sm font-bold text-slate-700 hover:bg-gray-100">
+                          <Download size={16} className="mr-2" /> PDF
+                      </button>
+                      <button onClick={handlePrintPDF} className="flex items-center justify-center px-3 py-2.5 bg-white border border-gray-200 rounded-lg text-sm font-bold text-slate-700 hover:bg-gray-100">
+                          <Printer size={16} className="mr-2" /> Imprimer
+                      </button>
+                      <button onClick={handleExportToDrive} className="flex items-center justify-center px-3 py-2.5 bg-white border border-gray-200 rounded-lg text-sm font-bold text-slate-700 hover:bg-gray-100">
+                          <HardDrive size={16} className="mr-2" /> Drive
+                      </button>
+                      <button onClick={handleSendByMail} className="flex items-center justify-center px-3 py-2.5 bg-white border border-gray-200 rounded-lg text-sm font-bold text-slate-700 hover:bg-gray-100">
+                          <Mail size={16} className="mr-2" /> Email
+                      </button>
+                  </div>
+                  <button onClick={() => setSelectedSession(null)} className="w-full px-4 py-2.5 text-slate-600 hover:bg-gray-200 rounded-lg font-medium">
+                      Fermer
                   </button>
               </div>
           </div>
@@ -293,9 +412,74 @@ const SessionHistory: React.FC = () => {
           </table>
       </div>
 
-      {selectedSession && filteredSessions.find(s => s.id === selectedSession.id) && 
+      {selectedSession && filteredSessions.find(s => s.id === selectedSession.id) &&
         renderSessionDetail(selectedSession, getPatient(selectedSession.patientId)!)
       }
+
+      {/* Drive Modal */}
+      {showDriveModal && (
+          <div className="fixed inset-0 bg-black/60 z-[70] flex items-center justify-center p-4">
+            <div className="bg-white rounded-xl p-6 w-full max-w-sm">
+                <h3 className="font-bold text-lg mb-4">Sauvegarder Séance sur Drive</h3>
+                <div className="space-y-2 mb-4 max-h-40 overflow-y-auto">
+                    {driveFolders.map(f => (
+                        <button key={f.id} onClick={() => setSelectedFolder(f.id)} className={`w-full text-left p-2 rounded text-sm ${selectedFolder === f.id ? 'bg-blue-100 text-blue-700' : 'hover:bg-gray-100'}`}>
+                            <HardDrive size={14} className="mr-2 inline"/> {f.name}
+                        </button>
+                    ))}
+                </div>
+                <div className="flex justify-end space-x-2">
+                    <button onClick={() => setShowDriveModal(false)} className="px-3 py-1.5 text-slate-500 text-sm">Annuler</button>
+                    <button onClick={confirmExportToDrive} disabled={!selectedFolder} className="px-3 py-1.5 bg-blue-600 text-white rounded-lg text-sm disabled:opacity-50">Sauvegarder</button>
+                </div>
+            </div>
+        </div>
+      )}
+
+      {/* Mail Modal */}
+      {showMailModal && (
+          <div className="fixed inset-0 bg-black/60 z-[70] flex items-center justify-center p-4">
+            <div className="bg-white rounded-xl p-6 w-full max-w-md">
+                <div className="flex justify-between items-center mb-4">
+                    <h3 className="font-bold text-lg flex items-center"><Mail size={20} className="mr-2 text-blue-600"/> Envoyer par Email</h3>
+                    <button onClick={() => setShowMailModal(false)}><X size={20} className="text-slate-400"/></button>
+                </div>
+                <div className="space-y-4">
+                    <div>
+                        <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Destinataire</label>
+                        <input
+                            type="email"
+                            placeholder="email@example.com"
+                            className="w-full p-2.5 border border-gray-300 rounded-lg text-sm"
+                            value={mailForm.to}
+                            onChange={e => setMailForm({...mailForm, to: e.target.value})}
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Objet</label>
+                        <input
+                            type="text"
+                            className="w-full p-2.5 border border-gray-300 rounded-lg text-sm"
+                            value={mailForm.subject}
+                            onChange={e => setMailForm({...mailForm, subject: e.target.value})}
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Message</label>
+                        <textarea
+                            rows={4}
+                            className="w-full p-2.5 border border-gray-300 rounded-lg text-sm"
+                            value={mailForm.message}
+                            onChange={e => setMailForm({...mailForm, message: e.target.value})}
+                        />
+                    </div>
+                    <button onClick={confirmSendMail} disabled={!mailForm.to} className="w-full py-2.5 bg-blue-600 text-white rounded-lg font-bold disabled:opacity-50 hover:bg-blue-700">
+                        Envoyer
+                    </button>
+                </div>
+            </div>
+        </div>
+      )}
     </div>
   );
 };

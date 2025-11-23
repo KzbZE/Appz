@@ -1,23 +1,64 @@
 import Dexie, { Table } from 'dexie';
-import { Patient, Appointment, Invoice, Expense, AppSettings, PatientType, ApptStatus, InvoiceStatus, Session } from './types';
+import { Patient, Appointment, Invoice, RecurringInvoice, Expense, AppSettings, PatientType, ApptStatus, InvoiceStatus, Session, SMSLog, SurveyResponse, Goal, LoyaltyCard, LoyaltyTransaction, Referral, Promotion, AppointmentRequest, Notification } from './types';
 
 class TheraFlowDB extends Dexie {
   patients!: Table<Patient>;
   appointments!: Table<Appointment>;
   invoices!: Table<Invoice>;
+  recurringInvoices!: Table<RecurringInvoice>;
   expenses!: Table<Expense>;
   settings!: Table<AppSettings>;
   sessions!: Table<Session>;
+  smsLogs!: Table<SMSLog>;
+  surveyResponses!: Table<SurveyResponse>;
+  goals!: Table<Goal>;
+  loyaltyCards!: Table<LoyaltyCard>;
+  loyaltyTransactions!: Table<LoyaltyTransaction>;
+  referrals!: Table<Referral>;
+  promotions!: Table<Promotion>;
+  appointmentRequests!: Table<AppointmentRequest>;
+  notifications!: Table<Notification>;
 
   constructor() {
     super('TheraFlowDB');
-    (this as any).version(1).stores({
-      patients: '++id, name, type',
-      appointments: '++id, patientId, startTime, status',
+    // Version 7: Ajout appointmentRequests, notifications, GPS (lat/lng), isOptimizedSlot
+    (this as any).version(7).stores({
+      patients: '++id, name, type, lat, lng',
+      appointments: '++id, patientId, startTime, status, isOptimizedSlot',
       invoices: '++id, number, status, patientName',
+      recurringInvoices: '++id, patientName, isActive, nextDueDate',
       expenses: '++id, date, category',
       settings: '++id',
-      sessions: '++id, patientId, date, type'
+      sessions: '++id, patientId, date, type',
+      smsLogs: '++id, date, status',
+      surveyResponses: '++id, patientId, date, npsScore',
+      goals: '++id, type, period, isActive, endDate',
+      loyaltyCards: '++id, patientId, isActive, type',
+      loyaltyTransactions: '++id, cardId, patientId, date, type',
+      referrals: '++id, referrerId, status, createdDate',
+      promotions: '++id, code, isActive, startDate, endDate',
+      appointmentRequests: '++id, patientId, status, requestedStartTime, createdAt',
+      notifications: '++id, type, status, sentAt, relatedRequestId'
+    });
+
+    // ✅ Version 8: Ajout index googleEventId pour synchronisation Google Calendar
+    (this as any).version(8).stores({
+      patients: '++id, name, type, lat, lng',
+      appointments: '++id, patientId, startTime, status, isOptimizedSlot, googleEventId',
+      invoices: '++id, number, status, patientName',
+      recurringInvoices: '++id, patientName, isActive, nextDueDate',
+      expenses: '++id, date, category',
+      settings: '++id',
+      sessions: '++id, patientId, date, type',
+      smsLogs: '++id, date, status',
+      surveyResponses: '++id, patientId, date, npsScore',
+      goals: '++id, type, period, isActive, endDate',
+      loyaltyCards: '++id, patientId, isActive, type',
+      loyaltyTransactions: '++id, cardId, patientId, date, type',
+      referrals: '++id, referrerId, status, createdDate',
+      promotions: '++id, code, isActive, startDate, endDate',
+      appointmentRequests: '++id, patientId, status, requestedStartTime, createdAt',
+      notifications: '++id, type, status, sentAt, relatedRequestId'
     });
   }
 
@@ -39,7 +80,39 @@ class TheraFlowDB extends Dexie {
         },
         finance: {
             firstReminderDays: 1,
-            nextReminderFreq: 7
+            nextReminderFreq: 7,
+            reminderStages: [
+                {
+                    stage: 'J+7',
+                    daysAfterDue: 7,
+                    message: 'Bonjour,\n\nNous constatons que la facture {invoiceNumber} d\'un montant de {amount}€ n\'a pas encore été réglée.\nNous vous remercions de bien vouloir procéder au paiement dans les meilleurs délais.\n\nCordialement,\n{practitioner}',
+                    enabled: true
+                },
+                {
+                    stage: 'J+15',
+                    daysAfterDue: 15,
+                    message: 'Bonjour,\n\nNous vous rappelons que la facture {invoiceNumber} d\'un montant de {amount}€ reste impayée.\nMerci de régulariser votre situation rapidement.\n\nCordialement,\n{practitioner}',
+                    enabled: true
+                },
+                {
+                    stage: 'J+30',
+                    daysAfterDue: 30,
+                    message: 'Bonjour,\n\nMalgré nos précédentes relances, la facture {invoiceNumber} de {amount}€ n\'a toujours pas été réglée.\nNous vous demandons de procéder au paiement sous 7 jours.\n\nCordialement,\n{practitioner}',
+                    enabled: true
+                },
+                {
+                    stage: 'J+45',
+                    daysAfterDue: 45,
+                    message: 'DERNIERE RELANCE\n\nLa facture {invoiceNumber} de {amount}€ reste impayée malgré nos relances.\nSans règlement sous 15 jours, nous serons contraints d\'engager une procédure de recouvrement.\n\n{practitioner}',
+                    enabled: true
+                },
+                {
+                    stage: 'J+60_FORMAL',
+                    daysAfterDue: 60,
+                    message: 'MISE EN DEMEURE\n\nEn l\'absence de règlement de la facture {invoiceNumber} de {amount}€, nous vous mettons en demeure de procéder au paiement sous 8 jours.\nPassé ce délai, nous engagerons une procédure de recouvrement contentieux.\n\n{practitioner}',
+                    enabled: false
+                }
+            ]
         },
         social: {
             instagramHandle: '@equimotion_pro',
@@ -48,6 +121,69 @@ class TheraFlowDB extends Dexie {
         branding: {
             primaryColor: '#0f766e',
             logoUrl: 'https://cdn-icons-png.flaticon.com/512/2393/2393858.png'
+        },
+        sms: {
+            enabled: true,
+            templates: [
+                {
+                    id: 'reminder_j1',
+                    name: 'Rappel RDV J-1',
+                    trigger: 'REMINDER_J1',
+                    message: 'Bonjour {patient}, rappel de votre RDV demain à {heure} chez {praticien}. À bientôt !',
+                    enabled: true
+                },
+                {
+                    id: 'reminder_h2',
+                    name: 'Rappel RDV H-2',
+                    trigger: 'REMINDER_H2',
+                    message: 'Bonjour {patient}, votre RDV est dans 2h chez {praticien}. À tout de suite !',
+                    enabled: true
+                },
+                {
+                    id: 'post_session',
+                    name: 'Remerciement Post-Séance',
+                    trigger: 'POST_SESSION',
+                    message: 'Merci {patient} pour votre visite ! N\'hésitez pas à nous contacter si besoin. {praticien}',
+                    enabled: true
+                },
+                {
+                    id: 'birthday',
+                    name: 'Vœux Anniversaire',
+                    trigger: 'BIRTHDAY',
+                    message: 'Joyeux anniversaire {patient} ! Toute l\'équipe {praticien} vous souhaite une excellente journée 🎉',
+                    enabled: false
+                }
+            ]
+        },
+        survey: {
+            enabled: true,
+            sendAfterSession: true,
+            questions: [
+                {
+                    id: 'nps',
+                    question: 'Sur une échelle de 0 à 10, recommanderiez-vous nos services à un proche ?',
+                    type: 'NPS',
+                    required: true
+                },
+                {
+                    id: 'satisfaction',
+                    question: 'Comment évalueriez-vous votre satisfaction globale ?',
+                    type: 'RATING',
+                    required: true
+                },
+                {
+                    id: 'pain_improvement',
+                    question: 'Avez-vous ressenti une amélioration après la séance ?',
+                    type: 'YES_NO',
+                    required: true
+                },
+                {
+                    id: 'feedback',
+                    question: 'Avez-vous des suggestions ou commentaires pour améliorer nos services ?',
+                    type: 'TEXT',
+                    required: false
+                }
+            ]
         }
     });
 

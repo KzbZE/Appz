@@ -148,7 +148,7 @@ const CalendarModule: React.FC<CalendarModuleProps> = ({ appointments, onAddAppo
                 >
                     {view === 'DAY' ? 'Semaine' : 'Jour'}
                 </button>
-                <button onClick={onAddAppointment} className="p-2 bg-primary-600 text-white rounded-full shadow-lg hover:bg-primary-700">
+                <button onClick={onAddAppointment} className="p-2 bg-gradient-to-r from-teal-500 to-cyan-600 hover:from-teal-600 hover:to-cyan-700 text-white rounded-full shadow-lg transition-all duration-300 hover:scale-110">
                     <Plus size={20} />
                 </button>
             </div>

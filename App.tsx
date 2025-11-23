@@ -9,13 +9,26 @@ import AICoach from './components/AICoach';
 import PatientList from './components/PatientList';
 import CalendarModule from './components/CalendarModule';
 import ClientBooking from './components/ClientBooking';
+import PublicAppointmentRequest from './components/PublicAppointmentRequest';
 import SettingsModule from './components/SettingsModule';
-import StatisticsModule from './components/StatisticsModule';
+import AdvancedStatistics from './components/AdvancedStatistics';
+import ReminderModule from './components/ReminderModule';
 import SessionHistory from './components/SessionHistory';
-import { checkAvailability, calculateLogistics } from './services/logisticsService';
+import WeeklyPlanner from './components/WeeklyPlanner';
+import SessionTemplates from './components/SessionTemplates';
+import MarketingAutomation from './components/MarketingAutomation';
+import ProductsInventory from './components/ProductsInventory';
+import SatisfactionSurvey from './components/SatisfactionSurvey';
+import GoalsWidget from './components/GoalsWidget';
+import LoyaltyPromoModule from './components/LoyaltyPromoModule';
+import RGPDModule from './components/RGPDModule';
+import MigrationWizard from './components/MigrationWizard';
+import { checkAvailability, calculateLogistics, suggestOptimalTimeSlots } from './services/logisticsService';
+import { suggestOptimizedSlots, getAllAvailableSlots } from './services/optimizationService';
 import { Patient, Appointment, ApptStatus, PatientType, Invoice, InvoiceStatus, Expense, AppSettings } from './types';
 import { X, Save, Clock, MapPin, User, Globe, AlertTriangle, Search, Zap, Plus, ChevronLeft } from 'lucide-react';
 import { initGoogleClient } from './services/googleApiService';
+import { setupAutomaticBackup } from './services/backupService';
 
 const App: React.FC = () => {
   const patients = useLiveQuery(() => db.patients.toArray());
@@ -61,11 +74,13 @@ const App: React.FC = () => {
       type: 'CABINET',
       notes: 'Consultation'
   });
-  
+
+  const [suggestedTimeSlots, setSuggestedTimeSlots] = useState<any[]>([]);
   const [quickSearchTerm, setQuickSearchTerm] = useState('');
 
   useEffect(() => {
     db.populate();
+    setupAutomaticBackup();
   }, []);
 
   useEffect(() => {
@@ -79,9 +94,67 @@ const App: React.FC = () => {
         const hex = appSettings.branding.primaryColor;
         document.documentElement.style.setProperty('--primary-500', hex);
         document.documentElement.style.setProperty('--primary-600', hex);
-        document.documentElement.style.setProperty('--primary-100', hex + '33'); 
+        document.documentElement.style.setProperty('--primary-100', hex + '33');
     }
   }, [appSettings]);
+
+  // Calculate suggested time slots for route optimization (GPS-based)
+  useEffect(() => {
+    if (!newApptData.date || !patients || !appointments || newApptData.type === 'CABINET') {
+      setSuggestedTimeSlots([]);
+      return;
+    }
+
+    let targetLat: number | undefined;
+    let targetLng: number | undefined;
+
+    // Get GPS coordinates from existing patient or new patient form
+    if (!newApptData.isNewPatient && newApptData.patientId) {
+      const patient = patients.find(p => String(p.id) === String(newApptData.patientId));
+      targetLat = patient?.lat;
+      targetLng = patient?.lng;
+    }
+
+    // If no GPS coordinates, try to use old logistics service as fallback
+    if (!targetLat || !targetLng) {
+      let targetAddress = '';
+      if (!newApptData.isNewPatient && newApptData.patientId) {
+        const patient = patients.find(p => String(p.id) === String(newApptData.patientId));
+        targetAddress = patient?.address || '';
+      } else if (newApptData.isNewPatient) {
+        targetAddress = newApptData.newPatientAddress;
+      }
+
+      if (!targetAddress || targetAddress === 'Adresse à compléter') {
+        setSuggestedTimeSlots([]);
+        return;
+      }
+
+      // Fallback to old logistics service
+      const targetDate = new Date(newApptData.date);
+      const suggestions = suggestOptimalTimeSlots(
+        targetDate,
+        targetAddress,
+        60,
+        appointments,
+        patients,
+        appSettings.cabinetAddress || 'Cabinet'
+      );
+      setSuggestedTimeSlots(suggestions);
+      return;
+    }
+
+    // Use new GPS-based optimization service
+    const targetDate = new Date(newApptData.date);
+    suggestOptimizedSlots(targetLat, targetLng, 60, targetDate)
+      .then(suggestions => {
+        setSuggestedTimeSlots(suggestions);
+      })
+      .catch(err => {
+        console.error('Optimization error:', err);
+        setSuggestedTimeSlots([]);
+      });
+  }, [newApptData.date, newApptData.patientId, newApptData.newPatientAddress, newApptData.isNewPatient, newApptData.type, patients, appointments, appSettings.cabinetAddress]);
 
   const handleStartSession = (appt: Appointment) => {
     setActiveAppointment(appt);
@@ -141,6 +214,7 @@ const App: React.FC = () => {
   };
 
   const handleOpenNewAppt = (apptToEdit?: Appointment) => {
+      setSuggestedTimeSlots([]); // Clear previous suggestions
       if (apptToEdit && apptToEdit.id) {
           setEditingApptId(apptToEdit.id);
           const d = new Date(apptToEdit.startTime);
@@ -152,7 +226,7 @@ const App: React.FC = () => {
               newPatientAddress: '',
               date: d.toISOString().split('T')[0],
               time: d.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
-              type: apptToEdit.type === 'BLOCK' ? 'CABINET' : apptToEdit.type as any, 
+              type: apptToEdit.type === 'BLOCK' ? 'CABINET' : apptToEdit.type as any,
               notes: apptToEdit.notes?.replace(/.* - /, '') || ''
           });
       } else {
@@ -237,6 +311,12 @@ const App: React.FC = () => {
           await db.appointments.add(apptData as Appointment);
       }
 
+      setSuggestedTimeSlots([]); // Clear suggestions on close
+      setIsNewApptModalOpen(false);
+  };
+
+  const handleCloseApptModal = () => {
+      setSuggestedTimeSlots([]);
       setIsNewApptModalOpen(false);
   };
 
@@ -245,7 +325,7 @@ const App: React.FC = () => {
           <div className="bg-white rounded-2xl w-full max-w-md p-6 shadow-xl max-h-[90vh] overflow-y-auto">
               <div className="flex justify-between items-center mb-6">
                   <h3 className="text-xl font-bold text-slate-800">{editingApptId ? 'Modifier RDV' : 'Nouveau Rendez-vous'}</h3>
-                  <button onClick={() => setIsNewApptModalOpen(false)}><X size={24} className="text-slate-400"/></button>
+                  <button onClick={handleCloseApptModal}><X size={24} className="text-slate-400"/></button>
               </div>
 
               <div className="space-y-4">
@@ -305,8 +385,8 @@ const App: React.FC = () => {
                   <div className="grid grid-cols-2 gap-4">
                       <div>
                           <label className="block text-sm font-bold text-slate-700 mb-1">Date</label>
-                          <input 
-                            type="date" 
+                          <input
+                            type="date"
                             className="w-full p-3 border border-gray-200 rounded-xl"
                             value={newApptData.date}
                             onChange={e => setNewApptData({...newApptData, date: e.target.value})}
@@ -314,14 +394,53 @@ const App: React.FC = () => {
                       </div>
                       <div>
                           <label className="block text-sm font-bold text-slate-700 mb-1">Heure</label>
-                          <input 
-                            type="time" 
+                          <input
+                            type="time"
                             className="w-full p-3 border border-gray-200 rounded-xl"
                             value={newApptData.time}
                             onChange={e => setNewApptData({...newApptData, time: e.target.value})}
                           />
                       </div>
                   </div>
+
+                  {suggestedTimeSlots.length > 0 && (
+                    <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-3 animate-fadeIn">
+                      <div className="flex items-center mb-2">
+                        <MapPin size={14} className="text-indigo-600 mr-1" />
+                        <span className="text-xs font-bold text-indigo-700 uppercase">Suggestions Optimisées</span>
+                      </div>
+                      <div className="space-y-2 max-h-48 overflow-y-auto">
+                        {suggestedTimeSlots.map((slot, idx) => {
+                          const slotTime = new Date(slot.startTime).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+                          const scoreColor = slot.score >= 80 ? 'bg-green-100 text-green-700 border-green-300' :
+                                            slot.score >= 60 ? 'bg-yellow-100 text-yellow-700 border-yellow-300' :
+                                            'bg-gray-100 text-gray-600 border-gray-300';
+
+                          return (
+                            <button
+                              key={idx}
+                              onClick={() => setNewApptData({...newApptData, time: slotTime})}
+                              className={`w-full text-left p-2.5 rounded-lg border-2 transition-all hover:shadow-md ${scoreColor}`}
+                            >
+                              <div className="flex items-center justify-between mb-1">
+                                <span className="font-bold text-sm">{slotTime}</span>
+                                <span className="text-xs px-2 py-0.5 bg-white/50 rounded-full font-bold">
+                                  Score {slot.score}
+                                </span>
+                              </div>
+                              <p className="text-xs leading-relaxed">{slot.reason}</p>
+                              {slot.savingsKm && slot.savingsKm > 0 && (
+                                <div className="mt-1 flex items-center text-xs font-bold opacity-80">
+                                  <Clock size={10} className="mr-1" />
+                                  Économie: {slot.savingsKm.toFixed(1)}km • {slot.savingsTime}min
+                                </div>
+                              )}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
 
                   <div>
                       <label className="block text-sm font-bold text-slate-700 mb-1">Lieu / Type</label>
@@ -562,29 +681,43 @@ const App: React.FC = () => {
              <SettingsModule settings={appSettings} onSave={handleUpdateSettings} />
           )}
 
-          {currentView === 'stats' && (
-              <StatisticsModule 
-                  appointments={appointments || []}
-                  patients={patients || []}
-                  invoices={invoices || []}
-              />
-          )}
+          {currentView === 'stats' && <AdvancedStatistics />}
+
+          {currentView === 'reminders' && <ReminderModule invoices={invoices || []} />}
 
           {currentView === 'records' && <SessionHistory />}
+
+          {currentView === 'planner' && <WeeklyPlanner />}
+
+          {currentView === 'templates' && <SessionTemplates />}
+
+          {currentView === 'marketing' && <MarketingAutomation />}
+
+          {currentView === 'satisfaction' && <SatisfactionSurvey />}
+
+          {currentView === 'inventory' && <ProductsInventory />}
+
+          {currentView === 'loyalty' && <LoyaltyPromoModule />}
+
+          {currentView === 'rgpd' && <RGPDModule />}
+
+          {currentView === 'goals' && <GoalsWidget />}
+
+          {currentView === 'migration' && <MigrationWizard />}
         </div>
 
         {isNewApptModalOpen && renderNewApptModal()}
         {isQuickSessionModalOpen && renderQuickSessionModal()}
         {isClientBookingOpen && (
-            <ClientBooking 
-                appointments={appointments || []}
-                patients={patients || []}
-                onClose={() => setIsClientBookingOpen(false)}
-                onBook={async (appt) => {
-                    await db.appointments.add(appt as Appointment);
-                    alert("Rendez-vous confirmé !");
-                }}
-            />
+            <div className="fixed inset-0 z-50 bg-white">
+                <button
+                    onClick={() => setIsClientBookingOpen(false)}
+                    className="fixed top-4 right-4 z-50 p-3 bg-white rounded-full shadow-lg hover:bg-gray-100 transition-colors"
+                >
+                    <X size={24} className="text-slate-600" />
+                </button>
+                <PublicAppointmentRequest />
+            </div>
         )}
       </main>
     </div>

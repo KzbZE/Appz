@@ -1,10 +1,17 @@
 import { GoogleGenAI } from "@google/genai";
 
+// ⚠️ TEMPORAIRE - CLÉS HARD-CODÉES POUR TEST UNIQUEMENT
+// TODO: CONFIGURER SUR NETLIFY ET SUPPRIMER CE COMMIT
 const API_KEY = (() => {
   try {
-    return (typeof process !== 'undefined' && process.env) ? process.env.API_KEY : '';
+    // Priorité à la variable d'environnement si disponible
+    if (typeof process !== 'undefined' && process.env && process.env.API_KEY) {
+      return process.env.API_KEY;
+    }
+    // Sinon, utiliser la clé hard-codée (TEMPORAIRE!)
+    return 'AIzaSyCX74WTc8JanMveBecE9HI5Y_8NcNbETZY';
   } catch (e) {
-    return '';
+    return 'AIzaSyCX74WTc8JanMveBecE9HI5Y_8NcNbETZY';
   }
 })();
 
