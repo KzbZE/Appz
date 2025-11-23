@@ -9,3 +9,6 @@
 
 [build.environment]
   NODE_VERSION = "18"
+  # Désactiver le scan de secrets pour les clés API publiques frontend
+  # Ces clés DOIVENT être dans le bundle compilé pour fonctionner
+  SECRETS_SCAN_SMART_DETECTION_OMIT_VALUES = "AIzaSy"
