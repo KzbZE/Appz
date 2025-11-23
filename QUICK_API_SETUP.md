@@ -5,14 +5,13 @@
 1. **Ouvrez votre app** sur Netlify
 2. **Cliquez** sur l'onglet **"Réglages"** (en bas, 5ème icône)
 3. **Scrollez** jusqu'à voir "Intégration Cloud"
-4. **Entrez** :
-   ```
-   Google Client ID:
-   628641859046-ghldi8552ctukbmbo0l4rjbr2nvga5ug.apps.googleusercontent.com
+4. **Entrez vos clés Google** :
+   - Google Client ID : Votre client ID
+   - Google API Key : Votre clé API Google Places
 
-   Google API Key:
-   AIzaSyAfK0Uz779sCthuHIkhC30FY6Kq9OPuIFY
-   ```
+   **Note** : Les clés doivent être configurées via les variables d'environnement Netlify
+   (voir `.env.example` pour référence)
+
 5. **Cliquez** "Enregistrer" (bouton en haut à droite)
 
 ✅ **C'EST FAIT !** Les clés Google sont configurées.
@@ -29,11 +28,13 @@
 4. **Cliquez** sur "Site configuration" (dans le menu de gauche)
 5. **Cliquez** sur "Environment variables"
 6. **Cliquez** sur le bouton "Add a variable" (ou "Add")
-7. **Remplissez** :
-   - **Key** : `GEMINI_API_KEY`
-   - **Value** : `AIzaSyCX74WTc8JanMveBecE9HI5Y_8NcNbETZY`
-   - **Scopes** : Cochez "All" ou "All deploys"
-8. **Cliquez** "Create variable"
+7. **Ajoutez les variables suivantes** :
+   - **Key** : `GEMINI_API_KEY` | **Value** : Votre clé Gemini AI
+   - **Key** : `VITE_GOOGLE_PLACES_API_KEY` | **Value** : Votre clé Google Places
+   - **Scopes** : Cochez "All" ou "All deploys" pour chaque variable
+8. **Cliquez** "Create variable" pour chaque clé
+
+**Note** : Les valeurs des clés ne sont pas affichées ici pour des raisons de sécurité.
 9. **En haut** de la page, cliquez sur "Deploys"
 10. **Cliquez** "Trigger deploy" → "Deploy site"
 11. **Attendez** 2 minutes ⏱️

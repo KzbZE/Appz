@@ -28,14 +28,13 @@ Une fois le site redéployé :
 1. **Ouvrez votre site** Netlify sur Safari iPhone
 2. **Cliquez** sur l'onglet **"Réglages"** (5ème icône en bas)
 3. **Scrollez** jusqu'à "Intégration Cloud"
-4. **Entrez** :
-   ```
-   Google Client ID:
-   628641859046-ghldi8552ctukbmbo0l4rjbr2nvga5ug.apps.googleusercontent.com
+4. **Entrez vos clés API** (voir `.env.example` pour la liste)
+   - Google Client ID : Votre client ID Google
+   - Google API Key : Votre clé API Google Places
 
-   Google API Key:
-   AIzaSyAfK0Uz779sCthuHIkhC30FY6Kq9OPuIFY
-   ```
+   **Note** : Pour des raisons de sécurité, les clés ne sont pas affichées ici.
+   Configurez-les via les variables d'environnement Netlify.
+
 5. **Cliquez** "Enregistrer" (bouton vert en haut à droite)
 
 ✅ Les clés Google sont maintenant configurées !
@@ -102,11 +101,13 @@ Vos clés ont des restrictions. **Solution rapide** :
 
 1. Allez sur https://app.netlify.com
 2. Site Settings → Environment Variables
-3. Ajoutez :
-   - **Key** : `GEMINI_API_KEY`
-   - **Value** : `AIzaSyCX74WTc8JanMveBecE9HI5Y_8NcNbETZY`
+3. Ajoutez vos clés API :
+   - **Key** : `GEMINI_API_KEY` | **Value** : Votre clé Gemini
+   - **Key** : `VITE_GOOGLE_PLACES_API_KEY` | **Value** : Votre clé Google Places
 4. Sauvegardez
 5. Trigger deploy
+
+**Note** : Les valeurs des clés ne sont pas affichées ici pour des raisons de sécurité.
 
 ### Étape 2 : Révoquer et régénérer les clés
 

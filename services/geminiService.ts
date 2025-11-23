@@ -1,19 +1,9 @@
 import { GoogleGenAI } from "@google/genai";
 
-// ⚠️ TEMPORAIRE - CLÉS HARD-CODÉES POUR TEST UNIQUEMENT
-// TODO: CONFIGURER SUR NETLIFY ET SUPPRIMER CE COMMIT
-const API_KEY = (() => {
-  try {
-    // Priorité à la variable d'environnement si disponible
-    if (typeof process !== 'undefined' && process.env && process.env.API_KEY) {
-      return process.env.API_KEY;
-    }
-    // Sinon, utiliser la clé hard-codée (TEMPORAIRE!)
-    return 'AIzaSyCX74WTc8JanMveBecE9HI5Y_8NcNbETZY';
-  } catch (e) {
-    return 'AIzaSyCX74WTc8JanMveBecE9HI5Y_8NcNbETZY';
-  }
-})();
+// Configuration Gemini AI depuis variables d'environnement
+// Configurer GEMINI_API_KEY dans les variables d'environnement Netlify
+// Voir .env.example pour la configuration locale
+const API_KEY = import.meta.env.GEMINI_API_KEY || '';
 
 let aiClient: GoogleGenAI | null = null;
 
