@@ -9,6 +9,7 @@ import AICoach from './components/AICoach';
 import PatientList from './components/PatientList';
 import CalendarModule from './components/CalendarModule';
 import ClientBooking from './components/ClientBooking';
+import PublicAppointmentRequest from './components/PublicAppointmentRequest';
 import SettingsModule from './components/SettingsModule';
 import AdvancedStatistics from './components/AdvancedStatistics';
 import ReminderModule from './components/ReminderModule';
@@ -23,6 +24,7 @@ import LoyaltyPromoModule from './components/LoyaltyPromoModule';
 import RGPDModule from './components/RGPDModule';
 import MigrationWizard from './components/MigrationWizard';
 import { checkAvailability, calculateLogistics, suggestOptimalTimeSlots } from './services/logisticsService';
+import { suggestOptimizedSlots, getAllAvailableSlots } from './services/optimizationService';
 import { Patient, Appointment, ApptStatus, PatientType, Invoice, InvoiceStatus, Expense, AppSettings } from './types';
 import { X, Save, Clock, MapPin, User, Globe, AlertTriangle, Search, Zap, Plus, ChevronLeft } from 'lucide-react';
 import { initGoogleClient } from './services/googleApiService';
@@ -96,40 +98,62 @@ const App: React.FC = () => {
     }
   }, [appSettings]);
 
-  // Calculate suggested time slots for route optimization
+  // Calculate suggested time slots for route optimization (GPS-based)
   useEffect(() => {
     if (!newApptData.date || !patients || !appointments || newApptData.type === 'CABINET') {
       setSuggestedTimeSlots([]);
       return;
     }
 
-    let targetAddress = '';
+    let targetLat: number | undefined;
+    let targetLng: number | undefined;
 
-    // Get address from existing patient or new patient form
+    // Get GPS coordinates from existing patient or new patient form
     if (!newApptData.isNewPatient && newApptData.patientId) {
-      const patient = patients.find(p => p.id === newApptData.patientId);
-      targetAddress = patient?.address || '';
-    } else if (newApptData.isNewPatient) {
-      targetAddress = newApptData.newPatientAddress;
+      const patient = patients.find(p => String(p.id) === String(newApptData.patientId));
+      targetLat = patient?.lat;
+      targetLng = patient?.lng;
     }
 
-    if (!targetAddress || targetAddress === 'Adresse à compléter') {
-      setSuggestedTimeSlots([]);
+    // If no GPS coordinates, try to use old logistics service as fallback
+    if (!targetLat || !targetLng) {
+      let targetAddress = '';
+      if (!newApptData.isNewPatient && newApptData.patientId) {
+        const patient = patients.find(p => String(p.id) === String(newApptData.patientId));
+        targetAddress = patient?.address || '';
+      } else if (newApptData.isNewPatient) {
+        targetAddress = newApptData.newPatientAddress;
+      }
+
+      if (!targetAddress || targetAddress === 'Adresse à compléter') {
+        setSuggestedTimeSlots([]);
+        return;
+      }
+
+      // Fallback to old logistics service
+      const targetDate = new Date(newApptData.date);
+      const suggestions = suggestOptimalTimeSlots(
+        targetDate,
+        targetAddress,
+        60,
+        appointments,
+        patients,
+        appSettings.cabinetAddress || 'Cabinet'
+      );
+      setSuggestedTimeSlots(suggestions);
       return;
     }
 
-    // Calculate suggestions
+    // Use new GPS-based optimization service
     const targetDate = new Date(newApptData.date);
-    const suggestions = suggestOptimalTimeSlots(
-      targetDate,
-      targetAddress,
-      60, // default duration
-      appointments,
-      patients,
-      appSettings.cabinetAddress || 'Cabinet'
-    );
-
-    setSuggestedTimeSlots(suggestions);
+    suggestOptimizedSlots(targetLat, targetLng, 60, targetDate)
+      .then(suggestions => {
+        setSuggestedTimeSlots(suggestions);
+      })
+      .catch(err => {
+        console.error('Optimization error:', err);
+        setSuggestedTimeSlots([]);
+      });
   }, [newApptData.date, newApptData.patientId, newApptData.newPatientAddress, newApptData.isNewPatient, newApptData.type, patients, appointments, appSettings.cabinetAddress]);
 
   const handleStartSession = (appt: Appointment) => {
@@ -685,15 +709,15 @@ const App: React.FC = () => {
         {isNewApptModalOpen && renderNewApptModal()}
         {isQuickSessionModalOpen && renderQuickSessionModal()}
         {isClientBookingOpen && (
-            <ClientBooking 
-                appointments={appointments || []}
-                patients={patients || []}
-                onClose={() => setIsClientBookingOpen(false)}
-                onBook={async (appt) => {
-                    await db.appointments.add(appt as Appointment);
-                    alert("Rendez-vous confirmé !");
-                }}
-            />
+            <div className="fixed inset-0 z-50 bg-white">
+                <button
+                    onClick={() => setIsClientBookingOpen(false)}
+                    className="fixed top-4 right-4 z-50 p-3 bg-white rounded-full shadow-lg hover:bg-gray-100 transition-colors"
+                >
+                    <X size={24} className="text-slate-600" />
+                </button>
+                <PublicAppointmentRequest />
+            </div>
         )}
       </main>
     </div>

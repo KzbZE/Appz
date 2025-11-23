@@ -1,8 +1,9 @@
 
 import React, { useState, useEffect } from 'react';
 import { Appointment, ApptStatus, AppSettings, Patient, PatientType } from '../types';
-import { MapPin, Clock, Navigation as NavIcon, CloudRain, Zap, Users, Search, GripVertical, Calendar, TrendingUp, BarChart2, Smartphone, Sparkles, ArrowRight, Sun } from 'lucide-react';
+import { MapPin, Clock, Navigation as NavIcon, CloudRain, Zap, Users, Search, GripVertical, Calendar, TrendingUp, BarChart2, Smartphone, Sparkles, ArrowRight, Sun, Bell } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
+import AppointmentRequestManager from './AppointmentRequestManager';
 
 interface DailyDashboardProps {
   appointments: Appointment[];
@@ -204,6 +205,22 @@ const DailyDashboard: React.FC<DailyDashboardProps> = ({ appointments, patients,
                         </div>
                     );
                 })}
+            </div>
+        </div>
+
+        {/* Demandes de Rendez-vous */}
+        <div className="bg-white rounded-3xl border border-slate-200 shadow-lg">
+            <div className="p-6 border-b border-slate-100">
+                <h3 className="text-lg font-black text-slate-800 flex items-center">
+                    <div className="w-1 h-6 bg-gradient-to-b from-orange-500 to-amber-500 rounded-full mr-3"></div>
+                    Demandes de Rendez-vous
+                    <div className="ml-2 w-6 h-6 bg-orange-100 text-orange-600 rounded-full flex items-center justify-center text-xs font-black">
+                        <Bell size={14} />
+                    </div>
+                </h3>
+            </div>
+            <div className="p-6">
+                <AppointmentRequestManager />
             </div>
         </div>
     </div>
