@@ -1,9 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { MapPin } from 'lucide-react';
 
-// ✅ Clé API Google Places configurée
-// Places API, Maps JavaScript API activées
-const GOOGLE_PLACES_API_KEY = 'AIzaSyAfK0Uz779sCthuHIkhC30FY6Kq9OPuIFY';
+// ✅ Clé API Google Places depuis variables d'environnement
+// Places API, Maps JavaScript API doivent être activées dans Google Cloud Console
+// Configurer VITE_GOOGLE_PLACES_API_KEY dans les variables d'environnement Netlify
+const GOOGLE_PLACES_API_KEY = import.meta.env.VITE_GOOGLE_PLACES_API_KEY || '';
 
 interface AddressAutocompleteProps {
   value: string;

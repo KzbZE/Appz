@@ -68,12 +68,14 @@ Cette PR intègre 3 fonctionnalités majeures demandées :
 
 ### APIs Configurées
 
-| Service | Clé configurée |
+| Service | Configuration |
 |---------|---------------|
-| **Google Places API** | ✅ `AIzaSyAfK0Uz779sCthuHIkhC30FY6Kq9OPuIFY` |
-| **Resend (Email)** | ✅ `re_jGd97qqL_Mkdb5bMqppBthgYaXxyZE1AN` |
-| **Twilio (SMS)** | ✅ SID: `AC823b69ed164a3b5ae50802b730a58f94` |
-| **Twilio Phone** | ✅ `+19595006824` |
+| **Google Places API** | ✅ Configurée via `VITE_GOOGLE_PLACES_API_KEY` |
+| **Resend (Email)** | ✅ Configurée (clé masquée pour sécurité) |
+| **Twilio (SMS)** | ✅ Configuré (SID masqué pour sécurité) |
+| **Twilio Phone** | ✅ Configuré |
+
+**Note de sécurité** : Les clés API doivent être configurées dans les variables d'environnement Netlify, pas dans le code.
 
 ## 📦 Nouveaux Fichiers
 
