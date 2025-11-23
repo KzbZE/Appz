@@ -5,7 +5,7 @@ import { Notification } from '../types';
 const RESEND_API_KEY = 're_jGd97qqL_Mkdb5bMqppBthgYaXxyZE1AN';
 const TWILIO_ACCOUNT_SID = 'AC823b69ed164a3b5ae50802b730a58f94';
 const TWILIO_AUTH_TOKEN = 'b9f360926e91f3a13c69adb108f888c7';
-const TWILIO_PHONE_NUMBER = '+33XXXXXXXXX'; // À configurer
+const TWILIO_PHONE_NUMBER = '+19595006824'; // ✅ Configuré
 
 interface EmailParams {
   to: string;
