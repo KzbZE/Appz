@@ -23,6 +23,7 @@ import GoalsWidget from './components/GoalsWidget';
 import LoyaltyPromoModule from './components/LoyaltyPromoModule';
 import RGPDModule from './components/RGPDModule';
 import MigrationWizard from './components/MigrationWizard';
+import UrssafModule from './components/UrssafModule';
 import { checkAvailability, calculateLogistics, suggestOptimalTimeSlots } from './services/logisticsService';
 import { suggestOptimizedSlots, getAllAvailableSlots } from './services/optimizationService';
 import { Patient, Appointment, ApptStatus, PatientType, Invoice, InvoiceStatus, Expense, AppSettings } from './types';
@@ -670,11 +671,13 @@ const App: React.FC = () => {
           )}
 
           {currentView === 'finance' && (
-            <FinanceModule 
-              invoices={invoices || []} 
-              expenses={expenses || []} 
+            <FinanceModule
+              invoices={invoices || []}
+              expenses={expenses || []}
             />
           )}
+
+          {currentView === 'urssaf' && <UrssafModule />}
 
           {currentView === 'session' && activeAppointment && (
             <SessionWizard 
