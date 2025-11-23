@@ -74,6 +74,7 @@ export interface Appointment {
   distanceKm?: number;
   travelDurationMin?: number;
   isOptimizedSlot?: boolean; // Si créneau suggéré par optimisation tournée
+  googleEventId?: string; // ✅ ID événement Google Calendar pour sync bidirectionnelle
 }
 
 export interface AppointmentRequest {

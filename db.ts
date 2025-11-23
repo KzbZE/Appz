@@ -21,9 +21,30 @@ class TheraFlowDB extends Dexie {
 
   constructor() {
     super('TheraFlowDB');
+    // Version 7: Ajout appointmentRequests, notifications, GPS (lat/lng), isOptimizedSlot
     (this as any).version(7).stores({
       patients: '++id, name, type, lat, lng',
       appointments: '++id, patientId, startTime, status, isOptimizedSlot',
+      invoices: '++id, number, status, patientName',
+      recurringInvoices: '++id, patientName, isActive, nextDueDate',
+      expenses: '++id, date, category',
+      settings: '++id',
+      sessions: '++id, patientId, date, type',
+      smsLogs: '++id, date, status',
+      surveyResponses: '++id, patientId, date, npsScore',
+      goals: '++id, type, period, isActive, endDate',
+      loyaltyCards: '++id, patientId, isActive, type',
+      loyaltyTransactions: '++id, cardId, patientId, date, type',
+      referrals: '++id, referrerId, status, createdDate',
+      promotions: '++id, code, isActive, startDate, endDate',
+      appointmentRequests: '++id, patientId, status, requestedStartTime, createdAt',
+      notifications: '++id, type, status, sentAt, relatedRequestId'
+    });
+
+    // ✅ Version 8: Ajout index googleEventId pour synchronisation Google Calendar
+    (this as any).version(8).stores({
+      patients: '++id, name, type, lat, lng',
+      appointments: '++id, patientId, startTime, status, isOptimizedSlot, googleEventId',
       invoices: '++id, number, status, patientName',
       recurringInvoices: '++id, patientName, isActive, nextDueDate',
       expenses: '++id, date, category',

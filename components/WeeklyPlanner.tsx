@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../db';
 import { Appointment, Patient, ApptStatus, PatientType } from '../types';
-import { ChevronLeft, ChevronRight, Plus, Calendar, Clock, MapPin, User, X, Edit, Trash2, Sun, Cloud, CloudRain } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, Calendar, Clock, MapPin, User, X, Edit, Trash2, Sun, Cloud, CloudRain, Save } from 'lucide-react';
 
 const WeeklyPlanner: React.FC = () => {
   const appointments = useLiveQuery(() => db.appointments.toArray()) || [];
@@ -16,6 +16,15 @@ const WeeklyPlanner: React.FC = () => {
   });
 
   const [selectedSlot, setSelectedSlot] = useState<{ day: number; hour: number } | null>(null);
+
+  // ✅ NOUVEAU : Modal création RDV
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [newApptData, setNewApptData] = useState({
+    patientId: '',
+    type: 'CABINET' as 'CABINET' | 'DOMICILE' | 'STABLE',
+    notes: '',
+    durationMin: 60
+  });
 
   // Generate week days (Monday to Sunday)
   const weekDays = useMemo(() => {
@@ -100,6 +109,38 @@ const WeeklyPlanner: React.FC = () => {
 
   const handleSlotClick = (dayIndex: number, hour: number) => {
     setSelectedSlot({ day: dayIndex, hour });
+    setShowCreateModal(true); // ✅ Ouvrir le modal de création
+  };
+
+  // ✅ NOUVEAU : Créer un rendez-vous
+  const handleCreateAppointment = async () => {
+    if (!selectedSlot || !newApptData.patientId) {
+      alert('Veuillez sélectionner un patient');
+      return;
+    }
+
+    const slotDate = new Date(weekDays[selectedSlot.day]);
+    slotDate.setHours(selectedSlot.hour, 0, 0, 0);
+
+    await db.appointments.add({
+      patientId: newApptData.patientId,
+      startTime: slotDate.toISOString(),
+      durationMin: newApptData.durationMin,
+      status: ApptStatus.SCHEDULED,
+      type: newApptData.type,
+      notes: newApptData.notes,
+      price: 0
+    });
+
+    // Reset et fermer
+    setShowCreateModal(false);
+    setNewApptData({
+      patientId: '',
+      type: 'CABINET',
+      notes: '',
+      durationMin: 60
+    });
+    setSelectedSlot(null);
   };
 
   const handleDeleteAppointment = async (apptId: string | number) => {
@@ -316,6 +357,126 @@ const WeeklyPlanner: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* ✅ NOUVEAU : Modal création RDV */}
+      {showCreateModal && selectedSlot && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl w-full max-w-md p-6 shadow-2xl">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-xl font-bold text-slate-800">Nouveau Rendez-vous</h3>
+              <button onClick={() => {
+                setShowCreateModal(false);
+                setSelectedSlot(null);
+              }}>
+                <X size={24} className="text-slate-400 hover:text-slate-600" />
+              </button>
+            </div>
+
+            <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-3 mb-4">
+              <div className="flex items-center text-indigo-700 text-sm font-medium">
+                <Calendar size={16} className="mr-2" />
+                {weekDays[selectedSlot.day].toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}
+              </div>
+              <div className="flex items-center text-indigo-600 text-xs mt-1">
+                <Clock size={14} className="mr-2" />
+                {selectedSlot.hour}:00
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              {/* Patient */}
+              <div>
+                <label className="block text-sm font-bold text-slate-700 mb-2">Patient *</label>
+                <select
+                  value={newApptData.patientId}
+                  onChange={(e) => setNewApptData({ ...newApptData, patientId: e.target.value })}
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-200 focus:border-indigo-500 outline-none"
+                >
+                  <option value="">Sélectionner un patient...</option>
+                  {patients.map(p => (
+                    <option key={p.id} value={p.id}>
+                      {p.name} {p.type !== PatientType.HUMAN ? `(${p.ownerName})` : ''}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Type */}
+              <div>
+                <label className="block text-sm font-bold text-slate-700 mb-2">Type de consultation *</label>
+                <div className="grid grid-cols-3 gap-2">
+                  {[
+                    { value: 'CABINET', label: 'Cabinet', icon: '🏥' },
+                    { value: 'STABLE', label: 'Écurie', icon: '🐴' },
+                    { value: 'DOMICILE', label: 'Domicile', icon: '🏠' }
+                  ].map(({ value, label, icon }) => (
+                    <button
+                      key={value}
+                      type="button"
+                      onClick={() => setNewApptData({ ...newApptData, type: value as any })}
+                      className={`py-2 px-3 rounded-lg text-sm font-bold transition-all ${
+                        newApptData.type === value
+                          ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg'
+                          : 'bg-gray-100 text-slate-600 hover:bg-gray-200'
+                      }`}
+                    >
+                      {icon} {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Durée */}
+              <div>
+                <label className="block text-sm font-bold text-slate-700 mb-2">Durée (minutes)</label>
+                <select
+                  value={newApptData.durationMin}
+                  onChange={(e) => setNewApptData({ ...newApptData, durationMin: parseInt(e.target.value) })}
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-200 focus:border-indigo-500 outline-none"
+                >
+                  <option value={30}>30 min</option>
+                  <option value={60}>1 heure</option>
+                  <option value={90}>1h30</option>
+                  <option value={120}>2 heures</option>
+                </select>
+              </div>
+
+              {/* Notes */}
+              <div>
+                <label className="block text-sm font-bold text-slate-700 mb-2">Notes</label>
+                <textarea
+                  value={newApptData.notes}
+                  onChange={(e) => setNewApptData({ ...newApptData, notes: e.target.value })}
+                  rows={3}
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-200 focus:border-indigo-500 outline-none resize-none"
+                  placeholder="Raison de consultation, remarques..."
+                />
+              </div>
+
+              {/* Boutons */}
+              <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200">
+                <button
+                  onClick={() => {
+                    setShowCreateModal(false);
+                    setSelectedSlot(null);
+                  }}
+                  className="px-5 py-2.5 text-sm font-bold text-slate-600 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  Annuler
+                </button>
+                <button
+                  onClick={handleCreateAppointment}
+                  disabled={!newApptData.patientId}
+                  className="px-5 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white rounded-lg text-sm font-bold flex items-center shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <Save size={16} className="mr-2" />
+                  Créer le rendez-vous
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

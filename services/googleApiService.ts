@@ -13,7 +13,8 @@ const DISCOVERY_DOCS = [
   'https://www.googleapis.com/discovery/v1/apis/drive/v3/rest',
   'https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest'
 ];
-const SCOPES = 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/calendar.events.readonly';
+// ✅ Ajout permissions ÉCRITURE pour Calendar (pas seulement readonly)
+const SCOPES = 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/calendar.events';
 
 export const initGoogleClient = async (settings: AppSettings): Promise<void> => {
   if (!settings.google?.clientId || !settings.google?.apiKey) return;
@@ -133,7 +134,7 @@ export const syncCalendarEvents = async () => {
             'timeMin': (new Date()).toISOString(),
             'showDeleted': false,
             'singleEvents': true,
-            'maxResults': 10,
+            'maxResults': 100, // Augmenté pour récupérer plus d'événements
             'orderBy': 'startTime'
         });
         return response.result.items;
@@ -142,3 +143,131 @@ export const syncCalendarEvents = async () => {
         return [];
     }
 };
+
+// ✅ NOUVEAU : Créer un événement dans Google Calendar
+export const createCalendarEvent = async (eventData: {
+    summary: string;
+    description?: string;
+    start: string; // ISO format
+    end: string; // ISO format
+    location?: string;
+}) => {
+    try {
+        const response = await window.gapi.client.calendar.events.insert({
+            'calendarId': 'primary',
+            'resource': {
+                'summary': eventData.summary,
+                'description': eventData.description,
+                'start': {
+                    'dateTime': eventData.start,
+                    'timeZone': 'Europe/Paris'
+                },
+                'end': {
+                    'dateTime': eventData.end,
+                    'timeZone': 'Europe/Paris'
+                },
+                'location': eventData.location,
+                'reminders': {
+                    'useDefault': false,
+                    'overrides': [
+                        {'method': 'email', 'minutes': 24 * 60}, // 1 jour avant
+                        {'method': 'popup', 'minutes': 30} // 30 min avant
+                    ]
+                }
+            }
+        });
+        return response.result;
+    } catch (error) {
+        console.error("Create Calendar Event Error", error);
+        throw error;
+    }
+};
+
+// ✅ NOUVEAU : Mettre à jour un événement Google Calendar
+export const updateCalendarEvent = async (eventId: string, eventData: {
+    summary?: string;
+    description?: string;
+    start?: string;
+    end?: string;
+    location?: string;
+}) => {
+    try {
+        const response = await window.gapi.client.calendar.events.patch({
+            'calendarId': 'primary',
+            'eventId': eventId,
+            'resource': {
+                'summary': eventData.summary,
+                'description': eventData.description,
+                'start': eventData.start ? {
+                    'dateTime': eventData.start,
+                    'timeZone': 'Europe/Paris'
+                } : undefined,
+                'end': eventData.end ? {
+                    'dateTime': eventData.end,
+                    'timeZone': 'Europe/Paris'
+                } : undefined,
+                'location': eventData.location
+            }
+        });
+        return response.result;
+    } catch (error) {
+        console.error("Update Calendar Event Error", error);
+        throw error;
+    }
+};
+
+// ✅ NOUVEAU : Supprimer un événement Google Calendar
+export const deleteCalendarEvent = async (eventId: string) => {
+    try {
+        await window.gapi.client.calendar.events.delete({
+            'calendarId': 'primary',
+            'eventId': eventId
+        });
+        return true;
+    } catch (error) {
+        console.error("Delete Calendar Event Error", error);
+        throw error;
+    }
+};
+
+// ✅ NOUVEAU : Importer événements Google Calendar vers base locale
+export const importCalendarEventsToLocal = async () => {
+    try {
+        const events = await syncCalendarEvents();
+        const imported = [];
+
+        for (const event of events) {
+            // Vérifier si l'événement existe déjà dans la base locale
+            const existing = await db.appointments.where('googleEventId').equals(event.id).first();
+
+            if (!existing) {
+                // Créer un nouveau RDV local
+                const appointmentData = {
+                    patientId: 'GOOGLE_IMPORT', // Patient temporaire
+                    startTime: event.start.dateTime || event.start.date,
+                    durationMin: calculateDuration(event.start.dateTime || event.start.date, event.end.dateTime || event.end.date),
+                    status: 'SCHEDULED' as any,
+                    type: 'CABINET' as any,
+                    notes: event.summary,
+                    price: 0,
+                    googleEventId: event.id // Lien avec Google Calendar
+                };
+
+                const id = await db.appointments.add(appointmentData);
+                imported.push({ id, googleEventId: event.id });
+            }
+        }
+
+        return imported;
+    } catch (error) {
+        console.error("Import Calendar Events Error", error);
+        throw error;
+    }
+};
+
+// Helper pour calculer la durée
+function calculateDuration(start: string, end: string): number {
+    const startDate = new Date(start);
+    const endDate = new Date(end);
+    return Math.round((endDate.getTime() - startDate.getTime()) / (1000 * 60));
+}
