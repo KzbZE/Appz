@@ -12,6 +12,14 @@ export enum ApptStatus {
   UNAVAILABLE = 'UNAVAILABLE'
 }
 
+export enum AppointmentRequestStatus {
+  PENDING = 'PENDING', // Demande initiale du patient
+  PRACTITIONER_PROPOSED = 'PRACTITIONER_PROPOSED', // Praticien propose autre créneau
+  PATIENT_PROPOSED = 'PATIENT_PROPOSED', // Patient propose autre créneau
+  CONFIRMED = 'CONFIRMED', // Validé définitivement
+  REJECTED = 'REJECTED' // Refusé
+}
+
 export enum InvoiceStatus {
   DRAFT = 'DRAFT',
   SENT = 'SENT',
@@ -34,6 +42,10 @@ export interface Patient {
   type: PatientType;
   location: string;
   address: string;
+  city?: string; // Ville (auto-rempli par Google Places)
+  postalCode?: string; // Code postal (auto-rempli)
+  lat?: number; // Latitude (pour optimisation tournée)
+  lng?: number; // Longitude (pour optimisation tournée)
   phone?: string;
   email?: string;
   lastVisit?: string;
@@ -60,7 +72,49 @@ export interface Appointment {
   price: number;
   travelFee?: number;
   distanceKm?: number;
-  travelDurationMin?: number; 
+  travelDurationMin?: number;
+  isOptimizedSlot?: boolean; // Si créneau suggéré par optimisation tournée
+}
+
+export interface AppointmentRequest {
+  id?: number | string;
+  patientId: string | number;
+  patientName: string;
+  patientPhone?: string;
+  patientEmail?: string;
+  requestedStartTime: string; // Créneau demandé
+  durationMin: number;
+  type: 'CABINET' | 'DOMICILE' | 'STABLE';
+  status: AppointmentRequestStatus;
+  notes?: string;
+  proposedStartTime?: string; // Créneau proposé en alternative
+  proposedBy?: 'PATIENT' | 'PRACTITIONER'; // Qui a proposé l'alternative
+  history: AppointmentRequestHistoryItem[]; // Historique des échanges
+  createdAt: string;
+  updatedAt: string;
+  patientAddress?: string; // Pour calcul optimisation
+  patientLat?: number;
+  patientLng?: number;
+}
+
+export interface AppointmentRequestHistoryItem {
+  date: string;
+  action: 'CREATED' | 'PROPOSED_ALT' | 'ACCEPTED' | 'REJECTED';
+  by: 'PATIENT' | 'PRACTITIONER';
+  message?: string;
+  proposedTime?: string;
+}
+
+export interface Notification {
+  id?: number;
+  type: 'EMAIL' | 'SMS' | 'BOTH';
+  recipient: string; // email ou phone
+  subject?: string; // Pour email
+  message: string;
+  status: 'PENDING' | 'SENT' | 'FAILED';
+  sentAt?: string;
+  error?: string;
+  relatedRequestId?: number | string;
 }
 
 export interface TensionPoint {
