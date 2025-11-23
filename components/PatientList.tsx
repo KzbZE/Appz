@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Patient, PatientType } from '../types';
-import { Search, MapPin, Phone, Mail, Calendar, Activity, ChevronRight, User, Zap, DollarSign, Save, X, Plus, Trash2 } from 'lucide-react';
+import { Search, MapPin, Phone, Mail, Calendar, Activity, ChevronRight, User, Zap, DollarSign, Save, X, Plus, Trash2, Edit } from 'lucide-react';
+import AddressAutocomplete from './AddressAutocomplete';
 
 interface PatientListProps {
   patients: Patient[];
@@ -15,10 +16,13 @@ const PatientList: React.FC<PatientListProps> = ({ patients, onSelectPatient, on
   const [filterType, setFilterType] = useState<PatientType | 'ALL'>('ALL');
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
   const [isEditingTariffs, setIsEditingTariffs] = useState(false);
-  
+  const [isEditingInfo, setIsEditingInfo] = useState(false);
+
   const [tempTariffs, setTempTariffs] = useState<Record<string, number>>({});
   const [newTariffKey, setNewTariffKey] = useState('');
   const [newTariffPrice, setNewTariffPrice] = useState('');
+
+  const [editFormData, setEditFormData] = useState<Partial<Patient>>({});
 
   const filteredPatients = patients.filter(p => {
     const matchesSearch = p.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
@@ -30,7 +34,9 @@ const PatientList: React.FC<PatientListProps> = ({ patients, onSelectPatient, on
   const handleCardClick = (p: Patient) => {
     setSelectedPatient(p);
     setIsEditingTariffs(false);
+    setIsEditingInfo(false);
     setTempTariffs(p.customTariffs || {});
+    setEditFormData({ ...p });
     setNewTariffKey('');
     setNewTariffPrice('');
   };
@@ -41,6 +47,15 @@ const PatientList: React.FC<PatientListProps> = ({ patients, onSelectPatient, on
           onUpdatePatient(updated);
           setSelectedPatient(updated);
           setIsEditingTariffs(false);
+      }
+  };
+
+  const savePatientInfo = () => {
+      if (selectedPatient && editFormData) {
+          const updated = { ...selectedPatient, ...editFormData } as Patient;
+          onUpdatePatient(updated);
+          setSelectedPatient(updated);
+          setIsEditingInfo(false);
       }
   };
 
@@ -60,6 +75,172 @@ const PatientList: React.FC<PatientListProps> = ({ patients, onSelectPatient, on
       delete updated[key];
       setTempTariffs(updated);
   };
+
+  const renderPatientInfoEditor = () => (
+      <div className="bg-white border-2 border-teal-200 rounded-xl p-5 mb-6 shadow-lg animate-fadeIn">
+          <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center">
+              <Edit size={18} className="mr-2 text-teal-500" />
+              Modifier les informations
+          </h3>
+
+          <div className="space-y-4">
+              {/* Nom */}
+              <div>
+                  <label className="block text-xs font-bold text-slate-600 mb-1.5">Nom complet *</label>
+                  <input
+                      type="text"
+                      value={editFormData.name || ''}
+                      onChange={(e) => setEditFormData({ ...editFormData, name: e.target.value })}
+                      className="w-full p-3 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-teal-200 focus:border-teal-500 outline-none"
+                      placeholder="Nom du patient"
+                  />
+              </div>
+
+              {/* Type de patient */}
+              <div>
+                  <label className="block text-xs font-bold text-slate-600 mb-1.5">Type de patient *</label>
+                  <select
+                      value={editFormData.type || PatientType.HUMAN}
+                      onChange={(e) => setEditFormData({ ...editFormData, type: e.target.value as PatientType })}
+                      className="w-full p-3 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-teal-200 focus:border-teal-500 outline-none"
+                  >
+                      <option value={PatientType.HUMAN}>Humain (Cabinet)</option>
+                      <option value={PatientType.EQUINE}>Cheval</option>
+                      <option value={PatientType.CANINE}>Chien</option>
+                  </select>
+              </div>
+
+              {/* Propriétaire (si animal) */}
+              {editFormData.type !== PatientType.HUMAN && (
+                  <div>
+                      <label className="block text-xs font-bold text-slate-600 mb-1.5">Nom du propriétaire *</label>
+                      <input
+                          type="text"
+                          value={editFormData.ownerName || ''}
+                          onChange={(e) => setEditFormData({ ...editFormData, ownerName: e.target.value })}
+                          className="w-full p-3 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-teal-200 focus:border-teal-500 outline-none"
+                          placeholder="Nom du propriétaire"
+                      />
+                  </div>
+              )}
+
+              {/* Email */}
+              <div>
+                  <label className="block text-xs font-bold text-slate-600 mb-1.5">Email</label>
+                  <input
+                      type="email"
+                      value={editFormData.email || ''}
+                      onChange={(e) => setEditFormData({ ...editFormData, email: e.target.value })}
+                      className="w-full p-3 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-teal-200 focus:border-teal-500 outline-none"
+                      placeholder="email@exemple.com"
+                  />
+              </div>
+
+              {/* Téléphone */}
+              <div>
+                  <label className="block text-xs font-bold text-slate-600 mb-1.5">Téléphone *</label>
+                  <input
+                      type="tel"
+                      value={editFormData.phone || ''}
+                      onChange={(e) => setEditFormData({ ...editFormData, phone: e.target.value })}
+                      className="w-full p-3 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-teal-200 focus:border-teal-500 outline-none"
+                      placeholder="06 12 34 56 78"
+                  />
+              </div>
+
+              {/* Adresse avec autocomplete */}
+              <div>
+                  <label className="block text-xs font-bold text-slate-600 mb-1.5">Adresse complète *</label>
+                  <AddressAutocomplete
+                      value={editFormData.address || ''}
+                      onChange={(address) => setEditFormData({ ...editFormData, address })}
+                      onPlaceSelected={(place) => {
+                          setEditFormData({
+                              ...editFormData,
+                              address: place.address,
+                              city: place.city,
+                              postalCode: place.postalCode,
+                              lat: place.lat,
+                              lng: place.lng
+                          });
+                      }}
+                      placeholder="Commencez à taper une adresse..."
+                      className="w-full p-3 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-teal-200 focus:border-teal-500 outline-none"
+                  />
+              </div>
+
+              {/* Ville et Code postal (auto-remplis par autocomplete) */}
+              <div className="grid grid-cols-2 gap-3">
+                  <div>
+                      <label className="block text-xs font-bold text-slate-600 mb-1.5">Ville</label>
+                      <input
+                          type="text"
+                          value={editFormData.city || ''}
+                          onChange={(e) => setEditFormData({ ...editFormData, city: e.target.value })}
+                          className="w-full p-3 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-teal-200 focus:border-teal-500 outline-none"
+                          placeholder="Ville"
+                      />
+                  </div>
+                  <div>
+                      <label className="block text-xs font-bold text-slate-600 mb-1.5">Code postal</label>
+                      <input
+                          type="text"
+                          value={editFormData.postalCode || ''}
+                          onChange={(e) => setEditFormData({ ...editFormData, postalCode: e.target.value })}
+                          className="w-full p-3 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-teal-200 focus:border-teal-500 outline-none"
+                          placeholder="75001"
+                      />
+                  </div>
+              </div>
+
+              {/* Location (localisation générale) */}
+              <div>
+                  <label className="block text-xs font-bold text-slate-600 mb-1.5">Localisation générale</label>
+                  <input
+                      type="text"
+                      value={editFormData.location || ''}
+                      onChange={(e) => setEditFormData({ ...editFormData, location: e.target.value })}
+                      className="w-full p-3 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-teal-200 focus:border-teal-500 outline-none"
+                      placeholder="Ex: Paris 15e, Lyon Centre..."
+                  />
+              </div>
+
+              {/* Coordonnées GPS (affichage si présentes) */}
+              {editFormData.lat && editFormData.lng && (
+                  <div className="bg-teal-50 border border-teal-200 rounded-lg p-3">
+                      <p className="text-xs text-teal-700">
+                          📍 Coordonnées GPS : {editFormData.lat.toFixed(6)}, {editFormData.lng.toFixed(6)}
+                      </p>
+                      <p className="text-[10px] text-teal-600 mt-1">
+                          Utilisées pour l'optimisation de tournées
+                      </p>
+                  </div>
+              )}
+          </div>
+
+          {/* Boutons d'action */}
+          <div className="flex justify-end space-x-3 mt-6 pt-4 border-t border-gray-200">
+              <button
+                  onClick={() => {
+                      setIsEditingInfo(false);
+                      setEditFormData({ ...selectedPatient });
+                  }}
+                  className="px-5 py-2.5 text-sm font-bold text-slate-600 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                  <X size={16} className="inline mr-1" />
+                  Annuler
+              </button>
+              <button
+                  onClick={savePatientInfo}
+                  disabled={!editFormData.name || !editFormData.phone}
+                  className="px-5 py-2.5 bg-gradient-to-r from-teal-500 to-cyan-600 hover:from-teal-600 hover:to-cyan-700 text-white rounded-lg text-sm font-bold flex items-center shadow-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                  <Save size={16} className="mr-2" />
+                  Enregistrer les modifications
+              </button>
+          </div>
+      </div>
+  );
 
   const renderTariffEditor = () => (
       <div className="bg-white p-4 rounded-xl border border-gray-200 mt-4 animate-fadeIn shadow-inner bg-gray-50/50">
@@ -161,10 +342,21 @@ const PatientList: React.FC<PatientListProps> = ({ patients, onSelectPatient, on
                     </p>
                 </div>
             </div>
-            <button onClick={() => setSelectedPatient(null)} className="p-2 hover:bg-slate-100 rounded-full">
-                <X size={20} />
-            </button>
+            <div className="flex items-center gap-2">
+                <button
+                    onClick={() => setIsEditingInfo(!isEditingInfo)}
+                    className="p-2 hover:bg-teal-50 text-teal-600 rounded-full transition-colors"
+                    title="Modifier les informations"
+                >
+                    <Edit size={20} />
+                </button>
+                <button onClick={() => setSelectedPatient(null)} className="p-2 hover:bg-slate-100 rounded-full">
+                    <X size={20} />
+                </button>
+            </div>
          </div>
+
+         {isEditingInfo && renderPatientInfoEditor()}
 
          <button
             onClick={() => { onInstantSession(p); setSelectedPatient(null); }}

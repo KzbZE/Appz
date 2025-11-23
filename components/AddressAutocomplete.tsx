@@ -1,10 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { MapPin } from 'lucide-react';
 
-// ⚠️ À configurer : Clé API Google Places
-// Créer la clé sur : https://console.cloud.google.com/apis/credentials
-// Activer : Places API, Maps JavaScript API
-const GOOGLE_PLACES_API_KEY = 'YOUR_GOOGLE_PLACES_API_KEY';
+// ✅ Clé API Google Places configurée
+// Places API, Maps JavaScript API activées
+const GOOGLE_PLACES_API_KEY = 'AIzaSyAfK0Uz779sCthuHIkhC30FY6Kq9OPuIFY';
 
 interface AddressAutocompleteProps {
   value: string;
