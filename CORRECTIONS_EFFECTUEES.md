@@ -122,6 +122,23 @@ await deleteCalendarEvent(eventId);
 
 ---
 
+### 5. 🖥️ **Écran Blanc** - RÉSOLU ✅
+**Problème** : Écran blanc après implémentation des corrections
+
+**Cause** : Erreur TypeScript dans `WeeklyPlanner.tsx` ligne 154
+- Utilisation de `ApptStatus.CONFIRMED` qui n'existe pas dans l'enum
+- L'enum ApptStatus contient : SCHEDULED, COMPLETED, CANCELLED, IN_PROGRESS, UNAVAILABLE
+- TypeScript error empêchait le chargement du composant
+
+**Solution** :
+- ✅ Remplacé `ApptStatus.CONFIRMED` par `ApptStatus.SCHEDULED`
+- ✅ Build réussi sans erreurs
+- ✅ Application fonctionnelle
+
+**Commit** : `135406c` - Fix ApptStatus.CONFIRMED error
+
+---
+
 ## 🗂️ Fichiers Modifiés
 
 ### 1. `services/googleApiService.ts`
@@ -244,6 +261,7 @@ Google suggère en temps réel
 | **Drive Sélecteur Dossier** | ✅ Déjà existant | ⚠️ Vérifier auth Google |
 | **Optimisation GPS** | ✅ Fonctionnel | ✅ Aucune |
 | **Demandes RDV Patients** | ✅ Fonctionnel | ✅ Aucune |
+| **Écran Blanc** | ✅ Résolu | ✅ Aucune |
 
 ---
 
@@ -317,6 +335,15 @@ Actuellement, les fonctions existent mais ne sont pas appelées automatiquement.
 4. Vider cache navigateur
 ```
 
+### Écran blanc
+```
+1. Vider cache navigateur (Ctrl+F5)
+2. Console (F12) → Chercher erreurs JavaScript
+3. Vérifier que dernier commit est bien 135406c
+4. Si erreur persist : npm run build pour vérifier compilation
+5. Relancer dev server : npm run dev
+```
+
 ---
 
 ## 📞 Support
@@ -325,7 +352,8 @@ Toutes les corrections sont committées sur :
 **Branche** : `claude/fix-white-screen-errors-01PagWJrtXANbtNBmxNTbUWb`
 
 **Derniers commits** :
-- `49d3815` - Google Calendar Sync + WeeklyPlanner Creation RDV
+- `135406c` - Fix Écran Blanc (ApptStatus.CONFIRMED error)
+- `a7193d0` - Google Calendar Sync + WeeklyPlanner Creation RDV
 - `b94c991` - PR Description
 - `6bf0b4e` - Système complet RDV + Autocomplétion + Optimisation
 - `58a8259` - Google Places API + Full Patient Edit Mode
