@@ -183,8 +183,8 @@ const PublicAppointmentRequest: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-teal-50 via-cyan-50 to-blue-50 py-8 px-4">
-      <div className="max-w-2xl mx-auto">
+    <div className="min-h-screen bg-gradient-to-br from-teal-50 via-cyan-50 to-blue-50 py-8 px-4 overflow-y-auto">
+      <div className="max-w-2xl mx-auto pb-20">
         {/* Header */}
         <div className="text-center mb-8">
           <div className="w-16 h-16 bg-gradient-to-br from-teal-500 to-cyan-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
@@ -195,7 +195,7 @@ const PublicAppointmentRequest: React.FC = () => {
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="bg-white rounded-3xl shadow-2xl p-8 space-y-6">
+        <form onSubmit={handleSubmit} className="bg-white rounded-3xl shadow-2xl p-6 md:p-8 space-y-6">
           {error && (
             <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-red-700 text-sm">
               {error}

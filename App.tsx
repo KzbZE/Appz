@@ -85,7 +85,16 @@ const App: React.FC = () => {
 
   useEffect(() => {
       if (appSettings) {
-          initGoogleClient(appSettings).catch(err => console.log("GAPI Init status:", err));
+          initGoogleClient(appSettings)
+              .then(async () => {
+                  // ✅ Restaurer automatiquement le token Google si disponible
+                  const { checkAuth } = await import('./services/googleApiService');
+                  const isAuth = await checkAuth();
+                  if (isAuth) {
+                      console.log("✅ Google: Session restaurée automatiquement");
+                  }
+              })
+              .catch(err => console.log("GAPI Init status:", err));
       }
   }, [appSettings]);
 
