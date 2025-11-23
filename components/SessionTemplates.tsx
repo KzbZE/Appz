@@ -278,6 +278,11 @@ const SessionTemplates: React.FC = () => {
     return matchesSearch && matchesCategory && matchesType;
   });
 
+  // Debug
+  console.log('📋 Templates totaux:', templates.length);
+  console.log('📋 Templates filtrés:', filteredTemplates.length);
+  console.log('🔍 Filtres actifs:', { searchTerm, filterCategory, filterType });
+
   const handleCreate = () => {
     setEditForm({
       name: '',
@@ -345,7 +350,7 @@ const SessionTemplates: React.FC = () => {
   };
 
   return (
-    <div className="h-full flex flex-col space-y-6 pb-20 md:pb-0">
+    <div className="h-full flex flex-col space-y-4 md:space-y-6 pb-20 md:pb-0 p-4 md:p-0">
       {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
@@ -400,8 +405,14 @@ const SessionTemplates: React.FC = () => {
       </div>
 
       {/* Templates Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 flex-1 overflow-y-auto">
-        {filteredTemplates.map((template) => (
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 flex-1 overflow-y-auto px-2 md:px-0">
+        {filteredTemplates.length === 0 ? (
+          <div className="col-span-full text-center py-12">
+            <p className="text-slate-500 text-lg">Aucun template trouvé</p>
+            <p className="text-slate-400 text-sm mt-2">Total: {templates.length} templates disponibles</p>
+          </div>
+        ) : (
+          filteredTemplates.map((template) => (
           <div
             key={template.id}
             className="bg-white rounded-xl border-2 border-gray-200 shadow-sm hover:shadow-lg transition-all group overflow-hidden"
@@ -503,7 +514,8 @@ const SessionTemplates: React.FC = () => {
               </button>
             </div>
           </div>
-        ))}
+        ))
+        )}
       </div>
 
       {/* MODAL DÉTAIL TEMPLATE */}
