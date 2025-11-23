@@ -405,17 +405,18 @@ const SessionTemplates: React.FC = () => {
       </div>
 
       {/* Templates Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 flex-1 overflow-y-auto px-2 md:px-0">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 flex-1 overflow-y-auto px-2 md:px-0 bg-gray-100">
         {filteredTemplates.length === 0 ? (
-          <div className="col-span-full text-center py-12">
-            <p className="text-slate-500 text-lg">Aucun template trouvé</p>
-            <p className="text-slate-400 text-sm mt-2">Total: {templates.length} templates disponibles</p>
+          <div className="col-span-full text-center py-12 bg-yellow-100 rounded-xl">
+            <p className="text-slate-800 text-2xl font-bold">⚠️ Aucun template trouvé</p>
+            <p className="text-slate-600 text-lg mt-2">Total: {templates.length} templates disponibles</p>
           </div>
         ) : (
           filteredTemplates.map((template) => (
           <div
             key={template.id}
-            className="bg-white rounded-xl border-2 border-gray-200 shadow-sm hover:shadow-lg transition-all group overflow-hidden"
+            className="bg-white rounded-2xl border-4 border-emerald-500 shadow-xl overflow-hidden min-h-[200px]"
+            style={{ opacity: 1, visibility: 'visible', display: 'block' }}
           >
             {/* Clickable area to view details */}
             <div className="p-4 md:p-4 cursor-pointer" onClick={() => setViewingTemplate(template)}>
