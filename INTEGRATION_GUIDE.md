@@ -161,7 +161,7 @@ const GOOGLE_PLACES_API_KEY = 'VOTRE_CLE_API_GOOGLE';
 ### 2. Email Resend
 **Fichier** : `/home/user/Appz/services/notificationService.ts`
 
-✅ Déjà configuré avec votre clé : `re_jGd97qqL_Mkdb5bMqppBthgYaXxyZE1AN`
+✅ Configuré avec variables d'environnement
 
 **À modifier** :
 ```tsx
@@ -169,6 +169,8 @@ from: 'TheraFlow <onboarding@resend.dev>', // Remplacer par votre domaine vérif
 ```
 
 **Vérifier un domaine** : https://resend.com/domains
+
+**Configuration** : Ajouter `VITE_RESEND_API_KEY` dans les variables d'environnement Netlify
 
 ---
 
@@ -288,13 +290,17 @@ console.log('Distance:', dist, 'km'); // ~2.8 km
 
 ⚠️ **IMPORTANT** : En production, utiliser des variables d'environnement :
 
-**Créer** `.env` :
+**Créer** `.env` (pour développement local) :
 ```env
-VITE_RESEND_API_KEY=re_jGd97qqL_Mkdb5bMqppBthgYaXxyZE1AN
-VITE_TWILIO_ACCOUNT_SID=AC823b69ed164a3b5ae50802b730a58f94
-VITE_TWILIO_AUTH_TOKEN=b9f360926e91f3a13c69adb108f888c7
-VITE_GOOGLE_PLACES_API_KEY=VOTRE_CLE
+VITE_RESEND_API_KEY=your_resend_api_key_here
+VITE_TWILIO_ACCOUNT_SID=your_twilio_sid_here
+VITE_TWILIO_AUTH_TOKEN=your_twilio_token_here
+VITE_GOOGLE_PLACES_API_KEY=your_google_places_key_here
 ```
+
+**Pour Netlify** :
+- Configurer ces variables dans Site configuration → Environment variables
+- Ne JAMAIS committer les vraies valeurs dans le code
 
 **Utiliser** :
 ```tsx

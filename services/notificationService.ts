@@ -1,11 +1,12 @@
 import { db } from '../db';
 import { Notification } from '../types';
 
-// ⚠️ IMPORTANT: Ces clés doivent être dans des variables d'environnement en production
-const RESEND_API_KEY = 're_jGd97qqL_Mkdb5bMqppBthgYaXxyZE1AN';
-const TWILIO_ACCOUNT_SID = 'AC823b69ed164a3b5ae50802b730a58f94';
-const TWILIO_AUTH_TOKEN = 'b9f360926e91f3a13c69adb108f888c7';
-const TWILIO_PHONE_NUMBER = '+19595006824'; // ✅ Configuré
+// Configuration depuis variables d'environnement
+// Configurer ces variables dans Netlify : Site configuration → Environment variables
+const RESEND_API_KEY = import.meta.env.VITE_RESEND_API_KEY || '';
+const TWILIO_ACCOUNT_SID = import.meta.env.VITE_TWILIO_ACCOUNT_SID || '';
+const TWILIO_AUTH_TOKEN = import.meta.env.VITE_TWILIO_AUTH_TOKEN || '';
+const TWILIO_PHONE_NUMBER = import.meta.env.VITE_TWILIO_PHONE_NUMBER || '';
 
 interface EmailParams {
   to: string;
