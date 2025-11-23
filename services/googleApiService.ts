@@ -70,16 +70,27 @@ export const signInToGoogle = async (settings: AppSettings): Promise<string> => 
 
 export const checkAuth = async (): Promise<boolean> => {
     const settings = (await db.settings.toArray())[0];
-    if (!settings?.google?.accessToken) return false;
-    
-    // Vérif expiry
-    if (settings.google.tokenExpiry && Date.now() > settings.google.tokenExpiry) {
+    if (!settings?.google?.accessToken) {
+        console.log("❌ Google: Pas de token sauvegardé");
         return false;
     }
-    
+
+    // Vérif expiry
+    if (settings.google.tokenExpiry && Date.now() > settings.google.tokenExpiry) {
+        console.log("⏱️ Google: Token expiré. Reconnexion nécessaire.");
+        // Nettoyer le token expiré
+        if (settings.id) {
+            await db.settings.update(settings.id, {
+                google: { ...settings.google, accessToken: undefined, tokenExpiry: undefined }
+            });
+        }
+        return false;
+    }
+
     // Restaurer token dans gapi
     if (window.gapi?.client) {
         window.gapi.client.setToken({ access_token: settings.google.accessToken });
+        console.log("✅ Google: Token restauré, connecté");
         return true;
     }
     return false;

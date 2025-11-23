@@ -235,10 +235,14 @@ const SessionWizard: React.FC<SessionWizardProps> = ({ patient, settings, onComp
       const authed = await checkAuth();
       if (authed) {
           const folders = await listDriveFolders();
+          if (folders.length === 0) {
+              alert("⚠️ Impossible de récupérer vos dossiers Drive.\nVotre session Google a peut-être expiré.\n\nReconnectez-vous dans Paramètres → Google.");
+              return;
+          }
           setDriveFolders(folders);
           setShowDriveModal(true);
       } else {
-          alert("Veuillez d'abord connecter votre compte Google dans les Paramètres");
+          alert("🔐 Connexion Google requise\n\nPour sauvegarder sur Drive :\n1. Allez dans Paramètres\n2. Cliquez sur 'Se connecter avec Google'\n3. Autorisez l'accès à Drive\n\nNote : La session Google expire après 1h.");
       }
   };
 

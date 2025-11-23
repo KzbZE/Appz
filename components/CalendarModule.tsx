@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { Appointment } from '../types';
 import { ChevronLeft, ChevronRight, MapPin, Plus, Ban, RefreshCw } from 'lucide-react';
-import { checkAuth, syncCalendarEvents } from '../services/googleApiService';
+import { checkAuth, importCalendarEventsToLocal } from '../services/googleApiService';
+import { db } from '../db';
 
 interface CalendarModuleProps {
   appointments: Appointment[];
@@ -30,15 +31,26 @@ const CalendarModule: React.FC<CalendarModuleProps> = ({ appointments, onAddAppo
 
   const handleSyncCalendar = async () => {
       setIsSyncing(true);
-      const authed = await checkAuth();
-      if (authed) {
-          const events = await syncCalendarEvents();
-          console.log("Events synced:", events);
-          alert(`Synchronisation réussie : ${events.length} événements récupérés (Simulation visuelle pour l'instant)`);
-      } else {
-          alert("Connectez votre compte Google dans les paramètres pour synchroniser.");
+      try {
+          const authed = await checkAuth();
+          if (!authed) {
+              alert("Connectez votre compte Google dans les paramètres pour synchroniser.");
+              setIsSyncing(false);
+              return;
+          }
+
+          // ✅ Import réel des événements Google Calendar vers la base de données locale
+          const imported = await importCalendarEventsToLocal();
+          alert(`✅ Synchronisation réussie !\n${imported.length} événements importés depuis Google Calendar.`);
+
+          // Recharger la page pour afficher les nouveaux RDV
+          window.location.reload();
+      } catch (error) {
+          console.error("Sync error:", error);
+          alert("❌ Erreur de synchronisation. Vérifiez votre connexion Google dans Paramètres.");
+      } finally {
+          setIsSyncing(false);
       }
-      setIsSyncing(false);
   };
 
   const getAppointmentsForDay = (date: Date) => {
