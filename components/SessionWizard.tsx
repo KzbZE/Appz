@@ -2,9 +2,26 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Patient, PatientType, SessionDocument, AppSettings, Session } from '../types';
 import { generateSessionReport } from '../services/geminiService';
 import { checkAuth, listDriveFolders, uploadToDriveReal } from '../services/googleApiService';
-import { ChevronRight, ChevronLeft, Save, Video, AlertCircle, CheckCircle, Wand2, Upload, Download, Share2, Instagram, Facebook, Camera, Clock, HardDrive } from 'lucide-react';
+import { ChevronRight, ChevronLeft, Save, Video, AlertCircle, CheckCircle, Wand2, Upload, Download, Share2, Instagram, Facebook, Camera, Clock, HardDrive, FileText, Eye, Edit3 } from 'lucide-react';
 import { db } from '../db';
 import { jsPDF } from 'jspdf';
+
+interface SessionTemplate {
+  id?: number;
+  name: string;
+  category: string;
+  patientType: 'HUMAN' | 'EQUINE' | 'CANINE' | 'ALL';
+  anamnesis: {
+    mainComplaint: string;
+    observations: string;
+    objectives: string;
+  };
+  treatmentNotes: string;
+  duration: number;
+  exercises?: string;
+  recommendations?: string;
+  favorite: boolean;
+}
 
 interface SessionWizardProps {
   patient: Patient;
@@ -15,7 +32,7 @@ interface SessionWizardProps {
 const SessionWizard: React.FC<SessionWizardProps> = ({ patient, settings, onComplete }) => {
   const [step, setStep] = useState<number>(1);
   const [generatingReport, setGeneratingReport] = useState(false);
-  
+
   const [anamnesis, setAnamnesis] = useState<Record<string, string>>({});
   const [tensions, setTensions] = useState<{x: number, y: number, id: string, level: number, notes: string}[]>([]);
   const [treatmentNotes, setTreatmentNotes] = useState<string>("");
@@ -25,11 +42,38 @@ const SessionWizard: React.FC<SessionWizardProps> = ({ patient, settings, onComp
   const [sessionType, setSessionType] = useState<string>('KINESIO');
   const [selectedTechniques, setSelectedTechniques] = useState<string[]>([]);
   const [calculatedPrice, setCalculatedPrice] = useState<number>(0);
-  
+
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [showDriveModal, setShowDriveModal] = useState(false);
   const [driveFolders, setDriveFolders] = useState<{id:string, name:string}[]>([]);
   const [selectedFolder, setSelectedFolder] = useState('');
+
+  // Templates selection
+  const [selectedTemplates, setSelectedTemplates] = useState<number[]>([]);
+  const [showReportPreview, setShowReportPreview] = useState(true);
+
+  // Available templates library
+  const availableTemplates: SessionTemplate[] = [
+    // KINÉSIOLOGIE HUMAIN
+    { id: 1, name: 'Gestion Stress & Anxiété', category: 'Kinésiologie Humain', patientType: 'HUMAN', anamnesis: { mainComplaint: 'Stress chronique, anxiété, difficultés sommeil', observations: 'Tension généralisée. Respiration courte. Switching énergétique.', objectives: 'Réduction stress, amélioration sommeil, équilibre émotionnel' }, treatmentNotes: `1. Test musculaire - Identification déséquilibres\n2. Brain Gym - Cross Crawl pour intégration hémisphères\n3. Libération émotionnelle Three In One Concepts\n4. Équilibration chakras et méridiens\n5. Points neuro-vasculaires pour apaisement\n6. Ancrage et recentrage énergétique`, duration: 60, exercises: `Exercices quotidiens:\n- Cross Crawl: 2min matin/soir\n- Respiration cohérence cardiaque: 5min 3x/jour\n- Auto-massage points neuro-lymphatiques`, recommendations: 'Hydratation régulière. Limiter caféine. Marche quotidienne 20min.', favorite: true },
+    { id: 2, name: 'Difficultés Apprentissage Enfant', category: 'Kinésiologie Humain', patientType: 'HUMAN', anamnesis: { mainComplaint: 'Difficultés concentration, troubles apprentissage', observations: 'Réflexes archaïques non intégrés. Stress scolaire.', objectives: 'Amélioration concentration, intégration réflexes, confiance' }, treatmentNotes: `1. Test musculaire spécifique apprentissage\n2. Brain Gym - ECAP (Énergétique, Clair, Actif, Positif)\n3. RMTi - Intégration réflexes archaïques\n4. Touch For Health - Équilibration 14 méridiens\n5. Formatage Oreille pour écoute\n6. Baromètre du comportement`, duration: 45, exercises: `Programme à la maison (10min/jour):\n- Mouvements croisés\n- Huit couché (lazy 8)\n- Boire de l'eau régulièrement`, recommendations: 'Encouragements positifs. Pauses régulières durant devoirs. Jeux extérieurs.', favorite: true },
+    { id: 3, name: 'Soin Reiki Harmonisation Complète', category: 'Kinésiologie Humain', patientType: 'HUMAN', anamnesis: { mainComplaint: 'Fatigue chronique, besoin de rééquilibrage énergétique', observations: 'Déséquilibres énergétiques multiples. Chakras bloqués.', objectives: 'Harmonisation énergétique globale, vitalité, bien-être' }, treatmentNotes: `1. Scan énergétique complet du corps\n2. Reiki Usui - Positions classiques\n3. Harmonisation 7 chakras principaux\n4. Nettoyage énergétique aura\n5. LaHoChi pour élévation vibratoire\n6. Ancrage et protection énergétique`, duration: 75, recommendations: 'Repos après séance. Boire beaucoup d\'eau. Observer ressentis 48h.', favorite: true },
+    { id: 4, name: 'Libération Traumatisme Émotionnel', category: 'Kinésiologie Humain', patientType: 'HUMAN', anamnesis: { mainComplaint: 'Blocage émotionnel, trauma passé non résolu', observations: 'Émotions refoulées. Mémoires corporelles.', objectives: 'Libération émotionnelle, apaisement, reconstruction' }, treatmentNotes: `1. Test musculaire identification émotion\n2. Récession d'âge - Retour à l'événement\n3. One Brain - Baromètre comportement\n4. Libération stress émotionnel\n5. EFT (Emotional Freedom Technique)\n6. Réintégration et ancrage positif`, duration: 90, recommendations: 'Bienveillance envers soi. Journal émotions. Soutien psychologique si besoin.', favorite: false },
+    { id: 5, name: 'Préparation Mentale Sportif', category: 'Kinésiologie Humain', patientType: 'HUMAN', anamnesis: { mainComplaint: 'Stress compétition, baisse performance', observations: 'Tension pré-compétitive. Doutes capacités.', objectives: 'Confiance, concentration, optimisation performance' }, treatmentNotes: `1. Test musculaire objectifs sportifs\n2. Kinésiologie sport - Visualisation positive\n3. Équilibration énergétique performance\n4. Gestion stress compétition\n5. Ancrage confiance\n6. Mode Sabotage - Élimination auto-sabotage`, duration: 60, exercises: `Routine pré-compétition:\n- Visualisation succès: 5min\n- Cross Crawl: 2min\n- Ancrage confiance`, recommendations: 'Sommeil qualité. Nutrition adaptée. Rituel pré-compétition.', favorite: false },
+    // KINÉSIOLOGIE ANIMAL
+    { id: 6, name: 'Anxiété Séparation Chien', category: 'Kinésiologie Animal', patientType: 'CANINE', anamnesis: { mainComplaint: 'Aboiements, destruction en absence maître', observations: 'Stress visible. Attachement excessif.', objectives: 'Apaisement, autonomie, équilibre émotionnel' }, treatmentNotes: `1. Test musculaire animal - Communication\n2. Scan énergétique corps\n3. Équilibration chakras (spéc. plexus solaire)\n4. Libération émotionnelle stress\n5. Fleurs de Bach personnalisées\n6. Reiki canin harmonisation`, duration: 45, recommendations: 'Départ progressif. Jouets occupationnels. Routine stable.', favorite: true },
+    { id: 7, name: 'Performance Cheval Compétition', category: 'Kinésiologie Animal', patientType: 'EQUINE', anamnesis: { mainComplaint: 'Baisse performance, stress compétition', observations: 'Tension musculaire. Méridiens déséquilibrés.', objectives: 'Optimisation performance, concentration, vitalité' }, treatmentNotes: `1. Test musculaire équin complet\n2. Méthode Masterson - Relâchement tensions\n3. Équilibration 12 méridiens principaux\n4. Chakras - Focus chakra racine et sacré\n5. Gestion stress pré-compétition\n6. Reiki équin vitalité`, duration: 60, recommendations: 'Échauffement progressif. Hydratation. Vérification matériel.', favorite: true },
+    { id: 8, name: 'Troubles Comportement Chien', category: 'Kinésiologie Animal', patientType: 'CANINE', anamnesis: { mainComplaint: 'Agressivité, peurs, réactivité', observations: 'Trauma possible. Déséquilibres émotionnels.', objectives: 'Apaisement, confiance, comportement équilibré' }, treatmentNotes: `1. Communication animale - Identification cause\n2. Test musculaire émotions\n3. Libération stress post-traumatique\n4. Tellington TTouch - Apaisement nerveux\n5. Équilibration énergétique globale\n6. Fleurs de Bach trauma/peur`, duration: 50, recommendations: 'Environnement calme. Renforcement positif. Patience.', favorite: false },
+    { id: 9, name: 'Douleurs Chroniques Cheval Âgé', category: 'Kinésiologie Animal', patientType: 'EQUINE', anamnesis: { mainComplaint: 'Raideur, douleurs articulaires, vieillissement', observations: 'Mobilité réduite. Énergie basse.', objectives: 'Soulagement douleur, mobilité, qualité vie' }, treatmentNotes: `1. Scan énergétique zones douloureuses\n2. Reiki équin - Soulagement douleur\n3. Touch For Health animal\n4. Points d'acupression antalgiques\n5. Harmonisation méridiens\n6. Magnétisme zones affectées`, duration: 60, recommendations: 'Mouvement régulier adapté. Confort litière. Suivi vétérinaire.', favorite: false },
+    // MASSAGE ÉQUIN
+    { id: 10, name: 'Massage Pré-Compétition Équin', category: 'Massage Équin', patientType: 'EQUINE', anamnesis: { mainComplaint: 'Préparation épreuve sportive', observations: 'Bon état général. Tonus musculaire correct.', objectives: 'Optimisation performance, prévention blessures, échauffement' }, treatmentNotes: `1. Effleurage global - Échauffement tissus\n2. Pétrissage encolure et dos\n3. Friction transversale tendons membres\n4. Stretching passif membres\n5. Percussions tonifiantes muscles\n6. Mobilisations articulaires douces`, duration: 30, recommendations: 'Hydratation optimale. Échauffement progressif avant épreuve. Vérifier matériel.', favorite: true },
+    { id: 11, name: 'Récupération Post-Effort Équin', category: 'Massage Équin', patientType: 'EQUINE', anamnesis: { mainComplaint: 'Récupération après compétition/effort intense', observations: 'Fatigue musculaire. Possibles courbatures.', objectives: 'Récupération optimale, drainage, relaxation' }, treatmentNotes: `1. Drainage lymphatique membres\n2. Effleurage relaxant global\n3. Pétrissage doux muscles sollicités\n4. Points trigger zones contractées\n5. Stretching passif doux\n6. Cryothérapie si inflammation`, duration: 45, recommendations: 'Repos box 24h. Hydratation. Marche en main légère.', favorite: true },
+    { id: 12, name: 'Traitement Dorsalgie Équine', category: 'Massage Équin', patientType: 'EQUINE', anamnesis: { mainComplaint: 'Douleur dorsale, raideur, défense pansage', observations: 'Contractures longissimus dorsi. Mobilité limitée.', objectives: 'Soulagement douleur, relâchement musculaire, mobilité' }, treatmentNotes: `1. Thermothérapie préparatoire\n2. Massage myofascial dos profond\n3. Points trigger paravertébraux\n4. Stretching encolure et dos\n5. Mobilisations vertébrales douces\n6. Shiatsu équin méridiens dos`, duration: 60, recommendations: 'Vérification selle urgente. Repos 48h. Travail progressif.', favorite: true },
+    { id: 13, name: 'Massage Bien-être Équin', category: 'Massage Équin', patientType: 'EQUINE', anamnesis: { mainComplaint: 'Entretien, prévention, détente', observations: 'État général bon. Pas de pathologie.', objectives: 'Relaxation, bien-être, prévention tensions' }, treatmentNotes: `1. Effleurage global relaxant\n2. Pétrissage doux ensemble corps\n3. Acupression points de détente\n4. Shiatsu équin harmonisation\n5. Stretching passif membres\n6. Mobilisations articulaires confort`, duration: 45, recommendations: 'Séances régulières mensuelles. Observation comportement.', favorite: false },
+    // MASSAGE CANIN
+    { id: 14, name: 'Massage Sportif Canin', category: 'Massage Canin', patientType: 'CANINE', anamnesis: { mainComplaint: 'Chien sportif - Entretien musculaire', observations: 'Activité intense régulière. Tonus musculaire.', objectives: 'Performance, récupération, prévention blessures' }, treatmentNotes: `1. Effleurage échauffement\n2. Pétrissage membres et dos\n3. Friction tendons et ligaments\n4. Drainage lymphatique pattes\n5. Stretching passif membres\n6. Percussions tonifiantes`, duration: 30, recommendations: 'Hydratation post-effort. Repos après séance. Échauffement avant activité.', favorite: true },
+    { id: 15, name: 'Massage Thérapeutique Chien Âgé', category: 'Massage Canin', patientType: 'CANINE', anamnesis: { mainComplaint: 'Arthrose, raideur, mobilité réduite', observations: 'Douleurs articulaires. Difficulté lever.', objectives: 'Soulagement douleur, mobilité, confort vie' }, treatmentNotes: `1. Thermothérapie douce zones raides\n2. Effleurage très doux global\n3. Mobilisations passives articulations\n4. Points d'acupression antalgiques\n5. Drainage lymphatique doux\n6. Massage confort zones douloureuses`, duration: 40, recommendations: 'Couchage orthopédique. Exercice doux quotidien. Suppléments articulaires.', favorite: true }
+  ];
 
   const STORAGE_KEY = `theraflow_draft_${patient.id}`;
 
@@ -221,6 +265,46 @@ const SessionWizard: React.FC<SessionWizardProps> = ({ patient, settings, onComp
       date: new Date().toLocaleDateString()
     };
     setDocuments([...documents, newDoc]);
+  };
+
+  // Template management functions
+  const getRelevantTemplates = (): SessionTemplate[] => {
+    return availableTemplates.filter(template => {
+      const matchesPatient = template.patientType === patient.type || template.patientType === 'ALL';
+      const matchesType = sessionType === 'KINESIO' ?
+        (template.category.includes('Kinésiologie')) :
+        (template.category.includes('Massage'));
+      return matchesPatient && matchesType;
+    });
+  };
+
+  const toggleTemplate = (templateId: number) => {
+    if (selectedTemplates.includes(templateId)) {
+      setSelectedTemplates(selectedTemplates.filter(id => id !== templateId));
+    } else {
+      setSelectedTemplates([...selectedTemplates, templateId]);
+    }
+  };
+
+  const applySelectedTemplates = () => {
+    const templates = availableTemplates.filter(t => t.id && selectedTemplates.includes(t.id));
+    if (templates.length === 0) return;
+
+    // Combine template data
+    const combinedComplaints = templates.map(t => t.anamnesis.mainComplaint).join(' | ');
+    const combinedObservations = templates.map(t => t.anamnesis.observations).join(' | ');
+    const combinedObjectives = templates.map(t => t.anamnesis.objectives).join(' | ');
+    const combinedTreatment = templates.map(t => `${t.name}:\n${t.treatmentNotes}`).join('\n\n');
+    const combinedRecommendations = templates.map(t => t.recommendations).filter(Boolean).join(' | ');
+
+    setAnamnesis({
+      ...anamnesis,
+      mainComplaint: combinedComplaints,
+      observations: combinedObservations,
+      objectives: combinedObjectives,
+      recommendations: combinedRecommendations
+    });
+    setTreatmentNotes(combinedTreatment);
   };
 
   const handleFinishSession = async () => {
@@ -415,9 +499,78 @@ const SessionWizard: React.FC<SessionWizardProps> = ({ patient, settings, onComp
         )}
       </div>
 
+      {/* Templates Suggérés (Optionnel) */}
+      {getRelevantTemplates().length > 0 && (
+        <div className="bg-gradient-to-br from-purple-50 to-blue-50 p-4 rounded-xl shadow-sm border border-purple-200">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center">
+              <FileText size={18} className="text-purple-600 mr-2" />
+              <h4 className="text-sm font-bold text-purple-900">Templates d'aide (optionnel)</h4>
+            </div>
+            <span className="text-xs text-purple-600 bg-purple-100 px-2 py-1 rounded-full">
+              {getRelevantTemplates().length} disponibles
+            </span>
+          </div>
+          <p className="text-xs text-purple-700 mb-3">
+            Sélectionnez un ou plusieurs templates pour pré-remplir les champs. Vous pourrez modifier ensuite.
+          </p>
+
+          <div className="space-y-2 max-h-60 overflow-y-auto mb-3">
+            {getRelevantTemplates().map((template) => (
+              <div
+                key={template.id}
+                onClick={() => template.id && toggleTemplate(template.id)}
+                className={`p-3 rounded-lg cursor-pointer border-2 transition-all ${
+                  selectedTemplates.includes(template.id || 0)
+                    ? 'bg-purple-500 text-white border-purple-600 shadow-md'
+                    : 'bg-white text-slate-700 border-purple-200 hover:border-purple-400'
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex-1">
+                    <p className="text-sm font-bold">{selectedTemplates.includes(template.id || 0) && '✓ '}{template.name}</p>
+                    <p className={`text-xs mt-1 ${selectedTemplates.includes(template.id || 0) ? 'text-purple-100' : 'text-slate-500'}`}>
+                      {template.anamnesis.mainComplaint.substring(0, 60)}...
+                    </p>
+                  </div>
+                  <span className={`text-xs px-2 py-1 rounded ${
+                    selectedTemplates.includes(template.id || 0)
+                      ? 'bg-purple-400 text-white'
+                      : 'bg-purple-100 text-purple-700'
+                  }`}>
+                    {template.duration}min
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {selectedTemplates.length > 0 && (
+            <button
+              onClick={applySelectedTemplates}
+              className="w-full py-2.5 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg font-bold text-sm hover:shadow-lg transition-all"
+            >
+              Appliquer {selectedTemplates.length} template(s) sélectionné(s)
+            </button>
+          )}
+        </div>
+      )}
+
       {/* Anamnèse */}
       <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 space-y-4">
         <h4 className="text-sm font-bold text-slate-700">Anamnèse & Contexte</h4>
+        <div>
+             <label className="block text-sm font-medium text-slate-600 mb-1">Plainte principale</label>
+             <input type="text" className="w-full p-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-primary-500 outline-none text-sm" placeholder="Ex: Douleur dorsale, stress, anxiété..." value={anamnesis.mainComplaint || ''} onChange={(e) => setAnamnesis({...anamnesis, mainComplaint: e.target.value})} />
+        </div>
+        <div>
+             <label className="block text-sm font-medium text-slate-600 mb-1">Observations</label>
+             <textarea className="w-full p-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-primary-500 outline-none text-sm" rows={2} placeholder="Tension, posture, état général..." value={anamnesis.observations || ''} onChange={(e) => setAnamnesis({...anamnesis, observations: e.target.value})} />
+        </div>
+        <div>
+             <label className="block text-sm font-medium text-slate-600 mb-1">Objectifs</label>
+             <input type="text" className="w-full p-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-primary-500 outline-none text-sm" placeholder="Ex: Soulagement douleur, relaxation..." value={anamnesis.objectives || ''} onChange={(e) => setAnamnesis({...anamnesis, objectives: e.target.value})} />
+        </div>
         <div>
              <label className="block text-sm font-medium text-slate-600 mb-1">Notes libres</label>
              <textarea className="w-full p-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-primary-500 outline-none text-sm" rows={3} placeholder="Observations générales..." value={anamnesis.notes || ''} onChange={(e) => setAnamnesis({...anamnesis, notes: e.target.value})} />
@@ -525,24 +678,169 @@ const SessionWizard: React.FC<SessionWizardProps> = ({ patient, settings, onComp
            </div>
        </div>
        
-       {/* Report Section with PDF/Drive */}
-       <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
-           <div className="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
-                <h4 className="font-bold text-slate-700">Compte-Rendu</h4>
-                <div className="flex space-x-2">
-                    <button onClick={openDriveModal} className="p-1.5 bg-white border border-gray-300 rounded-lg text-slate-600 hover:bg-blue-50" title="Sauvegarder sur Drive">
-                        <HardDrive size={14} />
+       {/* Report Section - Document Word Style */}
+       <div className="bg-white border-2 border-gray-300 rounded-xl shadow-lg overflow-hidden">
+           {/* Toolbar */}
+           <div className="p-4 border-b-2 border-gray-200 flex justify-between items-center bg-gradient-to-r from-slate-50 to-gray-50">
+                <div className="flex items-center space-x-2">
+                  <FileText size={20} className="text-blue-600" />
+                  <h4 className="font-bold text-slate-800">Compte-Rendu de Séance</h4>
+                </div>
+                <div className="flex items-center space-x-2">
+                    <button
+                      onClick={() => setShowReportPreview(!showReportPreview)}
+                      className={`flex items-center px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                        showReportPreview
+                          ? 'bg-blue-100 text-blue-700 border border-blue-300'
+                          : 'bg-gray-100 text-gray-700 border border-gray-300'
+                      }`}
+                    >
+                      {showReportPreview ? <><Eye size={14} className="mr-1"/> Aperçu</> : <><Edit3 size={14} className="mr-1"/> Éditer</>}
                     </button>
-                    <button onClick={handleExportPDF} className="p-1.5 bg-white border rounded-lg text-slate-600 hover:bg-gray-50" title="Télécharger PDF">
-                        <Download size={14} />
+                    <div className="h-6 w-px bg-gray-300"></div>
+                    <button onClick={openDriveModal} className="p-2 bg-white border border-gray-300 rounded-lg text-slate-600 hover:bg-blue-50 transition-all" title="Sauvegarder sur Drive">
+                        <HardDrive size={16} />
                     </button>
-                    <button onClick={handleGenerateReport} disabled={generatingReport} className="flex items-center text-xs bg-indigo-50 text-indigo-700 px-3 py-1 rounded-full border border-indigo-100 hover:bg-indigo-100">
-                        {generatingReport ? <span className="animate-pulse">Rédaction...</span> : <><Wand2 size={12} className="mr-1"/> Rédiger</>}
+                    <button onClick={handleExportPDF} className="p-2 bg-white border border-gray-300 rounded-lg text-slate-600 hover:bg-gray-50 transition-all" title="Télécharger PDF">
+                        <Download size={16} />
+                    </button>
+                    <button onClick={handleGenerateReport} disabled={generatingReport} className="flex items-center text-xs bg-gradient-to-r from-indigo-500 to-purple-600 text-white px-4 py-2 rounded-lg font-bold hover:shadow-lg transition-all disabled:opacity-50">
+                        {generatingReport ? <span className="animate-pulse">Rédaction...</span> : <><Wand2 size={14} className="mr-1.5"/> Générer avec IA</>}
                     </button>
                 </div>
            </div>
-           <div className="p-4">
-                <textarea value={generatedReport} onChange={(e) => setGeneratedReport(e.target.value)} className="w-full p-3 bg-gray-50 rounded-lg text-sm border border-gray-200 min-h-[100px] outline-none" placeholder="Notes ou rapport généré..."/>
+
+           {/* Document Content */}
+           <div className="bg-gradient-to-b from-gray-50 to-white p-6 max-h-[600px] overflow-y-auto">
+             {showReportPreview ? (
+               /* Preview Mode - Document Word Style */
+               <div className="bg-white shadow-2xl rounded-lg border border-gray-300 mx-auto" style={{ maxWidth: '210mm', minHeight: '297mm', padding: '20mm' }}>
+                 {/* En-tête Document */}
+                 <div className="border-b-4 border-teal-600 pb-4 mb-6">
+                   <div className="flex justify-between items-start">
+                     <div>
+                       <h1 className="text-3xl font-bold text-slate-800 mb-1">TheraFlow</h1>
+                       <p className="text-sm text-slate-600">{settings?.practitioner?.name || 'Praticien'}</p>
+                       <p className="text-xs text-slate-500">{settings?.practitioner?.email || ''}</p>
+                     </div>
+                     <div className="text-right">
+                       <p className="text-xs text-slate-500 uppercase tracking-wide">Compte-Rendu</p>
+                       <p className="text-sm font-bold text-slate-700">{new Date().toLocaleDateString('fr-FR')}</p>
+                     </div>
+                   </div>
+                 </div>
+
+                 {/* Informations Patient */}
+                 <div className="bg-gradient-to-r from-teal-50 to-cyan-50 border-l-4 border-teal-500 p-4 rounded-r-lg mb-6">
+                   <h2 className="text-lg font-bold text-teal-900 mb-3">Informations Patient</h2>
+                   <div className="grid grid-cols-2 gap-3 text-sm">
+                     <div>
+                       <span className="font-semibold text-teal-800">Nom :</span>
+                       <span className="ml-2 text-slate-700">{patient.name}</span>
+                     </div>
+                     <div>
+                       <span className="font-semibold text-teal-800">Type :</span>
+                       <span className="ml-2 text-slate-700">{patient.type}</span>
+                     </div>
+                     <div>
+                       <span className="font-semibold text-teal-800">Séance :</span>
+                       <span className="ml-2 text-slate-700">{sessionType === 'KINESIO' ? 'Kinésiologie' : 'Massage'}</span>
+                     </div>
+                     <div>
+                       <span className="font-semibold text-teal-800">Durée :</span>
+                       <span className="ml-2 text-slate-700">{calculatedPrice > 0 ? `${Math.round(calculatedPrice / 2)} min` : 'N/A'}</span>
+                     </div>
+                   </div>
+                 </div>
+
+                 {/* Plainte Principale */}
+                 {anamnesis.mainComplaint && (
+                   <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-r-lg mb-4">
+                     <h3 className="text-base font-bold text-red-900 mb-2">Plainte Principale</h3>
+                     <p className="text-sm text-red-800 leading-relaxed">{anamnesis.mainComplaint}</p>
+                   </div>
+                 )}
+
+                 {/* Observations */}
+                 {anamnesis.observations && (
+                   <div className="bg-blue-50 border-l-4 border-blue-500 p-4 rounded-r-lg mb-4">
+                     <h3 className="text-base font-bold text-blue-900 mb-2">Observations</h3>
+                     <p className="text-sm text-blue-800 leading-relaxed">{anamnesis.observations}</p>
+                   </div>
+                 )}
+
+                 {/* Objectifs */}
+                 {anamnesis.objectives && (
+                   <div className="bg-purple-50 border-l-4 border-purple-500 p-4 rounded-r-lg mb-4">
+                     <h3 className="text-base font-bold text-purple-900 mb-2">Objectifs de la Séance</h3>
+                     <p className="text-sm text-purple-800 leading-relaxed">{anamnesis.objectives}</p>
+                   </div>
+                 )}
+
+                 {/* Techniques Utilisées */}
+                 {selectedTechniques.length > 0 && (
+                   <div className="bg-amber-50 border-l-4 border-amber-500 p-4 rounded-r-lg mb-4">
+                     <h3 className="text-base font-bold text-amber-900 mb-2">Techniques Utilisées</h3>
+                     <div className="flex flex-wrap gap-2">
+                       {selectedTechniques.map((tech, i) => (
+                         <span key={i} className="px-3 py-1 bg-amber-200 text-amber-900 rounded-full text-xs font-medium">
+                           {tech}
+                         </span>
+                       ))}
+                     </div>
+                   </div>
+                 )}
+
+                 {/* Notes de Traitement */}
+                 {treatmentNotes && (
+                   <div className="bg-emerald-50 border-l-4 border-emerald-500 p-4 rounded-r-lg mb-4">
+                     <h3 className="text-base font-bold text-emerald-900 mb-2">Protocole de Traitement</h3>
+                     <pre className="text-sm text-emerald-800 whitespace-pre-wrap font-sans leading-relaxed">{treatmentNotes}</pre>
+                   </div>
+                 )}
+
+                 {/* Rapport Généré / Notes */}
+                 <div className="bg-slate-50 border-l-4 border-slate-500 p-4 rounded-r-lg mb-4">
+                   <h3 className="text-base font-bold text-slate-900 mb-2">Notes & Rapport</h3>
+                   {generatedReport ? (
+                     <pre className="text-sm text-slate-800 whitespace-pre-wrap font-sans leading-relaxed">{generatedReport}</pre>
+                   ) : (
+                     <p className="text-sm text-slate-500 italic">Cliquez sur "Générer avec IA" pour créer un rapport automatique</p>
+                   )}
+                 </div>
+
+                 {/* Recommandations */}
+                 {anamnesis.recommendations && (
+                   <div className="bg-teal-50 border-l-4 border-teal-500 p-4 rounded-r-lg mb-6">
+                     <h3 className="text-base font-bold text-teal-900 mb-2">Recommandations</h3>
+                     <p className="text-sm text-teal-800 leading-relaxed">{anamnesis.recommendations}</p>
+                   </div>
+                 )}
+
+                 {/* Footer */}
+                 <div className="border-t-2 border-gray-300 pt-4 mt-8 text-center">
+                   <p className="text-xs text-slate-500">
+                     Document généré par TheraFlow - {new Date().toLocaleDateString('fr-FR', { year: 'numeric', month: 'long', day: 'numeric' })}
+                   </p>
+                 </div>
+               </div>
+             ) : (
+               /* Edit Mode */
+               <div className="space-y-4">
+                 <div className="bg-yellow-50 border-l-4 border-yellow-500 p-3 rounded-r-lg">
+                   <p className="text-sm text-yellow-800 flex items-center">
+                     <Edit3 size={16} className="mr-2" />
+                     <strong>Mode édition :</strong> Modifiez le contenu ci-dessous. Il sera automatiquement inclus dans l'aperçu.
+                   </p>
+                 </div>
+                 <textarea
+                   value={generatedReport}
+                   onChange={(e) => setGeneratedReport(e.target.value)}
+                   className="w-full p-4 bg-white rounded-lg text-sm border-2 border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none font-sans leading-relaxed min-h-[400px]"
+                   placeholder="Rédigez ici le compte-rendu de la séance...\n\nVous pouvez utiliser le bouton 'Générer avec IA' pour créer un rapport automatique basé sur les données de la séance, ou rédiger manuellement.\n\nExemple de contenu:\n- Déroulement de la séance\n- Réactions du patient\n- Zones traitées\n- Amélioration constatées\n- Conseils pour les prochains jours"
+                 />
+               </div>
+             )}
            </div>
        </div>
 
