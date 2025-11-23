@@ -50,7 +50,6 @@ const SessionWizard: React.FC<SessionWizardProps> = ({ patient, settings, onComp
 
   // Templates selection
   const [selectedTemplates, setSelectedTemplates] = useState<number[]>([]);
-  const [showReportPreview, setShowReportPreview] = useState(true);
 
   // Available templates library
   const availableTemplates: SessionTemplate[] = [
@@ -678,169 +677,182 @@ const SessionWizard: React.FC<SessionWizardProps> = ({ patient, settings, onComp
            </div>
        </div>
        
-       {/* Report Section - Document Word Style */}
+       {/* Compte-Rendu Éditable - Style Document Word */}
        <div className="bg-white border-2 border-gray-300 rounded-xl shadow-lg overflow-hidden">
-           {/* Toolbar */}
-           <div className="p-4 border-b-2 border-gray-200 flex justify-between items-center bg-gradient-to-r from-slate-50 to-gray-50">
-                <div className="flex items-center space-x-2">
-                  <FileText size={20} className="text-blue-600" />
-                  <h4 className="font-bold text-slate-800">Compte-Rendu de Séance</h4>
-                </div>
-                <div className="flex items-center space-x-2">
-                    <button
-                      onClick={() => setShowReportPreview(!showReportPreview)}
-                      className={`flex items-center px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                        showReportPreview
-                          ? 'bg-blue-100 text-blue-700 border border-blue-300'
-                          : 'bg-gray-100 text-gray-700 border border-gray-300'
-                      }`}
-                    >
-                      {showReportPreview ? <><Eye size={14} className="mr-1"/> Aperçu</> : <><Edit3 size={14} className="mr-1"/> Éditer</>}
-                    </button>
-                    <div className="h-6 w-px bg-gray-300"></div>
-                    <button onClick={openDriveModal} className="p-2 bg-white border border-gray-300 rounded-lg text-slate-600 hover:bg-blue-50 transition-all" title="Sauvegarder sur Drive">
-                        <HardDrive size={16} />
-                    </button>
-                    <button onClick={handleExportPDF} className="p-2 bg-white border border-gray-300 rounded-lg text-slate-600 hover:bg-gray-50 transition-all" title="Télécharger PDF">
-                        <Download size={16} />
-                    </button>
-                    <button onClick={handleGenerateReport} disabled={generatingReport} className="flex items-center text-xs bg-gradient-to-r from-indigo-500 to-purple-600 text-white px-4 py-2 rounded-lg font-bold hover:shadow-lg transition-all disabled:opacity-50">
-                        {generatingReport ? <span className="animate-pulse">Rédaction...</span> : <><Wand2 size={14} className="mr-1.5"/> Générer avec IA</>}
-                    </button>
+           {/* Toolbar Mobile-Friendly */}
+           <div className="p-3 md:p-4 border-b-2 border-gray-200 bg-gradient-to-r from-slate-50 to-gray-50">
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3">
+                  <div className="flex items-center">
+                    <FileText size={18} className="text-blue-600 mr-2" />
+                    <h4 className="font-bold text-slate-800 text-sm md:text-base">Compte-Rendu Éditable</h4>
+                  </div>
+                  <div className="flex items-center space-x-2 w-full md:w-auto overflow-x-auto">
+                      <button onClick={handleGenerateReport} disabled={generatingReport} className="flex items-center text-xs bg-gradient-to-r from-indigo-500 to-purple-600 text-white px-3 md:px-4 py-2 rounded-lg font-bold hover:shadow-lg transition-all disabled:opacity-50 whitespace-nowrap">
+                          {generatingReport ? <span className="animate-pulse">Génération...</span> : <><Wand2 size={14} className="mr-1.5"/> Générer IA</>}
+                      </button>
+                      <button onClick={openDriveModal} className="p-2 bg-white border border-gray-300 rounded-lg text-slate-600 hover:bg-blue-50 transition-all" title="Drive">
+                          <HardDrive size={16} />
+                      </button>
+                      <button onClick={handleExportPDF} className="p-2 bg-white border border-gray-300 rounded-lg text-slate-600 hover:bg-gray-50 transition-all" title="PDF">
+                          <Download size={16} />
+                      </button>
+                  </div>
                 </div>
            </div>
 
-           {/* Document Content */}
-           <div className="bg-gradient-to-b from-gray-50 to-white p-6 max-h-[600px] overflow-y-auto">
-             {showReportPreview ? (
-               /* Preview Mode - Document Word Style */
-               <div className="bg-white shadow-2xl rounded-lg border border-gray-300 mx-auto" style={{ maxWidth: '210mm', minHeight: '297mm', padding: '20mm' }}>
-                 {/* En-tête Document */}
-                 <div className="border-b-4 border-teal-600 pb-4 mb-6">
-                   <div className="flex justify-between items-start">
-                     <div>
-                       <h1 className="text-3xl font-bold text-slate-800 mb-1">TheraFlow</h1>
-                       <p className="text-sm text-slate-600">{settings?.practitioner?.name || 'Praticien'}</p>
-                       <p className="text-xs text-slate-500">{settings?.practitioner?.email || ''}</p>
-                     </div>
-                     <div className="text-right">
-                       <p className="text-xs text-slate-500 uppercase tracking-wide">Compte-Rendu</p>
-                       <p className="text-sm font-bold text-slate-700">{new Date().toLocaleDateString('fr-FR')}</p>
-                     </div>
+           {/* Document Word-Style Éditable */}
+           <div className="bg-gradient-to-b from-gray-50 to-white p-3 md:p-6 overflow-y-auto" style={{ maxHeight: '70vh' }}>
+             <div className="bg-white shadow-md md:shadow-2xl rounded-lg border border-gray-300 mx-auto p-4 md:p-8" style={{ maxWidth: '800px' }}>
+
+               {/* En-tête Document */}
+               <div className="border-b-4 border-teal-600 pb-3 md:pb-4 mb-4 md:mb-6">
+                 <div className="flex flex-col md:flex-row justify-between items-start gap-2">
+                   <div>
+                     <h1 className="text-xl md:text-3xl font-bold text-slate-800 mb-1">TheraFlow</h1>
+                     <p className="text-xs md:text-sm text-slate-600">{settings?.practitioner?.name || 'Praticien'}</p>
+                     <p className="text-[10px] md:text-xs text-slate-500">{settings?.practitioner?.email || ''}</p>
                    </div>
-                 </div>
-
-                 {/* Informations Patient */}
-                 <div className="bg-gradient-to-r from-teal-50 to-cyan-50 border-l-4 border-teal-500 p-4 rounded-r-lg mb-6">
-                   <h2 className="text-lg font-bold text-teal-900 mb-3">Informations Patient</h2>
-                   <div className="grid grid-cols-2 gap-3 text-sm">
-                     <div>
-                       <span className="font-semibold text-teal-800">Nom :</span>
-                       <span className="ml-2 text-slate-700">{patient.name}</span>
-                     </div>
-                     <div>
-                       <span className="font-semibold text-teal-800">Type :</span>
-                       <span className="ml-2 text-slate-700">{patient.type}</span>
-                     </div>
-                     <div>
-                       <span className="font-semibold text-teal-800">Séance :</span>
-                       <span className="ml-2 text-slate-700">{sessionType === 'KINESIO' ? 'Kinésiologie' : 'Massage'}</span>
-                     </div>
-                     <div>
-                       <span className="font-semibold text-teal-800">Durée :</span>
-                       <span className="ml-2 text-slate-700">{calculatedPrice > 0 ? `${Math.round(calculatedPrice / 2)} min` : 'N/A'}</span>
-                     </div>
+                   <div className="text-left md:text-right">
+                     <p className="text-[10px] md:text-xs text-slate-500 uppercase tracking-wide">Compte-Rendu</p>
+                     <p className="text-xs md:text-sm font-bold text-slate-700">{new Date().toLocaleDateString('fr-FR')}</p>
                    </div>
-                 </div>
-
-                 {/* Plainte Principale */}
-                 {anamnesis.mainComplaint && (
-                   <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-r-lg mb-4">
-                     <h3 className="text-base font-bold text-red-900 mb-2">Plainte Principale</h3>
-                     <p className="text-sm text-red-800 leading-relaxed">{anamnesis.mainComplaint}</p>
-                   </div>
-                 )}
-
-                 {/* Observations */}
-                 {anamnesis.observations && (
-                   <div className="bg-blue-50 border-l-4 border-blue-500 p-4 rounded-r-lg mb-4">
-                     <h3 className="text-base font-bold text-blue-900 mb-2">Observations</h3>
-                     <p className="text-sm text-blue-800 leading-relaxed">{anamnesis.observations}</p>
-                   </div>
-                 )}
-
-                 {/* Objectifs */}
-                 {anamnesis.objectives && (
-                   <div className="bg-purple-50 border-l-4 border-purple-500 p-4 rounded-r-lg mb-4">
-                     <h3 className="text-base font-bold text-purple-900 mb-2">Objectifs de la Séance</h3>
-                     <p className="text-sm text-purple-800 leading-relaxed">{anamnesis.objectives}</p>
-                   </div>
-                 )}
-
-                 {/* Techniques Utilisées */}
-                 {selectedTechniques.length > 0 && (
-                   <div className="bg-amber-50 border-l-4 border-amber-500 p-4 rounded-r-lg mb-4">
-                     <h3 className="text-base font-bold text-amber-900 mb-2">Techniques Utilisées</h3>
-                     <div className="flex flex-wrap gap-2">
-                       {selectedTechniques.map((tech, i) => (
-                         <span key={i} className="px-3 py-1 bg-amber-200 text-amber-900 rounded-full text-xs font-medium">
-                           {tech}
-                         </span>
-                       ))}
-                     </div>
-                   </div>
-                 )}
-
-                 {/* Notes de Traitement */}
-                 {treatmentNotes && (
-                   <div className="bg-emerald-50 border-l-4 border-emerald-500 p-4 rounded-r-lg mb-4">
-                     <h3 className="text-base font-bold text-emerald-900 mb-2">Protocole de Traitement</h3>
-                     <pre className="text-sm text-emerald-800 whitespace-pre-wrap font-sans leading-relaxed">{treatmentNotes}</pre>
-                   </div>
-                 )}
-
-                 {/* Rapport Généré / Notes */}
-                 <div className="bg-slate-50 border-l-4 border-slate-500 p-4 rounded-r-lg mb-4">
-                   <h3 className="text-base font-bold text-slate-900 mb-2">Notes & Rapport</h3>
-                   {generatedReport ? (
-                     <pre className="text-sm text-slate-800 whitespace-pre-wrap font-sans leading-relaxed">{generatedReport}</pre>
-                   ) : (
-                     <p className="text-sm text-slate-500 italic">Cliquez sur "Générer avec IA" pour créer un rapport automatique</p>
-                   )}
-                 </div>
-
-                 {/* Recommandations */}
-                 {anamnesis.recommendations && (
-                   <div className="bg-teal-50 border-l-4 border-teal-500 p-4 rounded-r-lg mb-6">
-                     <h3 className="text-base font-bold text-teal-900 mb-2">Recommandations</h3>
-                     <p className="text-sm text-teal-800 leading-relaxed">{anamnesis.recommendations}</p>
-                   </div>
-                 )}
-
-                 {/* Footer */}
-                 <div className="border-t-2 border-gray-300 pt-4 mt-8 text-center">
-                   <p className="text-xs text-slate-500">
-                     Document généré par TheraFlow - {new Date().toLocaleDateString('fr-FR', { year: 'numeric', month: 'long', day: 'numeric' })}
-                   </p>
                  </div>
                </div>
-             ) : (
-               /* Edit Mode */
-               <div className="space-y-4">
-                 <div className="bg-yellow-50 border-l-4 border-yellow-500 p-3 rounded-r-lg">
-                   <p className="text-sm text-yellow-800 flex items-center">
-                     <Edit3 size={16} className="mr-2" />
-                     <strong>Mode édition :</strong> Modifiez le contenu ci-dessous. Il sera automatiquement inclus dans l'aperçu.
-                   </p>
+
+               {/* Informations Patient */}
+               <div className="bg-gradient-to-r from-teal-50 to-cyan-50 border-l-4 border-teal-500 p-3 md:p-4 rounded-r-lg mb-4 md:mb-6">
+                 <h2 className="text-sm md:text-lg font-bold text-teal-900 mb-2 md:mb-3">Informations Patient</h2>
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-2 md:gap-3 text-xs md:text-sm">
+                   <div>
+                     <span className="font-semibold text-teal-800">Patient :</span>
+                     <span className="ml-2 text-slate-700">{patient.name}</span>
+                   </div>
+                   <div>
+                     <span className="font-semibold text-teal-800">Type :</span>
+                     <span className="ml-2 text-slate-700">{patient.type}</span>
+                   </div>
+                   <div>
+                     <span className="font-semibold text-teal-800">Séance :</span>
+                     <span className="ml-2 text-slate-700">{sessionType === 'KINESIO' ? 'Kinésiologie' : 'Massage'}</span>
+                   </div>
+                   <div>
+                     <span className="font-semibold text-teal-800">Date :</span>
+                     <span className="ml-2 text-slate-700">{new Date().toLocaleDateString('fr-FR')}</span>
+                   </div>
                  </div>
+               </div>
+
+               {/* Section Éditable: Plainte Principale */}
+               <div className="mb-4">
+                 <h3 className="text-sm md:text-base font-bold text-red-900 mb-2 flex items-center">
+                   <span className="w-1 h-6 bg-red-500 rounded mr-2"></span>
+                   Plainte Principale
+                 </h3>
+                 <textarea
+                   value={anamnesis.mainComplaint || ''}
+                   onChange={(e) => setAnamnesis({...anamnesis, mainComplaint: e.target.value})}
+                   className="w-full p-3 bg-red-50 border-2 border-red-200 rounded-lg text-xs md:text-sm text-red-900 focus:border-red-500 focus:ring-2 focus:ring-red-200 outline-none font-sans leading-relaxed resize-none"
+                   rows={2}
+                   placeholder="Décrivez la plainte principale du patient..."
+                 />
+               </div>
+
+               {/* Section Éditable: Observations */}
+               <div className="mb-4">
+                 <h3 className="text-sm md:text-base font-bold text-blue-900 mb-2 flex items-center">
+                   <span className="w-1 h-6 bg-blue-500 rounded mr-2"></span>
+                   Observations
+                 </h3>
+                 <textarea
+                   value={anamnesis.observations || ''}
+                   onChange={(e) => setAnamnesis({...anamnesis, observations: e.target.value})}
+                   className="w-full p-3 bg-blue-50 border-2 border-blue-200 rounded-lg text-xs md:text-sm text-blue-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none font-sans leading-relaxed resize-none"
+                   rows={3}
+                   placeholder="Notez vos observations (posture, tension, état général...)..."
+                 />
+               </div>
+
+               {/* Section Éditable: Objectifs */}
+               <div className="mb-4">
+                 <h3 className="text-sm md:text-base font-bold text-purple-900 mb-2 flex items-center">
+                   <span className="w-1 h-6 bg-purple-500 rounded mr-2"></span>
+                   Objectifs de la Séance
+                 </h3>
+                 <textarea
+                   value={anamnesis.objectives || ''}
+                   onChange={(e) => setAnamnesis({...anamnesis, objectives: e.target.value})}
+                   className="w-full p-3 bg-purple-50 border-2 border-purple-200 rounded-lg text-xs md:text-sm text-purple-900 focus:border-purple-500 focus:ring-2 focus:ring-purple-200 outline-none font-sans leading-relaxed resize-none"
+                   rows={2}
+                   placeholder="Quels sont les objectifs de cette séance..."
+                 />
+               </div>
+
+               {/* Techniques Utilisées (Read-only mais visible) */}
+               {selectedTechniques.length > 0 && (
+                 <div className="mb-4 bg-amber-50 border-l-4 border-amber-500 p-3 rounded-r-lg">
+                   <h3 className="text-sm md:text-base font-bold text-amber-900 mb-2">Techniques Utilisées</h3>
+                   <div className="flex flex-wrap gap-2">
+                     {selectedTechniques.map((tech, i) => (
+                       <span key={i} className="px-2 md:px-3 py-1 bg-amber-200 text-amber-900 rounded-full text-[10px] md:text-xs font-medium">
+                         {tech}
+                       </span>
+                     ))}
+                   </div>
+                 </div>
+               )}
+
+               {/* Section Éditable: Protocole de Traitement */}
+               <div className="mb-4">
+                 <h3 className="text-sm md:text-base font-bold text-emerald-900 mb-2 flex items-center">
+                   <span className="w-1 h-6 bg-emerald-500 rounded mr-2"></span>
+                   Protocole & Déroulement
+                 </h3>
+                 <textarea
+                   value={treatmentNotes}
+                   onChange={(e) => setTreatmentNotes(e.target.value)}
+                   className="w-full p-3 bg-emerald-50 border-2 border-emerald-200 rounded-lg text-xs md:text-sm text-emerald-900 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 outline-none font-sans leading-relaxed resize-none"
+                   rows={6}
+                   placeholder="Décrivez le protocole et le déroulement de la séance (étapes, techniques appliquées, réactions...)..."
+                 />
+               </div>
+
+               {/* Section Éditable: Notes & Rapport Complet */}
+               <div className="mb-4">
+                 <h3 className="text-sm md:text-base font-bold text-slate-900 mb-2 flex items-center">
+                   <span className="w-1 h-6 bg-slate-500 rounded mr-2"></span>
+                   Notes Complémentaires & Rapport
+                 </h3>
                  <textarea
                    value={generatedReport}
                    onChange={(e) => setGeneratedReport(e.target.value)}
-                   className="w-full p-4 bg-white rounded-lg text-sm border-2 border-gray-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none font-sans leading-relaxed min-h-[400px]"
-                   placeholder="Rédigez ici le compte-rendu de la séance...\n\nVous pouvez utiliser le bouton 'Générer avec IA' pour créer un rapport automatique basé sur les données de la séance, ou rédiger manuellement.\n\nExemple de contenu:\n- Déroulement de la séance\n- Réactions du patient\n- Zones traitées\n- Amélioration constatées\n- Conseils pour les prochains jours"
+                   className="w-full p-3 md:p-4 bg-slate-50 border-2 border-slate-300 rounded-lg text-xs md:text-sm text-slate-800 focus:border-slate-500 focus:ring-2 focus:ring-slate-200 outline-none font-sans leading-relaxed resize-none"
+                   rows={8}
+                   placeholder="Rédigez ici le compte-rendu détaillé de la séance...&#10;&#10;Vous pouvez utiliser le bouton 'Générer IA' ci-dessus pour créer automatiquement un rapport basé sur les informations saisies.&#10;&#10;Contenu suggéré :&#10;- Déroulement détaillé de la séance&#10;- Réactions et ressentis du patient&#10;- Zones spécifiques traitées&#10;- Améliorations constatées&#10;- Points d'attention pour les prochaines séances&#10;- Conseils et recommandations"
                  />
                </div>
-             )}
+
+               {/* Section Éditable: Recommandations */}
+               <div className="mb-6">
+                 <h3 className="text-sm md:text-base font-bold text-teal-900 mb-2 flex items-center">
+                   <span className="w-1 h-6 bg-teal-500 rounded mr-2"></span>
+                   Recommandations & Conseils
+                 </h3>
+                 <textarea
+                   value={anamnesis.recommendations || ''}
+                   onChange={(e) => setAnamnesis({...anamnesis, recommendations: e.target.value})}
+                   className="w-full p-3 bg-teal-50 border-2 border-teal-200 rounded-lg text-xs md:text-sm text-teal-900 focus:border-teal-500 focus:ring-2 focus:ring-teal-200 outline-none font-sans leading-relaxed resize-none"
+                   rows={3}
+                   placeholder="Recommandations à donner au patient (repos, hydratation, exercices...)..."
+                 />
+               </div>
+
+               {/* Footer */}
+               <div className="border-t-2 border-gray-300 pt-3 md:pt-4 mt-6 md:mt-8 text-center">
+                 <p className="text-[10px] md:text-xs text-slate-500">
+                   Document généré par TheraFlow - {new Date().toLocaleDateString('fr-FR', { year: 'numeric', month: 'long', day: 'numeric' })}
+                 </p>
+               </div>
+             </div>
            </div>
        </div>
 
