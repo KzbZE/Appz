@@ -122,29 +122,50 @@ const SessionHistory: React.FC = () => {
   };
 
   const handleExportToDrive = async () => {
+      console.log('🔵 Drive: Début handleExportToDrive (SessionHistory)');
+
+      console.log('🔵 Drive: Vérification authentification...');
       const authed = await checkAuth();
+      console.log('🔵 Drive: Authentification =', authed);
+
       if (authed) {
+          console.log('🔵 Drive: Récupération dossiers...');
           const folders = await listDriveFolders();
+          console.log('🔵 Drive: Dossiers récupérés =', folders.length, folders);
           setDriveFolders(folders);
           setShowDriveModal(true);
+          console.log('🔵 Drive: Modal Drive affiché');
       } else {
+          console.error('❌ Drive: Pas authentifié');
           alert("Veuillez d'abord connecter votre compte Google dans les Réglages");
       }
   };
 
   const confirmExportToDrive = async () => {
-      if (!selectedFolder || !selectedSession) return;
+      console.log('🔵 Drive: Début confirmExportToDrive (SessionHistory)', { selectedFolder, selectedSession });
+
+      if (!selectedFolder || !selectedSession) {
+          console.error('❌ Drive: Dossier ou séance manquant');
+          return;
+      }
+
       const patient = getPatient(selectedSession.patientId);
+      console.log('🔵 Drive: Patient récupéré =', patient?.name);
+
+      console.log('🔵 Drive: Génération PDF séance...');
       const blob = await generateSessionPDF();
       const fileName = `Seance_${patient?.name}_${new Date(selectedSession.date).toLocaleDateString()}.pdf`;
+      console.log('🔵 Drive: PDF généré, taille =', blob.size, 'bytes, nom =', fileName);
 
       try {
+          console.log('🔵 Drive: Upload vers Drive, dossier =', selectedFolder);
           await uploadToDriveReal(blob, fileName, selectedFolder);
+          console.log('✅ Drive: Upload réussi (SessionHistory)');
           alert(`Séance sauvegardée sur Drive !`);
           setShowDriveModal(false);
       } catch (error) {
+          console.error('❌ Drive: Erreur upload (SessionHistory)', error);
           alert("Erreur upload Drive");
-          console.error(error);
       }
   };
 

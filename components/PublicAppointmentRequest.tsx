@@ -3,6 +3,7 @@ import { db } from '../db';
 import { AppointmentRequestStatus, PatientType } from '../types';
 import { Calendar, Clock, MapPin, Phone, Mail, User, Send, CheckCircle, Home } from 'lucide-react';
 import AddressAutocomplete from './AddressAutocomplete';
+import { AppointmentNotifications } from '../services/notificationService';
 
 const PublicAppointmentRequest: React.FC = () => {
   const [step, setStep] = useState<'FORM' | 'SUCCESS'>('FORM');
@@ -85,7 +86,7 @@ const PublicAppointmentRequest: React.FC = () => {
       // Create appointment request
       const requestedStartTime = new Date(`${formData.requestedDate}T${formData.requestedTime}`).toISOString();
 
-      await db.appointmentRequests.add({
+      const requestId = await db.appointmentRequests.add({
         patientId,
         patientName: formData.patientName,
         patientPhone: formData.patientPhone,
@@ -110,9 +111,25 @@ const PublicAppointmentRequest: React.FC = () => {
         patientLng: formData.lng
       });
 
-      // TODO: Send notification to practitioner
-      // This would be done via the notification service in a real scenario
-      // For now, the AppointmentRequestManager will show the pending request
+      // ✅ Notifier le praticien de la nouvelle demande
+      try {
+        const settings = await db.settings.toCollection().first();
+        if (settings?.practitionerEmail || settings?.practitionerPhone) {
+          await AppointmentNotifications.notifyPractitionerNewRequest(
+            settings.practitionerEmail || '',
+            settings.practitionerPhone || '',
+            formData.patientName,
+            requestedStartTime,
+            requestId
+          );
+          console.log('✅ Praticien notifié de la nouvelle demande RDV');
+        } else {
+          console.warn('⚠️ Email/téléphone praticien non configuré - notification non envoyée');
+        }
+      } catch (notifError) {
+        console.error('Erreur notification praticien (non bloquant):', notifError);
+        // Ne pas bloquer la création de la demande si la notification échoue
+      }
 
       setStep('SUCCESS');
     } catch (err: any) {

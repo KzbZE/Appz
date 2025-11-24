@@ -28,7 +28,7 @@ import { checkAvailability, calculateLogistics, suggestOptimalTimeSlots } from '
 import { suggestOptimizedSlots, getAllAvailableSlots } from './services/optimizationService';
 import { Patient, Appointment, ApptStatus, PatientType, Invoice, InvoiceStatus, Expense, AppSettings } from './types';
 import { X, Save, Clock, MapPin, User, Globe, AlertTriangle, Search, Zap, Plus, ChevronLeft } from 'lucide-react';
-import { initGoogleClient } from './services/googleApiService';
+import { initGoogleClient, checkAuth } from './services/googleApiService';
 import { setupAutomaticBackup } from './services/backupService';
 
 const App: React.FC = () => {
@@ -89,7 +89,6 @@ const App: React.FC = () => {
           initGoogleClient(appSettings)
               .then(async () => {
                   // ✅ Restaurer automatiquement le token Google si disponible
-                  const { checkAuth } = await import('./services/googleApiService');
                   const isAuth = await checkAuth();
                   if (isAuth) {
                       console.log("✅ Google: Session restaurée automatiquement");

@@ -133,14 +133,42 @@ const SettingsModule: React.FC<SettingsModuleProps> = ({ settings, onSave }) => 
                     <label className="block text-sm font-medium text-slate-600 mb-1">Nom du Praticien</label>
                     <div className="relative">
                         <User className="absolute left-3 top-3 text-slate-400" size={18} />
-                        <input 
-                            type="text" 
+                        <input
+                            type="text"
                             className="w-full p-3 pl-10 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none"
                             value={localSettings.practitionerName || ''}
                             onChange={(e) => setLocalSettings({...localSettings, practitionerName: e.target.value})}
                             placeholder="Ex: Martin Durand"
                         />
                     </div>
+                </div>
+
+                <div>
+                    <label className="block text-sm font-medium text-slate-600 mb-1">Email Praticien</label>
+                    <div className="relative">
+                        <input
+                            type="email"
+                            className="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none"
+                            value={localSettings.practitionerEmail || ''}
+                            onChange={(e) => setLocalSettings({...localSettings, practitionerEmail: e.target.value})}
+                            placeholder="Ex: arnaudvb7@gmail.com"
+                        />
+                    </div>
+                    <p className="text-xs text-slate-400 mt-1">Pour recevoir les notifications de demandes RDV</p>
+                </div>
+
+                <div>
+                    <label className="block text-sm font-medium text-slate-600 mb-1">Téléphone Praticien</label>
+                    <div className="relative">
+                        <input
+                            type="tel"
+                            className="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none"
+                            value={localSettings.practitionerPhone || ''}
+                            onChange={(e) => setLocalSettings({...localSettings, practitionerPhone: e.target.value})}
+                            placeholder="Ex: 0763205941"
+                        />
+                    </div>
+                    <p className="text-xs text-slate-400 mt-1">Pour recevoir les SMS de demandes RDV (optionnel)</p>
                 </div>
 
                 <div className="md:col-span-2">

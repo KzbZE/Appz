@@ -354,6 +354,8 @@ export interface AppSettings {
   id?: number;
   appName: string;
   practitionerName: string;
+  practitionerEmail?: string; // ✅ Email praticien pour notifications
+  practitionerPhone?: string; // ✅ Téléphone praticien pour SMS notifications
   cabinetAddress: string;
   kmRate: number;
   defaultTariffs: {

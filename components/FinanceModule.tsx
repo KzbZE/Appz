@@ -203,31 +203,49 @@ const FinanceModule: React.FC<FinanceModuleProps> = ({ invoices: initialInvoices
   };
 
   const handleExportToDrive = async (inv: Invoice) => {
+      console.log('🔵 Drive: Début handleExportToDrive', inv);
       setInvoiceToExport(inv);
+
+      console.log('🔵 Drive: Vérification authentification...');
       const authed = await checkAuth();
+      console.log('🔵 Drive: Authentification =', authed);
+
       if (authed) {
+          console.log('🔵 Drive: Récupération dossiers...');
           const folders = await listDriveFolders();
+          console.log('🔵 Drive: Dossiers récupérés =', folders.length, folders);
           setDriveFolders(folders);
           setShowDriveModal(true);
       } else {
+          console.error('❌ Drive: Pas authentifié');
           alert("Veuillez d'abord connecter votre compte Google dans les Paramètres");
       }
   };
 
   const confirmExportToDrive = async () => {
-      if (!selectedFolder || !invoiceToExport) return;
+      console.log('🔵 Drive: Début confirmExportToDrive', { selectedFolder, invoiceToExport });
+
+      if (!selectedFolder || !invoiceToExport) {
+          console.error('❌ Drive: Dossier ou facture manquant');
+          return;
+      }
+
+      console.log('🔵 Drive: Génération PDF...');
       const doc = generateInvoicePDF(invoiceToExport);
       const blob = doc.output('blob');
       const fileName = `Facture_${invoiceToExport.number}.pdf`;
-      
+      console.log('🔵 Drive: PDF généré, taille =', blob.size, 'bytes');
+
       try {
+          console.log('🔵 Drive: Upload vers Drive, dossier =', selectedFolder);
           const url = await uploadToDriveReal(blob, fileName, selectedFolder);
+          console.log('✅ Drive: Upload réussi, URL =', url);
           alert(`Facture sauvegardée sur Drive !`);
           setShowDriveModal(false);
           setInvoiceToExport(null);
       } catch (error) {
+          console.error('❌ Drive: Erreur upload', error);
           alert("Erreur upload Drive");
-          console.error(error);
       }
   };
 
