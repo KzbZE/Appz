@@ -2,9 +2,10 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Patient, PatientType, SessionDocument, AppSettings, Session } from '../types';
 import { generateSessionReport } from '../services/geminiService';
 import { checkAuth, listDriveFolders, uploadToDriveReal } from '../services/googleApiService';
-import { ChevronRight, ChevronLeft, Save, Video, AlertCircle, CheckCircle, Wand2, Upload, Download, Share2, Instagram, Facebook, Camera, Clock, HardDrive, FileText, Eye, Edit3 } from 'lucide-react';
+import { ChevronRight, ChevronLeft, Save, Video, AlertCircle, CheckCircle, Wand2, Upload, Download, Share2, Instagram, Facebook, Camera, Clock, HardDrive, FileText, Eye, Edit3, Mail } from 'lucide-react';
 import { db } from '../db';
 import { jsPDF } from 'jspdf';
+import { sendEmailWithPDF } from '../services/notificationService';
 
 interface SessionTemplate {
   id?: number;
@@ -394,6 +395,60 @@ const SessionWizard: React.FC<SessionWizardProps> = ({ patient, settings, onComp
   const handleExportPDF = () => {
     const doc = generatePDF();
     doc.save(`CR_${patient.name}_${new Date().toISOString().split('T')[0]}.pdf`);
+  };
+
+  const handleEmailPDF = async () => {
+    // Vérifier si le patient a un email
+    const patientData = await db.patients.get(patient.id!);
+
+    if (!patientData?.email) {
+      alert('❌ Ce patient n\'a pas d\'adresse email renseignée.\n\nVeuillez ajouter l\'email dans la fiche patient pour pouvoir envoyer le compte-rendu.');
+      return;
+    }
+
+    // Générer le PDF
+    const doc = generatePDF();
+    const blob = doc.output('blob');
+    const fileName = `CR_${patient.name}_${new Date().toISOString().split('T')[0]}.pdf`;
+
+    // Confirmation
+    if (!confirm(`Envoyer le compte-rendu par email à ${patientData.email} ?`)) {
+      return;
+    }
+
+    try {
+      const message = `Bonjour ${patient.name},
+
+Veuillez trouver ci-joint le compte-rendu de votre séance du ${new Date().toLocaleDateString('fr-FR', {
+  weekday: 'long',
+  day: 'numeric',
+  month: 'long',
+  year: 'numeric'
+})}.
+
+N'hésitez pas à me contacter si vous avez des questions.
+
+Cordialement,
+${settings?.practitioner?.name || 'Votre praticien'}
+TheraFlow`;
+
+      const success = await sendEmailWithPDF(
+        patientData.email,
+        `Compte-rendu de séance - ${new Date().toLocaleDateString('fr-FR')}`,
+        message,
+        blob,
+        fileName
+      );
+
+      if (success) {
+        alert('✅ Compte-rendu envoyé par email avec succès !');
+      } else {
+        alert('❌ Erreur lors de l\'envoi de l\'email.\n\nVérifiez votre connexion et réessayez.');
+      }
+    } catch (error) {
+      console.error('Error sending PDF email:', error);
+      alert('❌ Erreur lors de l\'envoi de l\'email.');
+    }
   };
 
   const handleSaveToDrive = async () => {
@@ -886,7 +941,10 @@ const SessionWizard: React.FC<SessionWizardProps> = ({ patient, settings, onComp
                       <button onClick={openDriveModal} className="p-2 bg-white border border-gray-300 rounded-lg text-slate-600 hover:bg-blue-50 transition-all" title="Drive">
                           <HardDrive size={16} />
                       </button>
-                      <button onClick={handleExportPDF} className="p-2 bg-white border border-gray-300 rounded-lg text-slate-600 hover:bg-gray-50 transition-all" title="PDF">
+                      <button onClick={handleEmailPDF} className="p-2 bg-white border border-gray-300 rounded-lg text-slate-600 hover:bg-green-50 transition-all" title="Envoyer par email">
+                          <Mail size={16} />
+                      </button>
+                      <button onClick={handleExportPDF} className="p-2 bg-white border border-gray-300 rounded-lg text-slate-600 hover:bg-gray-50 transition-all" title="Télécharger PDF">
                           <Download size={16} />
                       </button>
                   </div>

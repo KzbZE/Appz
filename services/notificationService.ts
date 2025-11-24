@@ -13,6 +13,10 @@ interface EmailParams {
   subject: string;
   message: string;
   relatedRequestId?: number | string;
+  attachments?: Array<{
+    filename: string;
+    content: string; // Base64 encoded
+  }>;
 }
 
 interface SMSParams {
@@ -35,18 +39,26 @@ export async function sendEmail(params: EmailParams): Promise<boolean> {
   };
 
   try {
+    // Prepare request payload
+    const payload: any = {
+      to: params.to,
+      subject: params.subject,
+      message: params.message,
+      relatedRequestId: params.relatedRequestId
+    };
+
+    // Add attachments if provided
+    if (params.attachments && params.attachments.length > 0) {
+      payload.attachments = params.attachments;
+    }
+
     // Call Netlify Function instead of direct API
     const response = await fetch('/.netlify/functions/send-email', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({
-        to: params.to,
-        subject: params.subject,
-        message: params.message,
-        relatedRequestId: params.relatedRequestId
-      })
+      body: JSON.stringify(payload)
     });
 
     if (response.ok) {
@@ -260,3 +272,55 @@ TheraFlow`;
     return sendNotification(patientEmail, patientPhone, subject, notifMessage, requestId);
   }
 };
+
+/**
+ * Envoie un email avec un PDF en pièce jointe
+ * @param to Email du destinataire
+ * @param subject Sujet de l'email
+ * @param message Message de l'email
+ * @param pdfBlob Blob du PDF généré
+ * @param pdfFilename Nom du fichier PDF
+ * @param relatedRequestId ID de la demande liée (optionnel)
+ */
+export async function sendEmailWithPDF(
+  to: string,
+  subject: string,
+  message: string,
+  pdfBlob: Blob,
+  pdfFilename: string,
+  relatedRequestId?: number | string
+): Promise<boolean> {
+  try {
+    // Convert Blob to Base64
+    const reader = new FileReader();
+    const base64Promise = new Promise<string>((resolve, reject) => {
+      reader.onloadend = () => {
+        const base64 = reader.result as string;
+        // Remove data URL prefix (data:application/pdf;base64,)
+        const base64Data = base64.split(',')[1];
+        resolve(base64Data);
+      };
+      reader.onerror = reject;
+    });
+
+    reader.readAsDataURL(pdfBlob);
+    const base64Content = await base64Promise;
+
+    // Send email with PDF attachment
+    return await sendEmail({
+      to,
+      subject,
+      message,
+      relatedRequestId,
+      attachments: [
+        {
+          filename: pdfFilename,
+          content: base64Content
+        }
+      ]
+    });
+  } catch (error) {
+    console.error('Error sending email with PDF:', error);
+    return false;
+  }
+}

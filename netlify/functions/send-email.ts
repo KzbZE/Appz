@@ -5,6 +5,10 @@ interface EmailRequest {
   subject: string;
   message: string;
   relatedRequestId?: number | string;
+  attachments?: Array<{
+    filename: string;
+    content: string; // Base64 encoded
+  }>;
 }
 
 export const handler: Handler = async (event: HandlerEvent) => {
@@ -18,7 +22,7 @@ export const handler: Handler = async (event: HandlerEvent) => {
 
   try {
     // Parse request body
-    const { to, subject, message }: EmailRequest = JSON.parse(event.body || '{}');
+    const { to, subject, message, attachments }: EmailRequest = JSON.parse(event.body || '{}');
 
     // Validate inputs
     if (!to || !subject || !message) {
@@ -39,6 +43,24 @@ export const handler: Handler = async (event: HandlerEvent) => {
       };
     }
 
+    // Prepare email payload
+    const emailPayload: any = {
+      from: 'TheraFlow <onboarding@resend.dev>', // Replace with your verified domain
+      to: [to],
+      subject,
+      html: `<div style="font-family: Arial, sans-serif; padding: 20px; color: #333;">
+        ${message.replace(/\n/g, '<br>')}
+      </div>`
+    };
+
+    // Add attachments if provided
+    if (attachments && attachments.length > 0) {
+      emailPayload.attachments = attachments.map(att => ({
+        filename: att.filename,
+        content: att.content
+      }));
+    }
+
     // Send email via Resend API
     const response = await fetch('https://api.resend.com/emails', {
       method: 'POST',
@@ -46,14 +68,7 @@ export const handler: Handler = async (event: HandlerEvent) => {
         'Authorization': `Bearer ${RESEND_API_KEY}`,
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({
-        from: 'TheraFlow <onboarding@resend.dev>', // Replace with your verified domain
-        to: [to],
-        subject,
-        html: `<div style="font-family: Arial, sans-serif; padding: 20px; color: #333;">
-          ${message.replace(/\n/g, '<br>')}
-        </div>`
-      })
+      body: JSON.stringify(emailPayload)
     });
 
     const responseData = await response.json();
