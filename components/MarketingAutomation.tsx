@@ -3,6 +3,7 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../db';
 import { Patient, Session } from '../types';
 import { Send, Mail, AlertCircle, TrendingDown, Users, X, Check, Clock, Target } from 'lucide-react';
+import { sendEmail } from '../services/notificationService';
 
 interface InactivePatient {
   patient: Patient;
@@ -111,15 +112,47 @@ const MarketingAutomation: React.FC = () => {
       selectedPatients.has(ip.patient.id!)
     );
 
-    // Simulate email sending (in reality, would use backend SMTP)
-    for (const ip of selectedList) {
-      const personalizedMessage = mailForm.message.replace('[NOM_PATIENT]', ip.patient.name);
-      const mailto = `mailto:email@example.com?subject=${encodeURIComponent(mailForm.subject)}&body=${encodeURIComponent(personalizedMessage)}`;
+    let successCount = 0;
+    let failCount = 0;
 
-      console.log(`Sending to ${ip.patient.name}:`, mailto);
+    // Send emails via API
+    for (const ip of selectedList) {
+      // Check if patient has email
+      if (!ip.patient.email) {
+        console.warn(`Patient ${ip.patient.name} has no email address`);
+        failCount++;
+        continue;
+      }
+
+      const personalizedMessage = mailForm.message.replace('[NOM_PATIENT]', ip.patient.name);
+
+      try {
+        const emailSent = await sendEmail({
+          to: ip.patient.email,
+          subject: mailForm.subject,
+          message: personalizedMessage,
+          relatedRequestId: ip.patient.id
+        });
+
+        if (emailSent) {
+          successCount++;
+          console.log(`✅ Email sent to ${ip.patient.name}`);
+        } else {
+          failCount++;
+          console.error(`❌ Failed to send email to ${ip.patient.name}`);
+        }
+      } catch (error) {
+        failCount++;
+        console.error(`❌ Error sending to ${ip.patient.name}:`, error);
+      }
     }
 
-    alert(`Campagne envoyée à ${selectedPatients.size} patient(s) !\n\nNote : Dans une app de production, cela utiliserait un service d'emailing (SendGrid, Mailchimp, etc.)`);
+    if (successCount > 0) {
+      alert(`✅ Campagne envoyée avec succès !\n\n${successCount} email(s) envoyé(s)${failCount > 0 ? `\n${failCount} échec(s)` : ''}`);
+    } else {
+      alert(`❌ Erreur : Aucun email n'a pu être envoyé.\n\nVérifiez que les patients ont des adresses email et que la clé API Resend est configurée.`);
+    }
+
     setShowMailModal(false);
     deselectAll();
   };

@@ -5,6 +5,7 @@ import { db } from '../db';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { jsPDF } from 'jspdf';
 import { checkAuth, listDriveFolders, uploadToDriveReal } from '../services/googleApiService';
+import { sendEmail } from '../services/notificationService';
 
 interface FinanceModuleProps {
   invoices: Invoice[];
@@ -345,27 +346,40 @@ const FinanceModule: React.FC<FinanceModuleProps> = ({ invoices: initialInvoices
       const doc = generateInvoicePDF(selectedInvoice);
       const blob = doc.output('blob');
 
-      const mailtoLink = `mailto:${mailForm.to}?subject=${encodeURIComponent(mailForm.subject)}&body=${encodeURIComponent(mailForm.message)}`;
-
-      window.open(mailtoLink, '_blank');
-      alert("Note : Les pièces jointes ne sont pas supportées via mailto. Le PDF a été téléchargé. Attachez-le manuellement à votre client mail.");
-
-      // Télécharger le PDF automatiquement
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `Facture_${selectedInvoice.number}.pdf`;
-      link.click();
-      URL.revokeObjectURL(url);
-
-      // Marquer le rappel comme envoyé
-      if (selectedInvoice.id) {
-          await db.invoices.update(selectedInvoice.id, {
-              reminderSentAt: new Date().toISOString()
+      try {
+          // Send email via API
+          const emailSent = await sendEmail({
+              to: mailForm.to,
+              subject: mailForm.subject,
+              message: mailForm.message,
+              relatedRequestId: selectedInvoice.id
           });
-      }
 
-      setShowMailModal(false);
+          if (emailSent) {
+              // Download PDF locally for record
+              const url = URL.createObjectURL(blob);
+              const link = document.createElement('a');
+              link.href = url;
+              link.download = `Facture_${selectedInvoice.number}.pdf`;
+              link.click();
+              URL.revokeObjectURL(url);
+
+              // Marquer le rappel comme envoyé
+              if (selectedInvoice.id) {
+                  await db.invoices.update(selectedInvoice.id, {
+                      reminderSentAt: new Date().toISOString()
+                  });
+              }
+
+              alert("✅ Facture envoyée par email avec succès ! Le PDF a été téléchargé localement.");
+              setShowMailModal(false);
+          } else {
+              alert("❌ Erreur lors de l'envoi de l'email. Vérifiez la configuration de votre clé API Resend dans les variables d'environnement Netlify.");
+          }
+      } catch (error) {
+          console.error("Erreur envoi email:", error);
+          alert("❌ Erreur lors de l'envoi de l'email. Consultez la console pour plus de détails.");
+      }
   };
 
   // --- Renders ---

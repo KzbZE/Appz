@@ -7,6 +7,7 @@ import { Search, FileText, Edit, X, Save, Printer, Filter, Trash2, HardDrive, Ma
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
 import { checkAuth, listDriveFolders, uploadToDriveReal } from '../services/googleApiService';
+import { sendEmail } from '../services/notificationService';
 
 const SessionHistory: React.FC = () => {
   const sessions = useLiveQuery(() => db.sessions.toArray());
@@ -163,28 +164,34 @@ const SessionHistory: React.FC = () => {
 
       const patient = getPatient(selectedSession.patientId);
       const blob = await generateSessionPDF();
-      const reader = new FileReader();
 
-      reader.readAsDataURL(blob);
-      reader.onloadend = () => {
-          const base64data = reader.result as string;
-          const mailtoLink = `mailto:${mailForm.to}?subject=${encodeURIComponent(mailForm.subject)}&body=${encodeURIComponent(mailForm.message)}`;
+      try {
+          // Send email via API
+          const emailSent = await sendEmail({
+              to: mailForm.to,
+              subject: mailForm.subject,
+              message: mailForm.message,
+              relatedRequestId: selectedSession.id
+          });
 
-          // Note: Les pièces jointes ne sont pas supportées via mailto
-          // Dans une vraie app, il faudrait un backend pour l'envoi SMTP
-          window.open(mailtoLink, '_blank');
-          alert("Note : Les pièces jointes ne sont pas supportées via mailto. Le PDF a été téléchargé. Attachez-le manuellement à votre client mail.");
+          if (emailSent) {
+              // Download PDF locally for record
+              const url = URL.createObjectURL(blob);
+              const link = document.createElement('a');
+              link.href = url;
+              link.download = `Seance_${patient?.name}_${new Date(selectedSession.date).toLocaleDateString()}.pdf`;
+              link.click();
+              URL.revokeObjectURL(url);
 
-          // Télécharger le PDF automatiquement
-          const url = URL.createObjectURL(blob);
-          const link = document.createElement('a');
-          link.href = url;
-          link.download = `Seance_${patient?.name}_${new Date(selectedSession.date).toLocaleDateString()}.pdf`;
-          link.click();
-          URL.revokeObjectURL(url);
-
-          setShowMailModal(false);
-      };
+              alert("✅ Email envoyé avec succès ! Le PDF a été téléchargé localement.");
+              setShowMailModal(false);
+          } else {
+              alert("❌ Erreur lors de l'envoi de l'email. Vérifiez la configuration de votre clé API Resend dans les variables d'environnement Netlify.");
+          }
+      } catch (error) {
+          console.error("Erreur envoi email:", error);
+          alert("❌ Erreur lors de l'envoi de l'email. Consultez la console pour plus de détails.");
+      }
   };
 
   const renderSessionDetail = (session: Session, patient: Patient) => (
