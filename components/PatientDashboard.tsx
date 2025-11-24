@@ -10,7 +10,11 @@ interface PatientDashboardProps {
 }
 
 const PatientDashboard: React.FC<PatientDashboardProps> = ({ patientId, onLogout }) => {
-    const [activeTab, setActiveTab] = useState<'APPOINTMENTS' | 'SESSIONS' | 'INVOICES' | 'REQUESTS'>('APPOINTMENTS');
+    const [activeTab, setActiveTab] = useState<'APPOINTMENTS' | 'SESSIONS' | 'INVOICES' | 'REQUESTS' | 'PROFILE'>('APPOINTMENTS');
+    const [showEditProfileModal, setShowEditProfileModal] = useState(false);
+    const [showCancelModal, setShowCancelModal] = useState(false);
+    const [showNewRequestModal, setShowNewRequestModal] = useState(false);
+    const [selectedAppointmentToCancel, setSelectedAppointmentToCancel] = useState<number | null>(null);
 
     // Charger les données du patient
     const patient = useLiveQuery(() => db.patients.get(patientId));
@@ -18,27 +22,26 @@ const PatientDashboard: React.FC<PatientDashboardProps> = ({ patientId, onLogout
         db.patientAccounts.where('patientId').equals(patientId).first()
     );
 
-    // RDV à venir
-    const upcomingAppointments = useLiveQuery(() =>
-        db.appointments
-            .where('patientId')
-            .equals(String(patientId))
+    // RDV à venir - chercher avec String ET Number pour compatibilité
+    const upcomingAppointments = useLiveQuery(async () => {
+        const appts = await db.appointments
             .filter(appt =>
+                (appt.patientId === patientId || appt.patientId === String(patientId)) &&
                 appt.status !== ApptStatus.CANCELLED &&
                 new Date(appt.startTime) >= new Date()
             )
-            .toArray()
-    ) || [];
+            .toArray();
+        return appts.sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
+    }) || [];
 
-    // Historique séances
-    const pastSessions = useLiveQuery(() =>
-        db.sessions
-            .where('patientId')
-            .equals(String(patientId))
+    // Historique séances - chercher avec String ET Number pour compatibilité
+    const pastSessions = useLiveQuery(async () => {
+        const sessions = await db.sessions
+            .filter(s => s.patientId === patientId || s.patientId === String(patientId))
             .reverse()
-            .limit(10)
-            .toArray()
-    ) || [];
+            .sortBy('date');
+        return sessions.slice(0, 20); // Augmenter de 10 à 20
+    }) || [];
 
     // Factures
     const invoices = useLiveQuery(() =>
@@ -49,15 +52,18 @@ const PatientDashboard: React.FC<PatientDashboardProps> = ({ patientId, onLogout
             .toArray()
     ) || [];
 
-    // Demandes de RDV
-    const appointmentRequests = useLiveQuery(() =>
-        db.appointmentRequests
-            .where('patientId')
-            .equals(String(patientId))
+    // Demandes de RDV - chercher avec String ET Number + par email
+    const appointmentRequests = useLiveQuery(async () => {
+        const requests = await db.appointmentRequests
+            .filter(r =>
+                r.patientId === patientId ||
+                r.patientId === String(patientId) ||
+                (patientAccount?.email && r.patientEmail === patientAccount.email)
+            )
             .reverse()
-            .limit(10)
-            .toArray()
-    ) || [];
+            .sortBy('createdAt');
+        return requests.slice(0, 20); // Augmenter de 10 à 20
+    }, [patientAccount]) || [];
 
     const handleLogout = () => {
         localStorage.removeItem('theraflow_patient_session');
@@ -86,6 +92,34 @@ const PatientDashboard: React.FC<PatientDashboardProps> = ({ patientId, onLogout
         } catch (error) {
             console.error('Erreur validation:', error);
             alert('Erreur lors de la validation');
+        }
+    };
+
+    const handleCancelAppointment = async () => {
+        if (!selectedAppointmentToCancel) return;
+
+        try {
+            await db.appointments.update(selectedAppointmentToCancel, {
+                status: ApptStatus.CANCELLED
+            });
+
+            alert('✅ Rendez-vous annulé. Le praticien en sera informé.');
+            setShowCancelModal(false);
+            setSelectedAppointmentToCancel(null);
+        } catch (error) {
+            console.error('Erreur annulation:', error);
+            alert('Erreur lors de l\'annulation');
+        }
+    };
+
+    const handleUpdateProfile = async (updatedData: { name?: string; phone?: string; address?: string }) => {
+        try {
+            await db.patients.update(patientId, updatedData);
+            alert('✅ Profil mis à jour !');
+            setShowEditProfileModal(false);
+        } catch (error) {
+            console.error('Erreur mise à jour profil:', error);
+            alert('Erreur lors de la mise à jour');
         }
     };
 

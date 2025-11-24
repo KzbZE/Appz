@@ -19,7 +19,20 @@ const DailyDashboard: React.FC<DailyDashboardProps> = ({ appointments, patients,
   const [recentClients, setRecentClients] = useState<Patient[]>([]);
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
 
-  const nextAppt = appointments?.find(a => a.status === ApptStatus.SCHEDULED);
+  // 🔧 FIX: Trouver le vrai prochain rendez-vous du jour (aujourd'hui + statut SCHEDULED + à venir)
+  const nextAppt = appointments
+    ?.filter(a => {
+      const apptDate = new Date(a.startTime);
+      const now = new Date();
+      return (
+        a.status === ApptStatus.SCHEDULED &&
+        apptDate.getDate() === now.getDate() &&
+        apptDate.getMonth() === now.getMonth() &&
+        apptDate.getFullYear() === now.getFullYear() &&
+        apptDate.getTime() >= now.getTime() // À venir
+      );
+    })
+    .sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime())[0];
 
   useEffect(() => {
     if (patients) {
@@ -184,7 +197,7 @@ const DailyDashboard: React.FC<DailyDashboardProps> = ({ appointments, patients,
 
                             <div className={`p-4 rounded-2xl border-2 transition-all transform hover:scale-102 hover:shadow-lg
                                 ${isNext ? 'bg-gradient-to-br from-teal-50 to-cyan-50 border-teal-300 shadow-md' : 'bg-white border-slate-100'}`}>
-                                <div className="flex justify-between items-start">
+                                <div className="flex justify-between items-start mb-3">
                                     <div>
                                         <span className={`text-[10px] font-black px-3 py-1 rounded-full mb-2 inline-block uppercase tracking-wide
                                             ${appt.type === 'CABINET' ? 'bg-blue-500 text-white' : 'bg-orange-500 text-white'}`}>
@@ -201,6 +214,14 @@ const DailyDashboard: React.FC<DailyDashboardProps> = ({ appointments, patients,
                                         )}
                                     </div>
                                 </div>
+                                {!isDone && (
+                                    <button
+                                        onClick={() => onStartSession(appt)}
+                                        className="w-full py-2 bg-gradient-to-r from-teal-500 to-cyan-500 hover:from-teal-600 hover:to-cyan-600 text-white text-xs font-bold rounded-lg transition-all transform hover:scale-105 shadow-sm"
+                                    >
+                                        Démarrer cette séance
+                                    </button>
+                                )}
                             </div>
                         </div>
                     );

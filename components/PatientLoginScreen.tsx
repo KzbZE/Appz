@@ -98,12 +98,22 @@ const PatientLoginScreen: React.FC<PatientLoginScreenProps> = ({ onLoginSuccess,
                 return;
             }
 
-            // Rechercher ou créer le patient par téléphone
+            // Rechercher ou créer le patient par téléphone OU email
             let patientId: number | undefined;
-            const existingPatient = await db.patients
+
+            // 1. Chercher par téléphone
+            let existingPatient = await db.patients
                 .where('phone')
                 .equals(phone)
                 .first();
+
+            // 2. Si pas trouvé, chercher par email
+            if (!existingPatient) {
+                existingPatient = await db.patients
+                    .where('email')
+                    .equals(email.toLowerCase())
+                    .first();
+            }
 
             if (existingPatient) {
                 // Patient existe déjà, utiliser son ID
@@ -111,6 +121,7 @@ const PatientLoginScreen: React.FC<PatientLoginScreenProps> = ({ onLoginSuccess,
                 // Mettre à jour les infos
                 await db.patients.update(patientId, {
                     name,
+                    phone,
                     email: email.toLowerCase()
                 });
             } else {
@@ -124,6 +135,22 @@ const PatientLoginScreen: React.FC<PatientLoginScreenProps> = ({ onLoginSuccess,
                     address: 'À compléter'
                 }) as number;
             }
+
+            // 🔧 IMPORTANT: Lier toutes les demandes de RDV avec cet email au compte
+            const pendingRequests = await db.appointmentRequests
+                .where('patientEmail')
+                .equals(email.toLowerCase())
+                .toArray();
+
+            for (const request of pendingRequests) {
+                if (request.id && request.patientId !== patientId) {
+                    await db.appointmentRequests.update(request.id, {
+                        patientId: patientId
+                    });
+                }
+            }
+
+            console.log(`✅ ${pendingRequests.length} demandes de RDV liées au compte patient`);
 
             // Créer le compte patient
             const accountId = await db.patientAccounts.add({
