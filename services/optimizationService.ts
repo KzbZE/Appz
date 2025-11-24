@@ -90,18 +90,17 @@ export async function findNearbyAppointments(
 
 /**
  * Suggère des créneaux optimisés pour un rendez-vous
- * Basé sur la proximité géographique avec d'autres rendez-vous
+ * Basé sur la proximité géographique ET le regroupement au cabinet
  */
 export async function suggestOptimizedSlots(
-  patientLat: number,
-  patientLng: number,
+  patientLat: number | undefined,
+  patientLng: number | undefined,
   durationMin: number,
   preferredDate?: Date,
-  excludeSlots: string[] = [] // Créneaux déjà occupés à exclure
+  excludeSlots: string[] = [], // Créneaux déjà occupés à exclure
+  appointmentType?: 'CABINET' | 'HOME' // Type de RDV pour optimiser différemment
 ): Promise<OptimizedSlot[]> {
   const suggestions: OptimizedSlot[] = [];
-
-  // Chercher sur 7 jours
   const startDate = preferredDate || new Date();
   const daysToCheck = 7;
 
@@ -109,58 +108,109 @@ export async function suggestOptimizedSlots(
     const checkDate = new Date(startDate);
     checkDate.setDate(checkDate.getDate() + dayOffset);
 
-    // Trouver les rendez-vous proches ce jour-là
-    const nearbyAppointments = await findNearbyAppointments(
-      patientLat,
-      patientLng,
-      checkDate
-    );
+    const startOfDay = new Date(checkDate);
+    startOfDay.setHours(0, 0, 0, 0);
+    const endOfDay = new Date(checkDate);
+    endOfDay.setHours(23, 59, 59, 999);
 
-    if (nearbyAppointments.length > 0) {
-      // Pour chaque rendez-vous proche, suggérer un créneau juste avant ou juste après
-      for (const { appointment, patient, distance } of nearbyAppointments) {
-        const apptTime = new Date(appointment.startTime);
+    // Récupérer TOUS les RDV du jour
+    const dayAppointments = await db.appointments
+      .where('startTime')
+      .between(startOfDay.toISOString(), endOfDay.toISOString())
+      .and(appt => appt.status === 'SCHEDULED')
+      .toArray();
 
-        // Créneau AVANT le rendez-vous proche (- durée - 15 min de marge)
-        const slotBefore = new Date(apptTime);
-        slotBefore.setMinutes(slotBefore.getMinutes() - durationMin - 15);
+    if (dayAppointments.length > 0) {
+      // Si c'est un RDV CABINET, chercher d'autres RDV cabinet pour regrouper
+      if (appointmentType === 'CABINET') {
+        const cabinetAppointments = dayAppointments.filter(a => a.type === 'CABINET');
 
-        // Créneau APRÈS le rendez-vous proche (+ durée du RDV proche + 15 min)
-        const slotAfter = new Date(apptTime);
-        slotAfter.setMinutes(slotAfter.getMinutes() + appointment.durationMin + 15);
+        for (const cabAppt of cabinetAppointments) {
+          const apptTime = new Date(cabAppt.startTime);
 
-        // Vérifier que les créneaux sont dans les heures de travail (8h-19h)
-        const beforeHour = slotBefore.getHours();
-        const afterHour = slotAfter.getHours();
+          // Suggérer créneaux avant/après les RDV cabinet existants
+          const slotBefore = new Date(apptTime);
+          slotBefore.setMinutes(slotBefore.getMinutes() - durationMin - 10);
 
-        if (beforeHour >= 8 && beforeHour < 19 && !excludeSlots.includes(slotBefore.toISOString())) {
-          const score = calculateOptimizationScore(distance, nearbyAppointments.length);
-          suggestions.push({
-            startTime: slotBefore.toISOString(),
-            isOptimized: true,
-            reason: `Proche de "${patient.name}" (${distance} km)`,
-            nearbyAppointment: {
-              patientName: patient.name,
-              time: appointment.startTime,
-              distance
-            },
-            score
-          });
+          const slotAfter = new Date(apptTime);
+          slotAfter.setMinutes(slotAfter.getMinutes() + cabAppt.durationMin + 10);
+
+          const beforeHour = slotBefore.getHours();
+          const afterHour = slotAfter.getHours();
+
+          if (beforeHour >= 8 && beforeHour < 19 && !excludeSlots.includes(slotBefore.toISOString())) {
+            const score = 85 + (cabinetAppointments.length * 5); // Bon score pour regroupement cabinet
+            suggestions.push({
+              startTime: slotBefore.toISOString(),
+              isOptimized: true,
+              reason: `Regrouper avec autre RDV cabinet (${cabAppt.notes?.split(' - ')[0] || 'Patient'})`,
+              score
+            });
+          }
+
+          if (afterHour >= 8 && afterHour < 19 && !excludeSlots.includes(slotAfter.toISOString())) {
+            const score = 85 + (cabinetAppointments.length * 5);
+            suggestions.push({
+              startTime: slotAfter.toISOString(),
+              isOptimized: true,
+              reason: `Regrouper avec autre RDV cabinet (${cabAppt.notes?.split(' - ')[0] || 'Patient'})`,
+              score
+            });
+          }
         }
+      }
 
-        if (afterHour >= 8 && afterHour < 19 && !excludeSlots.includes(slotAfter.toISOString())) {
-          const score = calculateOptimizationScore(distance, nearbyAppointments.length);
-          suggestions.push({
-            startTime: slotAfter.toISOString(),
-            isOptimized: true,
-            reason: `Proche de "${patient.name}" (${distance} km)`,
-            nearbyAppointment: {
-              patientName: patient.name,
-              time: appointment.startTime,
-              distance
-            },
-            score
-          });
+      // Si c'est un RDV à DOMICILE et qu'on a les coordonnées
+      if (patientLat && patientLng && appointmentType !== 'CABINET') {
+        const nearbyAppointments = await findNearbyAppointments(
+          patientLat,
+          patientLng,
+          checkDate
+        );
+
+        if (nearbyAppointments.length > 0) {
+          for (const { appointment, patient, distance } of nearbyAppointments) {
+            const apptTime = new Date(appointment.startTime);
+
+            const slotBefore = new Date(apptTime);
+            slotBefore.setMinutes(slotBefore.getMinutes() - durationMin - 15);
+
+            const slotAfter = new Date(apptTime);
+            slotAfter.setMinutes(slotAfter.getMinutes() + appointment.durationMin + 15);
+
+            const beforeHour = slotBefore.getHours();
+            const afterHour = slotAfter.getHours();
+
+            if (beforeHour >= 8 && beforeHour < 19 && !excludeSlots.includes(slotBefore.toISOString())) {
+              const score = calculateOptimizationScore(distance, nearbyAppointments.length);
+              suggestions.push({
+                startTime: slotBefore.toISOString(),
+                isOptimized: true,
+                reason: `Proche de "${patient.name}" (${distance} km)`,
+                nearbyAppointment: {
+                  patientName: patient.name,
+                  time: appointment.startTime,
+                  distance
+                },
+                score
+              });
+            }
+
+            if (afterHour >= 8 && afterHour < 19 && !excludeSlots.includes(slotAfter.toISOString())) {
+              const score = calculateOptimizationScore(distance, nearbyAppointments.length);
+              suggestions.push({
+                startTime: slotAfter.toISOString(),
+                isOptimized: true,
+                reason: `Proche de "${patient.name}" (${distance} km)`,
+                nearbyAppointment: {
+                  patientName: patient.name,
+                  time: appointment.startTime,
+                  distance
+                },
+                score
+              });
+            }
+          }
         }
       }
     }
@@ -231,7 +281,8 @@ export async function getAllAvailableSlots(
   patientLat: number | undefined,
   patientLng: number | undefined,
   durationMin: number,
-  preferredDate?: Date
+  preferredDate?: Date,
+  appointmentType?: 'CABINET' | 'HOME'
 ): Promise<{
   optimized: OptimizedSlot[];
   standard: OptimizedSlot[];
@@ -248,17 +299,15 @@ export async function getAllAvailableSlots(
 
   const excludeSlots = bookedAppointments.map(a => a.startTime);
 
-  // Créneaux optimisés (si coordonnées disponibles)
-  let optimized: OptimizedSlot[] = [];
-  if (patientLat && patientLng) {
-    optimized = await suggestOptimizedSlots(
-      patientLat,
-      patientLng,
-      durationMin,
-      preferredDate,
-      excludeSlots
-    );
-  }
+  // Créneaux optimisés (toujours les chercher, même pour cabinet)
+  const optimized = await suggestOptimizedSlots(
+    patientLat,
+    patientLng,
+    durationMin,
+    preferredDate,
+    excludeSlots,
+    appointmentType
+  );
 
   // Créneaux standards
   const standard = generateStandardSlots(startDate, 14, excludeSlots);

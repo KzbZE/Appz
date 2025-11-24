@@ -160,7 +160,8 @@ const AppointmentRequestManager: React.FC = () => {
         patient?.lat,
         patient?.lng,
         request.durationMin,
-        new Date(request.requestedStartTime)
+        new Date(request.requestedStartTime),
+        request.type === 'CABINET' ? 'CABINET' : 'HOME'
       );
 
       setSuggestedSlots([...slots.optimized, ...slots.standard]);
