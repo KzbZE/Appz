@@ -117,7 +117,9 @@ const PublicAppointmentRequest: React.FC = () => {
       setStep('SUCCESS');
     } catch (err: any) {
       console.error('Error submitting request:', err);
-      setError('Une erreur est survenue. Veuillez réessayer.');
+      // Show more detailed error message
+      const errorMessage = err?.message || err?.toString() || 'Une erreur est survenue';
+      setError(`Erreur : ${errorMessage}. Veuillez réessayer ou contacter le praticien.`);
     } finally {
       setIsSubmitting(false);
     }
