@@ -165,6 +165,33 @@ const PublicAppointmentRequest: React.FC = () => {
         }
       }
 
+      // ✅ Envoyer SMS de validation au patient (Option A)
+      if (formData.patientPhone) {
+        try {
+          const validationUrl = `${window.location.origin}${window.location.pathname}#validate?token=${validationToken}`;
+          const dateStr = new Date(requestedStartTime).toLocaleDateString('fr-FR', {
+            day: 'numeric',
+            month: 'short'
+          });
+          const timeStr = new Date(requestedStartTime).toLocaleTimeString('fr-FR', {
+            hour: '2-digit',
+            minute: '2-digit'
+          });
+
+          await fetch('/.netlify/functions/send-sms', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              to: formData.patientPhone,
+              message: `Bonjour ${formData.patientName}, votre RDV est proposé pour le ${dateStr} à ${timeStr}. Validez ici : ${validationUrl}`
+            })
+          });
+          console.log('✅ SMS de validation envoyé au patient:', formData.patientPhone);
+        } catch (smsError) {
+          console.error('Erreur envoi SMS validation (non bloquant):', smsError);
+        }
+      }
+
       setStep('SUCCESS');
     } catch (err: any) {
       console.error('Error submitting request:', err);

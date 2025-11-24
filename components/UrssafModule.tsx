@@ -35,9 +35,9 @@ const UrssafModule: React.FC = () => {
         'Date': new Date(session.date).toLocaleDateString('fr-FR'),
         'Patient': patient?.name || 'Inconnu',
         'Type': session.type,
-        'Durée (min)': session.durationMin || 60,
+        'Durée (min)': 60,
         'Montant HT (€)': session.price || 0,
-        'Notes': session.notes || ''
+        'Notes': session.practitionerNotes || session.treatmentNotes?.substring(0, 50) || ''
       };
     });
 
@@ -70,9 +70,9 @@ const UrssafModule: React.FC = () => {
         'Mois': new Date(session.date).toLocaleDateString('fr-FR', { month: 'long' }),
         'Patient': patient?.name || 'Inconnu',
         'Type': session.type,
-        'Durée (min)': session.durationMin || 60,
+        'Durée (min)': 60,
         'Montant HT (€)': session.price || 0,
-        'Notes': session.notes || ''
+        'Notes': session.practitionerNotes || session.treatmentNotes?.substring(0, 50) || ''
       };
     });
 

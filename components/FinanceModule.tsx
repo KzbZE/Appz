@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Invoice, InvoiceStatus, Expense, PaymentRecord, RecurringInvoice } from '../types';
-import { Download, TrendingUp, TrendingDown, Euro, Bell, CreditCard, AlertTriangle, Send, Check, Settings as SettingsIcon, X, HardDrive, Eye, Edit2, Plus, Trash2, Calendar, Repeat } from 'lucide-react';
+import { Download, TrendingUp, TrendingDown, Euro, Bell, CreditCard, AlertTriangle, Send, Check, Settings as SettingsIcon, X, HardDrive, Eye, Edit2, Plus, Trash2, Calendar, Repeat, Mail, MessageSquare } from 'lucide-react';
 import { db } from '../db';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { jsPDF } from 'jspdf';
@@ -16,6 +16,7 @@ const FinanceModule: React.FC<FinanceModuleProps> = ({ invoices: initialInvoices
   const [activeTab, setActiveTab] = useState<'overview' | 'invoices' | 'recurring' | 'expenses'>('overview');
   const settings = useLiveQuery(() => db.settings.toArray());
   const currentSettings = settings?.[0];
+  const patients = useLiveQuery(() => db.patients.toArray()) || [];
   
   const [isConfigOpen, setIsConfigOpen] = useState(false);
   const [configForm, setConfigForm] = useState({
@@ -346,6 +347,46 @@ const FinanceModule: React.FC<FinanceModuleProps> = ({ invoices: initialInvoices
       setIsPaymentModalOpen(false);
   };
 
+  // ✅ Supprimer un encaissement
+  const handleDeletePayment = async (paymentIndex: number) => {
+      if (!selectedInvoice) return;
+
+      if (!confirm('Voulez-vous vraiment supprimer cet encaissement ?')) {
+          return;
+      }
+
+      // Créer nouveau tableau sans le paiement supprimé
+      const updatedPayments = selectedInvoice.payments?.filter((_, i) => i !== paymentIndex) || [];
+
+      // Recalculer le montant payé
+      const newPaid = updatedPayments.reduce((sum, p) => sum + p.amount, 0);
+
+      // Recalculer le statut
+      let newStatus: InvoiceStatus;
+      if (newPaid === 0) {
+          newStatus = InvoiceStatus.PENDING;
+      } else if (newPaid >= (selectedInvoice.amountTTC - 0.01)) {
+          newStatus = InvoiceStatus.PAID;
+      } else {
+          newStatus = InvoiceStatus.PARTIAL;
+      }
+
+      // Mettre à jour la base de données
+      await db.invoices.update(selectedInvoice.id, {
+          amountPaid: newPaid,
+          status: newStatus,
+          payments: updatedPayments
+      });
+
+      // Mettre à jour la vue locale
+      setSelectedInvoice({
+          ...selectedInvoice,
+          amountPaid: newPaid,
+          status: newStatus,
+          payments: updatedPayments
+      });
+  };
+
   // Mail Functions
   const handleSendInvoiceByMail = () => {
       if (!selectedInvoice) return;
@@ -397,6 +438,100 @@ const FinanceModule: React.FC<FinanceModuleProps> = ({ invoices: initialInvoices
       } catch (error) {
           console.error("Erreur envoi email:", error);
           alert("❌ Erreur lors de l'envoi de l'email. Consultez la console pour plus de détails.");
+      }
+  };
+
+  // ✅ Envoyer une relance par email
+  const handleSendReminder = async () => {
+      if (!selectedInvoice) return;
+
+      const remaining = selectedInvoice.amountTTC - selectedInvoice.amountPaid;
+      const daysLate = Math.floor((Date.now() - new Date(selectedInvoice.dueDate).getTime()) / (1000 * 60 * 60 * 24));
+
+      // Récupérer l'email du patient
+      const patient = await db.patients.filter(p => p.name === selectedInvoice.patientName).first();
+      if (!patient?.email) {
+          alert('Aucun email trouvé pour ce patient. Veuillez ajouter son email dans la fiche patient.');
+          return;
+      }
+
+      const subject = `Relance - Facture ${selectedInvoice.number} en attente de paiement`;
+      const message = `Bonjour ${selectedInvoice.patientName},
+
+Nous vous rappelons que votre facture n°${selectedInvoice.number} est en attente de paiement.
+
+Montant total : ${selectedInvoice.amountTTC.toFixed(2)}€
+Déjà réglé : ${selectedInvoice.amountPaid.toFixed(2)}€
+Reste à payer : ${remaining.toFixed(2)}€
+${daysLate > 0 ? `Retard : ${daysLate} jour(s)\n` : ''}
+Merci de régulariser votre situation dans les meilleurs délais.
+
+Cordialement,
+${currentSettings?.practitionerName || 'Votre Praticien'}`;
+
+      try {
+          const emailSent = await sendEmail({
+              to: patient.email,
+              subject,
+              message,
+              relatedRequestId: selectedInvoice.id
+          });
+
+          if (emailSent) {
+              alert(`✅ Relance envoyée par email à ${patient.email}`);
+
+              // Mettre à jour la date de dernier rappel
+              if (selectedInvoice.id) {
+                  await db.invoices.update(selectedInvoice.id, {
+                      reminderSentAt: new Date().toISOString()
+                  });
+              }
+          } else {
+              alert('❌ Erreur lors de l\'envoi de la relance');
+          }
+      } catch (error) {
+          console.error('Erreur relance email:', error);
+          alert('❌ Erreur lors de l\'envoi de la relance');
+      }
+  };
+
+  // ✅ Envoyer une relance par SMS
+  const handleSendReminderSMS = async () => {
+      if (!selectedInvoice) return;
+
+      const remaining = selectedInvoice.amountTTC - selectedInvoice.amountPaid;
+
+      // Récupérer le téléphone du patient
+      const patient = await db.patients.filter(p => p.name === selectedInvoice.patientName).first();
+      if (!patient?.phone) {
+          alert('Aucun téléphone trouvé pour ce patient. Veuillez ajouter son numéro dans la fiche patient.');
+          return;
+      }
+
+      const message = `Rappel : Facture n°${selectedInvoice.number} - Reste à payer : ${remaining.toFixed(2)}€. Merci de régulariser. ${currentSettings?.practitionerName || 'Votre Praticien'}`;
+
+      try {
+          const smsSent = await sendSMS({
+              to: patient.phone,
+              message,
+              relatedRequestId: selectedInvoice.id
+          });
+
+          if (smsSent) {
+              alert(`✅ Relance envoyée par SMS au ${patient.phone}`);
+
+              // Mettre à jour la date de dernier rappel
+              if (selectedInvoice.id) {
+                  await db.invoices.update(selectedInvoice.id, {
+                      reminderSentAt: new Date().toISOString()
+                  });
+              }
+          } else {
+              alert('❌ Erreur lors de l\'envoi du SMS');
+          }
+      } catch (error) {
+          console.error('Erreur relance SMS:', error);
+          alert('❌ Erreur lors de l\'envoi du SMS');
       }
   };
 
@@ -606,6 +741,13 @@ const FinanceModule: React.FC<FinanceModuleProps> = ({ invoices: initialInvoices
                                                         {PAYMENT_METHODS[p.method] || p.method}
                                                     </span>
                                                     <span className="font-bold text-green-800">{p.amount.toFixed(2)} €</span>
+                                                    <button
+                                                        onClick={() => handleDeletePayment(i)}
+                                                        className="p-1 hover:bg-red-100 rounded text-red-600 transition-colors"
+                                                        title="Supprimer cet encaissement"
+                                                    >
+                                                        <Trash2 size={14} />
+                                                    </button>
                                                 </div>
                                             </div>
                                         ))}
@@ -634,7 +776,18 @@ const FinanceModule: React.FC<FinanceModuleProps> = ({ invoices: initialInvoices
                                     <CreditCard size={18} className="mr-2" /> Encaisser un Paiement
                                 </button>
                             )}
-                            
+
+                            {!isPaid && (selectedInvoice.status === InvoiceStatus.OVERDUE || selectedInvoice.status === InvoiceStatus.PENDING || selectedInvoice.status === InvoiceStatus.PARTIAL) && (
+                                <div className="grid grid-cols-2 gap-2">
+                                    <button onClick={handleSendReminder} className="flex items-center justify-center py-2.5 bg-orange-50 border border-orange-200 rounded-lg text-sm font-bold text-orange-700 hover:bg-orange-100">
+                                        <Mail size={16} className="mr-2" /> Relance Email
+                                    </button>
+                                    <button onClick={handleSendReminderSMS} className="flex items-center justify-center py-2.5 bg-blue-50 border border-blue-200 rounded-lg text-sm font-bold text-blue-700 hover:bg-blue-100">
+                                        <MessageSquare size={16} className="mr-2" /> Relance SMS
+                                    </button>
+                                </div>
+                            )}
+
                             <div className="grid grid-cols-3 gap-2">
                                 <button onClick={() => handleDownloadPDF(selectedInvoice)} className="flex items-center justify-center py-2.5 bg-white border border-gray-200 rounded-lg text-sm font-bold text-slate-700 hover:bg-gray-100">
                                     <Download size={16} className="mr-2" /> PDF
@@ -1125,13 +1278,16 @@ const FinanceModule: React.FC<FinanceModuleProps> = ({ invoices: initialInvoices
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                         <label className="block text-sm font-bold text-slate-700 mb-2">Patient / Client *</label>
-                        <input
-                            type="text"
+                        <select
                             value={recurringForm.patientName || ''}
                             onChange={(e) => setRecurringForm({...recurringForm, patientName: e.target.value})}
                             className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-                            placeholder="Nom du patient"
-                        />
+                        >
+                            <option value="">Sélectionner un patient...</option>
+                            {patients.map(p => (
+                                <option key={p.id} value={p.name}>{p.name}</option>
+                            ))}
+                        </select>
                     </div>
 
                     <div>

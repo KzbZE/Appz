@@ -347,6 +347,220 @@ const LoyaltyPromoModule: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Modal: Nouvelle Carte de Fidélité */}
+      {showAddCardModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-xl font-bold text-slate-800">Nouvelle Carte de Fidélité</h3>
+              <button onClick={() => setShowAddCardModal(false)} className="text-slate-400 hover:text-slate-600">
+                <X size={24} />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-bold text-slate-700 mb-2">Patient</label>
+                <select
+                  id="loyaltyPatientSelect"
+                  className="w-full p-3 border-2 border-slate-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                >
+                  <option value="">Sélectionner un patient...</option>
+                  {patients.map(p => (
+                    <option key={p.id} value={p.id}>{p.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="flex gap-2">
+                <button
+                  onClick={() => {
+                    const select = document.getElementById('loyaltyPatientSelect') as HTMLSelectElement;
+                    const patientId = select.value;
+                    const patientName = select.options[select.selectedIndex].text;
+                    if (patientId && patientName !== 'Sélectionner un patient...') {
+                      handleCreateCard(parseInt(patientId), patientName, 'STAMP_CARD');
+                    } else {
+                      alert('Veuillez sélectionner un patient');
+                    }
+                  }}
+                  className="flex-1 py-3 bg-gradient-to-r from-purple-500 to-pink-600 text-white rounded-xl font-bold hover:scale-105 transition-all"
+                >
+                  Créer la Carte
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Nouveau Parrainage */}
+      {showAddReferralModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-xl font-bold text-slate-800">Nouveau Parrainage</h3>
+              <button onClick={() => setShowAddReferralModal(false)} className="text-slate-400 hover:text-slate-600">
+                <X size={24} />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-bold text-slate-700 mb-2">Parrain (Patient existant)</label>
+                <select
+                  id="referrerSelect"
+                  className="w-full p-3 border-2 border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="">Sélectionner un parrain...</option>
+                  {patients.map(p => (
+                    <option key={p.id} value={p.id}>{p.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-bold text-slate-700 mb-2">Nom du Filleul</label>
+                <input
+                  type="text"
+                  id="referredNameInput"
+                  placeholder="Jean Dupont"
+                  className="w-full p-3 border-2 border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-bold text-slate-700 mb-2">Téléphone du Filleul</label>
+                <input
+                  type="tel"
+                  id="referredPhoneInput"
+                  placeholder="0612345678"
+                  className="w-full p-3 border-2 border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+
+              <button
+                onClick={() => {
+                  const referrerSelect = document.getElementById('referrerSelect') as HTMLSelectElement;
+                  const referrerId = referrerSelect.value;
+                  const referrerName = referrerSelect.options[referrerSelect.selectedIndex].text;
+                  const referredName = (document.getElementById('referredNameInput') as HTMLInputElement).value;
+                  const referredPhone = (document.getElementById('referredPhoneInput') as HTMLInputElement).value;
+
+                  if (referrerId && referredName && referredPhone) {
+                    handleCreateReferral({
+                      referrerId: parseInt(referrerId),
+                      referrerName,
+                      referredName,
+                      referredPhone
+                    });
+                  } else {
+                    alert('Veuillez remplir tous les champs');
+                  }
+                }}
+                className="w-full py-3 bg-gradient-to-r from-blue-500 to-cyan-600 text-white rounded-xl font-bold hover:scale-105 transition-all"
+              >
+                Créer le Parrainage
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Nouvelle Promotion */}
+      {showAddPromoModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-xl font-bold text-slate-800">Nouvelle Promotion</h3>
+              <button onClick={() => setShowAddPromoModal(false)} className="text-slate-400 hover:text-slate-600">
+                <X size={24} />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-bold text-slate-700 mb-2">Nom de la Promo</label>
+                <input
+                  type="text"
+                  id="promoNameInput"
+                  placeholder="Promo Été 2024"
+                  className="w-full p-3 border-2 border-slate-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-bold text-slate-700 mb-2">Code Promo (optionnel)</label>
+                <input
+                  type="text"
+                  id="promoCodeInput"
+                  placeholder="ETE2024"
+                  className="w-full p-3 border-2 border-slate-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-bold text-slate-700 mb-2">Type</label>
+                  <select
+                    id="promoTypeSelect"
+                    className="w-full p-3 border-2 border-slate-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                  >
+                    <option value="PERCENTAGE">Pourcentage (%)</option>
+                    <option value="FIXED">Montant fixe (€)</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-bold text-slate-700 mb-2">Valeur</label>
+                  <input
+                    type="number"
+                    id="promoValueInput"
+                    placeholder="20"
+                    className="w-full p-3 border-2 border-slate-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-bold text-slate-700 mb-2">Date de fin</label>
+                <input
+                  type="date"
+                  id="promoEndDateInput"
+                  className="w-full p-3 border-2 border-slate-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                />
+              </div>
+
+              <button
+                onClick={() => {
+                  const name = (document.getElementById('promoNameInput') as HTMLInputElement).value;
+                  const code = (document.getElementById('promoCodeInput') as HTMLInputElement).value;
+                  const type = (document.getElementById('promoTypeSelect') as HTMLSelectElement).value as 'PERCENTAGE' | 'FIXED';
+                  const value = parseFloat((document.getElementById('promoValueInput') as HTMLInputElement).value);
+                  const endDate = (document.getElementById('promoEndDateInput') as HTMLInputElement).value;
+
+                  if (name && value && endDate) {
+                    handleCreatePromo({
+                      name,
+                      code: code || undefined,
+                      type,
+                      value,
+                      startDate: new Date().toISOString(),
+                      endDate: new Date(endDate).toISOString()
+                    });
+                  } else {
+                    alert('Veuillez remplir tous les champs obligatoires');
+                  }
+                }}
+                className="w-full py-3 bg-gradient-to-r from-orange-500 to-red-600 text-white rounded-xl font-bold hover:scale-105 transition-all"
+              >
+                Créer la Promotion
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
