@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { Patient, PatientType } from '../types';
-import { Search, MapPin, Phone, Mail, Calendar, Activity, ChevronRight, User, Zap, DollarSign, Save, X, Plus, Trash2, Edit } from 'lucide-react';
+import { Search, MapPin, Phone, Mail, Calendar, Activity, ChevronRight, User, Zap, DollarSign, Save, X, Plus, Trash2, Edit, Eye } from 'lucide-react';
 import AddressAutocomplete from './AddressAutocomplete';
+import PatientDetailView from './PatientDetailView';
 
 interface PatientListProps {
   patients: Patient[];
@@ -17,6 +18,8 @@ const PatientList: React.FC<PatientListProps> = ({ patients, onSelectPatient, on
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
   const [isEditingTariffs, setIsEditingTariffs] = useState(false);
   const [isEditingInfo, setIsEditingInfo] = useState(false);
+  const [showDetailView, setShowDetailView] = useState(false);
+  const [detailViewPatientId, setDetailViewPatientId] = useState<number | null>(null);
 
   const [tempTariffs, setTempTariffs] = useState<Record<string, number>>({});
   const [newTariffKey, setNewTariffKey] = useState('');
@@ -359,6 +362,16 @@ const PatientList: React.FC<PatientListProps> = ({ patients, onSelectPatient, on
          {isEditingInfo && renderPatientInfoEditor()}
 
          <button
+            onClick={() => {
+              setDetailViewPatientId(p.id!);
+              setShowDetailView(true);
+            }}
+            className="w-full py-3 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white rounded-xl shadow-lg shadow-blue-200 font-bold text-base flex items-center justify-center mb-3 hover:scale-[1.02] transition-all duration-300"
+         >
+             <Eye size={20} className="mr-2" /> Voir Détails Complets
+         </button>
+
+         <button
             onClick={() => { onInstantSession(p); setSelectedPatient(null); }}
             className="w-full py-4 bg-gradient-to-r from-teal-500 to-cyan-600 hover:from-teal-600 hover:to-cyan-700 text-white rounded-xl shadow-lg shadow-teal-200 font-bold text-lg flex items-center justify-center mb-6 hover:scale-[1.02] transition-all duration-300"
          >
@@ -517,6 +530,17 @@ const PatientList: React.FC<PatientListProps> = ({ patients, onSelectPatient, on
             ))}
         </div>
       </div>
+
+      {/* Modal vue détaillée patient */}
+      {showDetailView && detailViewPatientId && (
+        <PatientDetailView
+          patientId={detailViewPatientId}
+          onClose={() => {
+            setShowDetailView(false);
+            setDetailViewPatientId(null);
+          }}
+        />
+      )}
     </div>
   );
 };
