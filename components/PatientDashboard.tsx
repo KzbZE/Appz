@@ -1,8 +1,11 @@
 import React, { useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../db';
-import { Calendar, Clock, MapPin, FileText, CreditCard, LogOut, User, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
-import { ApptStatus, InvoiceStatus, AppointmentRequestStatus } from '../types';
+import { Calendar, Clock, MapPin, FileText, CreditCard, LogOut, User, CheckCircle, XCircle, AlertCircle, Edit, Trash2, Plus, Settings } from 'lucide-react';
+import { ApptStatus, InvoiceStatus, AppointmentRequestStatus, Appointment } from '../types';
+import PatientNewRequestModal from './PatientNewRequestModal';
+import PatientEditProfileModal from './PatientEditProfileModal';
+import PatientModifyAppointmentModal from './PatientModifyAppointmentModal';
 
 interface PatientDashboardProps {
     patientId: number;
@@ -14,7 +17,9 @@ const PatientDashboard: React.FC<PatientDashboardProps> = ({ patientId, onLogout
     const [showEditProfileModal, setShowEditProfileModal] = useState(false);
     const [showCancelModal, setShowCancelModal] = useState(false);
     const [showNewRequestModal, setShowNewRequestModal] = useState(false);
+    const [showModifyAppointmentModal, setShowModifyAppointmentModal] = useState(false);
     const [selectedAppointmentToCancel, setSelectedAppointmentToCancel] = useState<number | null>(null);
+    const [selectedAppointmentToModify, setSelectedAppointmentToModify] = useState<Appointment | null>(null);
 
     // Charger les données du patient
     const patient = useLiveQuery(() => db.patients.get(patientId));
@@ -146,13 +151,22 @@ const PatientDashboard: React.FC<PatientDashboardProps> = ({ patientId, onLogout
                                 <p className="text-sm text-slate-500">{patientAccount?.email}</p>
                             </div>
                         </div>
-                        <button
-                            onClick={handleLogout}
-                            className="flex items-center px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium rounded-lg transition-colors"
-                        >
-                            <LogOut size={18} className="mr-2" />
-                            Déconnexion
-                        </button>
+                        <div className="flex items-center space-x-2">
+                            <button
+                                onClick={() => setShowEditProfileModal(true)}
+                                className="flex items-center px-4 py-2 bg-teal-100 hover:bg-teal-200 text-teal-700 font-medium rounded-lg transition-colors"
+                            >
+                                <Settings size={18} className="mr-2" />
+                                Mon profil
+                            </button>
+                            <button
+                                onClick={handleLogout}
+                                className="flex items-center px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium rounded-lg transition-colors"
+                            >
+                                <LogOut size={18} className="mr-2" />
+                                Déconnexion
+                            </button>
+                        </div>
                     </div>
                 </div>
             </header>
@@ -210,11 +224,27 @@ const PatientDashboard: React.FC<PatientDashboardProps> = ({ patientId, onLogout
                 {/* Demandes RDV */}
                 {activeTab === 'REQUESTS' && (
                     <div className="space-y-4">
-                        <h2 className="text-xl font-bold text-slate-800 mb-4">Vos demandes de rendez-vous</h2>
+                        <div className="flex items-center justify-between mb-4">
+                            <h2 className="text-xl font-bold text-slate-800">Vos demandes de rendez-vous</h2>
+                            <button
+                                onClick={() => setShowNewRequestModal(true)}
+                                className="flex items-center px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-lg transition-colors shadow-sm"
+                            >
+                                <Plus size={18} className="mr-2" />
+                                Nouvelle demande
+                            </button>
+                        </div>
                         {appointmentRequests.length === 0 ? (
                             <div className="bg-white rounded-xl shadow p-8 text-center">
                                 <AlertCircle size={48} className="text-slate-300 mx-auto mb-4" />
-                                <p className="text-slate-500">Aucune demande de rendez-vous</p>
+                                <p className="text-slate-500 mb-4">Aucune demande de rendez-vous</p>
+                                <button
+                                    onClick={() => setShowNewRequestModal(true)}
+                                    className="inline-flex items-center px-6 py-3 bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-lg transition-colors"
+                                >
+                                    <Plus size={18} className="mr-2" />
+                                    Créer une demande
+                                </button>
                             </div>
                         ) : (
                             appointmentRequests.map(request => (
@@ -250,16 +280,50 @@ const PatientDashboard: React.FC<PatientDashboardProps> = ({ patientId, onLogout
                                             {request.notes && (
                                                 <p className="text-sm text-slate-500 mt-3 italic">"{request.notes}"</p>
                                             )}
+
+                                            {/* Créneau proposé par le praticien */}
+                                            {request.proposedStartTime && request.status === AppointmentRequestStatus.PRACTITIONER_PROPOSED && (
+                                                <div className="mt-4 p-3 bg-purple-50 border border-purple-200 rounded-lg">
+                                                    <p className="text-xs font-bold text-purple-900 mb-1">💡 Créneau proposé par le praticien:</p>
+                                                    <div className="flex items-center space-x-3 text-purple-800">
+                                                        <div className="flex items-center">
+                                                            <Calendar size={14} className="mr-1" />
+                                                            <span className="text-sm font-medium">
+                                                                {new Date(request.proposedStartTime).toLocaleDateString('fr-FR', {
+                                                                    weekday: 'short',
+                                                                    day: 'numeric',
+                                                                    month: 'short'
+                                                                })}
+                                                            </span>
+                                                        </div>
+                                                        <div className="flex items-center">
+                                                            <Clock size={14} className="mr-1" />
+                                                            <span className="text-sm font-medium">
+                                                                {new Date(request.proposedStartTime).toLocaleTimeString('fr-FR', {
+                                                                    hour: '2-digit',
+                                                                    minute: '2-digit'
+                                                                })}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            )}
                                         </div>
                                         <div className="ml-4">
-                                            {request.status === AppointmentRequestStatus.PENDING && !request.validated && (
+                                            {request.status === AppointmentRequestStatus.PENDING && (
+                                                <span className="inline-flex items-center px-3 py-1 bg-orange-100 text-orange-800 text-sm font-medium rounded-full">
+                                                    <Clock size={16} className="mr-1" />
+                                                    En attente
+                                                </span>
+                                            )}
+                                            {request.status === AppointmentRequestStatus.PRACTITIONER_PROPOSED && (
                                                 <div className="flex flex-col space-y-2">
                                                     <button
                                                         onClick={() => handleValidateRequest(request.id!, true)}
                                                         className="flex items-center px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-bold rounded-lg transition-colors"
                                                     >
                                                         <CheckCircle size={18} className="mr-2" />
-                                                        Valider
+                                                        Accepter
                                                     </button>
                                                     <button
                                                         onClick={() => handleValidateRequest(request.id!, false)}
@@ -302,7 +366,7 @@ const PatientDashboard: React.FC<PatientDashboardProps> = ({ patientId, onLogout
                         ) : (
                             upcomingAppointments.map(appt => (
                                 <div key={appt.id} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                                    <div className="flex items-center space-x-4">
+                                    <div className="flex items-start space-x-4">
                                         <div className="p-3 bg-teal-100 rounded-xl">
                                             <Calendar size={24} className="text-teal-600" />
                                         </div>
@@ -331,6 +395,30 @@ const PatientDashboard: React.FC<PatientDashboardProps> = ({ patientId, onLogout
                                             {appt.notes && (
                                                 <p className="text-sm text-slate-500 mt-2 italic">"{appt.notes}"</p>
                                             )}
+
+                                            {/* Actions */}
+                                            <div className="flex gap-2 mt-4">
+                                                <button
+                                                    onClick={() => {
+                                                        setSelectedAppointmentToModify(appt);
+                                                        setShowModifyAppointmentModal(true);
+                                                    }}
+                                                    className="flex items-center px-4 py-2 bg-blue-100 hover:bg-blue-200 text-blue-700 font-medium rounded-lg transition-colors text-sm"
+                                                >
+                                                    <Edit size={16} className="mr-1" />
+                                                    Modifier
+                                                </button>
+                                                <button
+                                                    onClick={() => {
+                                                        setSelectedAppointmentToCancel(appt.id!);
+                                                        setShowCancelModal(true);
+                                                    }}
+                                                    className="flex items-center px-4 py-2 bg-red-100 hover:bg-red-200 text-red-700 font-medium rounded-lg transition-colors text-sm"
+                                                >
+                                                    <Trash2 size={16} className="mr-1" />
+                                                    Annuler
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -427,6 +515,68 @@ const PatientDashboard: React.FC<PatientDashboardProps> = ({ patientId, onLogout
                     </div>
                 )}
             </div>
+
+            {/* Modals */}
+            {showNewRequestModal && patient && patientAccount && (
+                <PatientNewRequestModal
+                    patientId={patientId}
+                    patientEmail={patientAccount.email}
+                    patientName={patient.name}
+                    patientPhone={patient.phone || ''}
+                    patientAddress={patient.address}
+                    onClose={() => setShowNewRequestModal(false)}
+                />
+            )}
+
+            {showEditProfileModal && patient && (
+                <PatientEditProfileModal
+                    patient={patient}
+                    onSave={handleUpdateProfile}
+                    onClose={() => setShowEditProfileModal(false)}
+                />
+            )}
+
+            {showModifyAppointmentModal && selectedAppointmentToModify && patient && patientAccount && (
+                <PatientModifyAppointmentModal
+                    appointment={selectedAppointmentToModify}
+                    patientEmail={patientAccount.email}
+                    patientName={patient.name}
+                    patientPhone={patient.phone || ''}
+                    onClose={() => {
+                        setShowModifyAppointmentModal(false);
+                        setSelectedAppointmentToModify(null);
+                    }}
+                />
+            )}
+
+            {/* Modal confirmation annulation */}
+            {showCancelModal && (
+                <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
+                    <div className="bg-white rounded-2xl p-6 max-w-md w-full">
+                        <h3 className="text-xl font-bold text-slate-800 mb-4">Annuler le rendez-vous ?</h3>
+                        <p className="text-slate-600 mb-6">
+                            Êtes-vous sûr de vouloir annuler ce rendez-vous ? Le praticien en sera informé.
+                        </p>
+                        <div className="flex gap-3">
+                            <button
+                                onClick={() => {
+                                    setShowCancelModal(false);
+                                    setSelectedAppointmentToCancel(null);
+                                }}
+                                className="flex-1 py-3 bg-gray-200 text-gray-700 rounded-xl font-bold hover:bg-gray-300 transition-colors"
+                            >
+                                Non, garder
+                            </button>
+                            <button
+                                onClick={handleCancelAppointment}
+                                className="flex-1 py-3 bg-red-600 text-white rounded-xl font-bold hover:bg-red-700 transition-colors"
+                            >
+                                Oui, annuler
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
