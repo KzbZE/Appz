@@ -60,6 +60,26 @@ class TheraFlowDB extends Dexie {
       appointmentRequests: '++id, patientId, status, requestedStartTime, createdAt',
       notifications: '++id, type, status, sentAt, relatedRequestId'
     });
+
+    // ✅ Version 9: Ajout index 'phone' sur patients pour recherche dans PublicAppointmentRequest
+    (this as any).version(9).stores({
+      patients: '++id, name, type, lat, lng, phone',
+      appointments: '++id, patientId, startTime, status, isOptimizedSlot, googleEventId',
+      invoices: '++id, number, status, patientName',
+      recurringInvoices: '++id, patientName, isActive, nextDueDate',
+      expenses: '++id, date, category',
+      settings: '++id',
+      sessions: '++id, patientId, date, type',
+      smsLogs: '++id, date, status',
+      surveyResponses: '++id, patientId, date, npsScore',
+      goals: '++id, type, period, isActive, endDate',
+      loyaltyCards: '++id, patientId, isActive, type',
+      loyaltyTransactions: '++id, cardId, patientId, date, type',
+      referrals: '++id, referrerId, status, createdDate',
+      promotions: '++id, code, isActive, startDate, endDate',
+      appointmentRequests: '++id, patientId, status, requestedStartTime, createdAt',
+      notifications: '++id, type, status, sentAt, relatedRequestId'
+    });
   }
 
   async populate() {
