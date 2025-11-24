@@ -404,6 +404,7 @@ const PublicAppointmentRequest: React.FC = () => {
             )}
           </button>
         </form>
+        </div>
       </div>
     </div>
   );
