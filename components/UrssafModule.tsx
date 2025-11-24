@@ -55,7 +55,9 @@ const UrssafModule: React.FC = () => {
     XLSX.utils.sheet_add_json(ws, [totalRow], { skipHeader: true, origin: -1 });
 
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, `Séances ${selectedMonth + 1}/${selectedYear}`);
+    // Fix: Excel n'accepte pas les caractères / \ ? * [ ] dans les noms de feuille
+    const sheetName = `Séances ${String(selectedMonth + 1).padStart(2, '0')}-${selectedYear}`;
+    XLSX.utils.book_append_sheet(wb, ws, sheetName);
 
     const fileName = `URSSAF_${selectedYear}_${String(selectedMonth + 1).padStart(2, '0')}.xlsx`;
     XLSX.writeFile(wb, fileName);

@@ -5,7 +5,7 @@ import { db } from '../db';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { jsPDF } from 'jspdf';
 import { checkAuth, listDriveFolders, uploadToDriveReal } from '../services/googleApiService';
-import { sendEmail } from '../services/notificationService';
+import { sendEmail, sendSMS } from '../services/notificationService';
 
 interface FinanceModuleProps {
   invoices: Invoice[];

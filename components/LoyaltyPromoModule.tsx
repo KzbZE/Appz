@@ -18,17 +18,23 @@ const LoyaltyPromoModule: React.FC = () => {
 
   // Loyalty Card Management
   const handleCreateCard = async (patientId: number | string, patientName: string, type: 'STAMP_CARD' | 'POINTS') => {
-    await db.loyaltyCards.add({
-      patientId,
-      patientName,
-      type,
-      currentCount: 0,
-      targetCount: type === 'STAMP_CARD' ? 10 : 100,
-      createdDate: new Date().toISOString(),
-      isActive: true,
-      rewardClaimed: false
-    } as LoyaltyCard);
-    setShowAddCardModal(false);
+    try {
+      await db.loyaltyCards.add({
+        patientId,
+        patientName,
+        type,
+        currentCount: 0,
+        targetCount: type === 'STAMP_CARD' ? 10 : 100,
+        createdDate: new Date().toISOString(),
+        isActive: true,
+        rewardClaimed: false
+      } as LoyaltyCard);
+      alert('✅ Carte de fidélité créée avec succès !');
+      setShowAddCardModal(false);
+    } catch (error) {
+      console.error('Erreur création carte fidélité:', error);
+      alert('❌ Erreur lors de la création de la carte');
+    }
   };
 
   const handleStampCard = async (cardId: number, currentCount: number) => {
@@ -75,22 +81,33 @@ const LoyaltyPromoModule: React.FC = () => {
       return;
     }
 
-    await db.referrals.add({
-      ...referral,
-      status: 'PENDING',
-      createdDate: new Date().toISOString(),
-      referrerReward: 20, // 20€ de réduction
-      referredReward: 10  // 10€ de réduction
-    } as Referral);
-    setShowAddReferralModal(false);
+    try {
+      await db.referrals.add({
+        ...referral,
+        status: 'PENDING',
+        createdDate: new Date().toISOString(),
+        referrerReward: 20, // 20€ de réduction
+        referredReward: 10  // 10€ de réduction
+      } as Referral);
+      alert('✅ Parrainage créé avec succès !');
+      setShowAddReferralModal(false);
+    } catch (error) {
+      console.error('Erreur création parrainage:', error);
+      alert('❌ Erreur lors de la création du parrainage');
+    }
   };
 
   const markReferralCompleted = async (id: number) => {
-    await db.referrals.update(id, {
-      status: 'COMPLETED',
-      completedDate: new Date().toISOString()
-    });
-    alert('✅ Parrainage validé ! Les récompenses peuvent être attribuées.');
+    try {
+      await db.referrals.update(id, {
+        status: 'COMPLETED',
+        completedDate: new Date().toISOString()
+      });
+      alert('✅ Parrainage validé ! Les récompenses peuvent être attribuées.');
+    } catch (error) {
+      console.error('Erreur validation parrainage:', error);
+      alert('❌ Erreur lors de la validation du parrainage');
+    }
   };
 
   return (
