@@ -177,34 +177,217 @@ const SessionWizard: React.FC<SessionWizardProps> = ({ patient, settings, onComp
 
   const generatePDF = (): jsPDF => {
       const doc = new jsPDF();
-      doc.setFontSize(20);
-      doc.text(`Compte-Rendu de Séance`, 105, 20, { align: 'center' });
-      
-      doc.setFontSize(12);
-      doc.text(`Patient: ${patient.name}`, 20, 40);
-      doc.text(`Date: ${new Date().toLocaleDateString()}`, 20, 50);
-      doc.text(`Type: ${sessionType}`, 20, 60);
+      let y = 20;
 
-      doc.setFontSize(14);
-      doc.text("Anamnèse", 20, 80);
+      // Helper function to add colored section
+      const addSection = (title: string, content: string, color: [number, number, number], bgColor: [number, number, number]) => {
+        // Section title with colored bar
+        doc.setDrawColor(color[0], color[1], color[2]);
+        doc.setFillColor(color[0], color[1], color[2]);
+        doc.rect(15, y - 2, 2, 6, 'F'); // Colored bar
+
+        doc.setTextColor(color[0] * 0.6, color[1] * 0.6, color[2] * 0.6);
+        doc.setFontSize(11);
+        doc.setFont('helvetica', 'bold');
+        doc.text(title, 20, y + 3);
+
+        y += 8;
+
+        // Background box
+        doc.setFillColor(bgColor[0], bgColor[1], bgColor[2]);
+        const contentLines = doc.splitTextToSize(content || 'Non renseigné', 170);
+        const boxHeight = Math.max(12, contentLines.length * 5 + 4);
+        doc.roundedRect(15, y, 180, boxHeight, 2, 2, 'F');
+
+        // Content text
+        doc.setTextColor(color[0] * 0.5, color[1] * 0.5, color[2] * 0.5);
+        doc.setFontSize(9);
+        doc.setFont('helvetica', 'normal');
+        doc.text(contentLines, 18, y + 5);
+
+        y += boxHeight + 6;
+      };
+
+      // ========== HEADER ==========
+      // TheraFlow branding with teal border
+      doc.setDrawColor(20, 184, 166); // Teal
+      doc.setLineWidth(3);
+      doc.line(15, 15, 195, 15);
+
+      doc.setTextColor(51, 65, 85); // Slate-800
+      doc.setFontSize(22);
+      doc.setFont('helvetica', 'bold');
+      doc.text('TheraFlow', 15, 25);
+
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(100, 116, 139); // Slate-500
+      doc.text(settings?.practitioner?.name || 'Praticien', 15, 31);
+      if (settings?.practitioner?.email) {
+        doc.setFontSize(8);
+        doc.text(settings.practitioner.email, 15, 36);
+      }
+
+      // Date and "Compte-Rendu" label on right
+      doc.setFontSize(8);
+      doc.setTextColor(148, 163, 184);
+      doc.text('COMPTE-RENDU', 195, 21, { align: 'right' });
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(51, 65, 85);
+      doc.text(new Date().toLocaleDateString('fr-FR'), 195, 27, { align: 'right' });
+
+      y = 45;
+
+      // ========== PATIENT INFORMATION BOX ==========
+      // Teal gradient box
+      doc.setFillColor(240, 253, 250); // Teal-50
+      doc.roundedRect(15, y, 180, 26, 2, 2, 'F');
+
+      // Teal left border
+      doc.setFillColor(20, 184, 166);
+      doc.rect(15, y, 3, 26, 'F');
+
       doc.setFontSize(10);
-      let y = 90;
-      Object.entries(anamnesis).forEach(([k, v]) => {
-          if (k !== 'generatedReport' && y < 280) {
-            doc.text(`${k}: ${v}`, 20, y);
-            y += 10;
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(19, 78, 74); // Teal-900
+      doc.text('Informations Patient', 21, y + 6);
+
+      // Patient details in grid
+      doc.setFontSize(8);
+      doc.setFont('helvetica', 'normal');
+
+      // Left column
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(19, 78, 74);
+      doc.text('Patient :', 21, y + 13);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(51, 65, 85);
+      doc.text(patient.name, 42, y + 13);
+
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(19, 78, 74);
+      doc.text('Séance :', 21, y + 20);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(51, 65, 85);
+      doc.text(sessionType === 'KINESIO' ? 'Kinésiologie' : 'Massage', 42, y + 20);
+
+      // Right column
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(19, 78, 74);
+      doc.text('Type :', 110, y + 13);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(51, 65, 85);
+      doc.text(patient.type, 125, y + 13);
+
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(19, 78, 74);
+      doc.text('Date :', 110, y + 20);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(51, 65, 85);
+      doc.text(new Date().toLocaleDateString('fr-FR'), 125, y + 20);
+
+      y += 34;
+
+      // ========== SECTIONS ==========
+      // Plainte Principale (Red)
+      addSection('Plainte Principale', anamnesis.mainComplaint || '', [220, 38, 38], [254, 242, 242]);
+
+      // Check if need new page
+      if (y > 240) {
+        doc.addPage();
+        y = 20;
+      }
+
+      // Observations (Blue)
+      addSection('Observations', anamnesis.observations || '', [59, 130, 246], [239, 246, 255]);
+
+      if (y > 240) {
+        doc.addPage();
+        y = 20;
+      }
+
+      // Objectifs (Purple)
+      addSection('Objectifs de la Séance', anamnesis.objectives || '', [168, 85, 247], [250, 245, 255]);
+
+      if (y > 240) {
+        doc.addPage();
+        y = 20;
+      }
+
+      // Techniques (Amber - if any)
+      if (selectedTechniques.length > 0) {
+        doc.setFillColor(255, 251, 235); // Amber-50
+        const techBoxHeight = 8 + Math.ceil(selectedTechniques.length / 3) * 5;
+        doc.roundedRect(15, y, 180, techBoxHeight, 2, 2, 'F');
+
+        doc.setFillColor(245, 158, 11);
+        doc.rect(15, y, 3, techBoxHeight, 'F');
+
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(120, 53, 15);
+        doc.text('Techniques Utilisées', 21, y + 5);
+
+        doc.setFontSize(7);
+        doc.setFont('helvetica', 'normal');
+        let xTech = 21;
+        let yTech = y + 10;
+        selectedTechniques.forEach((tech, i) => {
+          const textWidth = doc.getTextWidth(tech);
+          if (xTech + textWidth + 4 > 190) {
+            xTech = 21;
+            yTech += 5;
           }
-      });
+          doc.setFillColor(252, 211, 77); // Amber-300
+          doc.roundedRect(xTech, yTech - 3, textWidth + 4, 4, 1, 1, 'F');
+          doc.setTextColor(120, 53, 15);
+          doc.text(tech, xTech + 2, yTech);
+          xTech += textWidth + 7;
+        });
 
-      y += 10;
-      doc.setFontSize(14);
-      doc.text("Rapport", 20, y);
-      y += 10;
-      doc.setFontSize(10);
-      
-      const splitText = doc.splitTextToSize(generatedReport || treatmentNotes, 170);
-      doc.text(splitText, 20, y);
-      
+        y += techBoxHeight + 6;
+      }
+
+      if (y > 240) {
+        doc.addPage();
+        y = 20;
+      }
+
+      // Protocole (Emerald)
+      addSection('Protocole & Déroulement', treatmentNotes || '', [16, 185, 129], [236, 253, 245]);
+
+      if (y > 240) {
+        doc.addPage();
+        y = 20;
+      }
+
+      // Notes Complémentaires (Slate)
+      addSection('Notes Complémentaires & Rapport', generatedReport || '', [100, 116, 139], [248, 250, 252]);
+
+      if (y > 240) {
+        doc.addPage();
+        y = 20;
+      }
+
+      // Recommandations (Teal)
+      addSection('Recommandations & Conseils', anamnesis.recommendations || '', [20, 184, 166], [240, 253, 250]);
+
+      // ========== FOOTER ==========
+      // Go to last page
+      const pageCount = doc.getNumberOfPages();
+      doc.setPage(pageCount);
+
+      doc.setDrawColor(209, 213, 219);
+      doc.setLineWidth(1);
+      doc.line(15, 280, 195, 280);
+
+      doc.setFontSize(7);
+      doc.setTextColor(148, 163, 184);
+      doc.setFont('helvetica', 'normal');
+      const footerText = `Document généré par TheraFlow - ${new Date().toLocaleDateString('fr-FR', { year: 'numeric', month: 'long', day: 'numeric' })}`;
+      doc.text(footerText, 105, 286, { align: 'center' });
+
       return doc;
   };
 
