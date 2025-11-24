@@ -4,6 +4,7 @@ import { AlertCircle, Send, Clock, Euro, Calendar, Mail, X, Check, TrendingDown,
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../db';
 import { jsPDF } from 'jspdf';
+import { sendEmail } from '../services/notificationService';
 
 interface ReminderConfig {
   firstReminderDays: number;
@@ -142,6 +143,7 @@ const InvoiceReminders: React.FC = () => {
   const confirmSendReminder = async () => {
     if (!selectedInvoice || !mailForm.to) return;
 
+    // Generate and download PDF
     const doc = generateInvoicePDF(selectedInvoice);
     const blob = doc.output('blob');
     const url = URL.createObjectURL(blob);
@@ -151,19 +153,33 @@ const InvoiceReminders: React.FC = () => {
     link.click();
     URL.revokeObjectURL(url);
 
-    const mailtoLink = `mailto:${mailForm.to}?subject=${encodeURIComponent(mailForm.subject)}&body=${encodeURIComponent(mailForm.message)}`;
-    window.open(mailtoLink, '_blank');
-
-    // Update reminder date
-    if (selectedInvoice.id) {
-      await db.invoices.update(selectedInvoice.id, {
-        reminderSentAt: new Date().toISOString()
+    // Send email via API
+    try {
+      const emailSent = await sendEmail({
+        to: mailForm.to,
+        subject: mailForm.subject,
+        message: mailForm.message,
+        relatedRequestId: selectedInvoice.id
       });
-    }
 
-    alert("Rappel envoyé ! Le PDF a été téléchargé.");
-    setShowMailModal(false);
-    setSelectedInvoice(null);
+      if (emailSent) {
+        // Update reminder date
+        if (selectedInvoice.id) {
+          await db.invoices.update(selectedInvoice.id, {
+            reminderSentAt: new Date().toISOString()
+          });
+        }
+
+        alert("✅ Rappel envoyé par email ! Le PDF a été téléchargé localement.");
+        setShowMailModal(false);
+        setSelectedInvoice(null);
+      } else {
+        alert("❌ Erreur lors de l'envoi de l'email. Vérifiez la configuration de votre clé API Resend dans les variables d'environnement Netlify.");
+      }
+    } catch (error) {
+      console.error("Erreur envoi email:", error);
+      alert("❌ Erreur lors de l'envoi de l'email. Consultez la console pour plus de détails.");
+    }
   };
 
   const handleBulkReminder = async () => {

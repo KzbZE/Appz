@@ -3,6 +3,7 @@ import { Invoice, ReminderRecord, ReminderStageConfig } from '../types';
 import { Bell, Send, Mail, Calendar, AlertTriangle, CheckCircle, X } from 'lucide-react';
 import { db } from '../db';
 import { useLiveQuery } from 'dexie-react-hooks';
+import { sendEmail } from '../services/notificationService';
 
 interface ReminderModuleProps {
   invoices: Invoice[];
@@ -16,6 +17,7 @@ const ReminderModule: React.FC<ReminderModuleProps> = ({ invoices }) => {
   const [showSendModal, setShowSendModal] = useState(false);
   const [selectedStage, setSelectedStage] = useState<'J+7' | 'J+15' | 'J+30' | 'J+45' | 'J+60_FORMAL'>('J+7');
   const [customMessage, setCustomMessage] = useState('');
+  const [recipientEmail, setRecipientEmail] = useState('');
 
   // Calculate which invoices need reminders and at what stage
   const getNextReminderStage = (invoice: Invoice): ReminderStageConfig | null => {
@@ -48,6 +50,7 @@ const ReminderModule: React.FC<ReminderModuleProps> = ({ invoices }) => {
   const handleOpenSendModal = (invoice: Invoice, stage: ReminderStageConfig) => {
     setSelectedInvoice(invoice);
     setSelectedStage(stage.stage);
+    setRecipientEmail('');
     setCustomMessage(
       stage.message
         .replace('{invoiceNumber}', invoice.number)
@@ -58,24 +61,46 @@ const ReminderModule: React.FC<ReminderModuleProps> = ({ invoices }) => {
   };
 
   const handleSendReminder = async () => {
-    if (!selectedInvoice || !selectedInvoice.id) return;
+    if (!selectedInvoice || !selectedInvoice.id || !recipientEmail) {
+      alert("⚠️ Veuillez entrer l'adresse email du destinataire.");
+      return;
+    }
 
-    const reminderRecord: ReminderRecord = {
-      date: new Date().toISOString(),
-      stage: selectedStage,
-      message: customMessage,
-      method: 'EMAIL' // Default to email for now
-    };
+    try {
+      // Send email via API
+      const emailSent = await sendEmail({
+        to: recipientEmail,
+        subject: `Relance ${selectedStage} - Facture ${selectedInvoice.number}`,
+        message: customMessage,
+        relatedRequestId: selectedInvoice.id
+      });
 
-    const existingReminders = selectedInvoice.reminders || [];
-    await db.invoices.update(selectedInvoice.id, {
-      reminders: [...existingReminders, reminderRecord],
-      reminderSentAt: new Date().toISOString()
-    });
+      if (emailSent) {
+        // Save reminder record
+        const reminderRecord: ReminderRecord = {
+          date: new Date().toISOString(),
+          stage: selectedStage,
+          message: customMessage,
+          method: 'EMAIL'
+        };
 
-    alert(`Relance ${selectedStage} envoyée avec succès !`);
-    setShowSendModal(false);
-    setSelectedInvoice(null);
+        const existingReminders = selectedInvoice.reminders || [];
+        await db.invoices.update(selectedInvoice.id, {
+          reminders: [...existingReminders, reminderRecord],
+          reminderSentAt: new Date().toISOString()
+        });
+
+        alert(`✅ Relance ${selectedStage} envoyée avec succès par email !`);
+        setShowSendModal(false);
+        setSelectedInvoice(null);
+        setRecipientEmail('');
+      } else {
+        alert("❌ Erreur lors de l'envoi de l'email. Vérifiez la configuration de votre clé API Resend dans les variables d'environnement Netlify.");
+      }
+    } catch (error) {
+      console.error("Erreur envoi email:", error);
+      alert("❌ Erreur lors de l'envoi de l'email. Consultez la console pour plus de détails.");
+    }
   };
 
   const STAGE_COLORS: Record<string, { bg: string; text: string; border: string }> = {
@@ -345,6 +370,18 @@ const ReminderModule: React.FC<ReminderModuleProps> = ({ invoices }) => {
                     </div>
                   </div>
                 </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-bold text-slate-700 mb-2">Email du Destinataire</label>
+                <input
+                  type="email"
+                  value={recipientEmail}
+                  onChange={(e) => setRecipientEmail(e.target.value)}
+                  className="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent text-sm"
+                  placeholder="email@exemple.com"
+                  required
+                />
               </div>
 
               <div>
