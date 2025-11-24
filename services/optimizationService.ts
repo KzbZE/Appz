@@ -1,10 +1,11 @@
 import { db } from '../db';
 import { Appointment, Patient } from '../types';
+import { validateSlot, SlotValidationResult } from './slotValidationService';
 
 // Clé API Google Maps (à configurer dans les settings)
 const GOOGLE_MAPS_API_KEY = 'YOUR_GOOGLE_MAPS_API_KEY'; // À remplacer
 
-interface OptimizedSlot {
+export interface OptimizedSlot {
   startTime: string;
   isOptimized: boolean;
   reason: string;
@@ -14,6 +15,7 @@ interface OptimizedSlot {
     distance: number; // km
   };
   score: number; // Score d'optimisation (0-100)
+  validation?: SlotValidationResult; // Résultat de la validation complète
 }
 
 /**
@@ -91,6 +93,7 @@ export async function findNearbyAppointments(
 /**
  * Suggère des créneaux optimisés pour un rendez-vous
  * Basé sur la proximité géographique ET le regroupement au cabinet
+ * Intègre la validation complète (conflits, temps de trajet)
  */
 export async function suggestOptimizedSlots(
   patientLat: number | undefined,
@@ -98,7 +101,8 @@ export async function suggestOptimizedSlots(
   durationMin: number,
   preferredDate?: Date,
   excludeSlots: string[] = [], // Créneaux déjà occupés à exclure
-  appointmentType?: 'CABINET' | 'HOME' // Type de RDV pour optimiser différemment
+  appointmentType?: 'CABINET' | 'HOME', // Type de RDV pour optimiser différemment
+  validateSlots: boolean = true // Activer la validation complète
 ): Promise<OptimizedSlot[]> {
   const suggestions: OptimizedSlot[] = [];
   const startDate = preferredDate || new Date();
@@ -139,22 +143,60 @@ export async function suggestOptimizedSlots(
           const afterHour = slotAfter.getHours();
 
           if (beforeHour >= 8 && beforeHour < 19 && !excludeSlots.includes(slotBefore.toISOString())) {
-            const score = 85 + (cabinetAppointments.length * 5); // Bon score pour regroupement cabinet
+            let score = 85 + (cabinetAppointments.length * 5); // Bon score pour regroupement cabinet
+            let validation: SlotValidationResult | undefined;
+
+            // Validation complète si activée
+            if (validateSlots) {
+              validation = await validateSlot(
+                slotBefore,
+                durationMin,
+                patientLat,
+                patientLng,
+                appointmentType
+              );
+
+              // Ajuster le score en fonction de la validation
+              if (!validation.isAvailable) {
+                continue; // Ne pas suggérer un créneau bloqué
+              }
+              score = Math.round((score + validation.score) / 2); // Moyenne des deux scores
+            }
+
             suggestions.push({
               startTime: slotBefore.toISOString(),
               isOptimized: true,
               reason: `Regrouper avec autre RDV cabinet (${cabAppt.notes?.split(' - ')[0] || 'Patient'})`,
-              score
+              score,
+              validation
             });
           }
 
           if (afterHour >= 8 && afterHour < 19 && !excludeSlots.includes(slotAfter.toISOString())) {
-            const score = 85 + (cabinetAppointments.length * 5);
+            let score = 85 + (cabinetAppointments.length * 5);
+            let validation: SlotValidationResult | undefined;
+
+            if (validateSlots) {
+              validation = await validateSlot(
+                slotAfter,
+                durationMin,
+                patientLat,
+                patientLng,
+                appointmentType
+              );
+
+              if (!validation.isAvailable) {
+                continue;
+              }
+              score = Math.round((score + validation.score) / 2);
+            }
+
             suggestions.push({
               startTime: slotAfter.toISOString(),
               isOptimized: true,
               reason: `Regrouper avec autre RDV cabinet (${cabAppt.notes?.split(' - ')[0] || 'Patient'})`,
-              score
+              score,
+              validation
             });
           }
         }
@@ -182,7 +224,24 @@ export async function suggestOptimizedSlots(
             const afterHour = slotAfter.getHours();
 
             if (beforeHour >= 8 && beforeHour < 19 && !excludeSlots.includes(slotBefore.toISOString())) {
-              const score = calculateOptimizationScore(distance, nearbyAppointments.length);
+              let score = calculateOptimizationScore(distance, nearbyAppointments.length);
+              let validation: SlotValidationResult | undefined;
+
+              if (validateSlots) {
+                validation = await validateSlot(
+                  slotBefore,
+                  durationMin,
+                  patientLat,
+                  patientLng,
+                  appointmentType
+                );
+
+                if (!validation.isAvailable) {
+                  continue;
+                }
+                score = Math.round((score + validation.score) / 2);
+              }
+
               suggestions.push({
                 startTime: slotBefore.toISOString(),
                 isOptimized: true,
@@ -192,12 +251,30 @@ export async function suggestOptimizedSlots(
                   time: appointment.startTime,
                   distance
                 },
-                score
+                score,
+                validation
               });
             }
 
             if (afterHour >= 8 && afterHour < 19 && !excludeSlots.includes(slotAfter.toISOString())) {
-              const score = calculateOptimizationScore(distance, nearbyAppointments.length);
+              let score = calculateOptimizationScore(distance, nearbyAppointments.length);
+              let validation: SlotValidationResult | undefined;
+
+              if (validateSlots) {
+                validation = await validateSlot(
+                  slotAfter,
+                  durationMin,
+                  patientLat,
+                  patientLng,
+                  appointmentType
+                );
+
+                if (!validation.isAvailable) {
+                  continue;
+                }
+                score = Math.round((score + validation.score) / 2);
+              }
+
               suggestions.push({
                 startTime: slotAfter.toISOString(),
                 isOptimized: true,
@@ -207,7 +284,8 @@ export async function suggestOptimizedSlots(
                   time: appointment.startTime,
                   distance
                 },
-                score
+                score,
+                validation
               });
             }
           }
@@ -241,11 +319,16 @@ function calculateOptimizationScore(distanceKm: number, nearbyCount: number): nu
  * Génère des créneaux disponibles standards (non optimisés)
  * Pour donner le choix même s'il n'y a pas d'optimisation possible
  */
-export function generateStandardSlots(
+export async function generateStandardSlots(
   startDate: Date,
   daysAhead: number = 14,
-  excludeSlots: string[] = []
-): OptimizedSlot[] {
+  excludeSlots: string[] = [],
+  patientLat?: number,
+  patientLng?: number,
+  durationMin?: number,
+  appointmentType?: 'CABINET' | 'HOME',
+  validateSlots: boolean = false
+): Promise<OptimizedSlot[]> {
   const slots: OptimizedSlot[] = [];
   const workingHours = [9, 10, 11, 14, 15, 16, 17, 18]; // Heures de travail
 
@@ -261,11 +344,31 @@ export function generateStandardSlots(
       slotTime.setHours(hour, 0, 0, 0);
 
       if (!excludeSlots.includes(slotTime.toISOString())) {
+        let score = 50; // Score neutre
+        let validation: SlotValidationResult | undefined;
+
+        // Validation optionnelle
+        if (validateSlots && durationMin) {
+          validation = await validateSlot(
+            slotTime,
+            durationMin,
+            patientLat,
+            patientLng,
+            appointmentType
+          );
+
+          if (!validation.isAvailable) {
+            continue; // Exclure les créneaux bloqués
+          }
+          score = validation.score;
+        }
+
         slots.push({
           startTime: slotTime.toISOString(),
           isOptimized: false,
           reason: 'Créneau disponible',
-          score: 50 // Score neutre
+          score,
+          validation
         });
       }
     }
@@ -282,7 +385,8 @@ export async function getAllAvailableSlots(
   patientLng: number | undefined,
   durationMin: number,
   preferredDate?: Date,
-  appointmentType?: 'CABINET' | 'HOME'
+  appointmentType?: 'CABINET' | 'HOME',
+  validateSlots: boolean = true
 ): Promise<{
   optimized: OptimizedSlot[];
   standard: OptimizedSlot[];
@@ -306,11 +410,21 @@ export async function getAllAvailableSlots(
     durationMin,
     preferredDate,
     excludeSlots,
-    appointmentType
+    appointmentType,
+    validateSlots
   );
 
   // Créneaux standards
-  const standard = generateStandardSlots(startDate, 14, excludeSlots);
+  const standard = await generateStandardSlots(
+    startDate,
+    14,
+    excludeSlots,
+    patientLat,
+    patientLng,
+    durationMin,
+    appointmentType,
+    validateSlots
+  );
 
   return { optimized, standard };
 }

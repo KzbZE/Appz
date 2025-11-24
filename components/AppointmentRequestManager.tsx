@@ -1,10 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../db';
 import { AppointmentRequest, AppointmentRequestStatus } from '../types';
-import { Calendar, Check, X, Clock, MessageCircle, Send } from 'lucide-react';
+import { Calendar, Check, X, Clock, MessageCircle, Send, RefreshCw, AlertTriangle } from 'lucide-react';
 import { AppointmentNotifications } from '../services/notificationService';
-import { getAllAvailableSlots } from '../services/optimizationService';
+import { getAllAvailableSlots, OptimizedSlot } from '../services/optimizationService';
+import { validateSlot, suggestAlternativeDays } from '../services/slotValidationService';
+import SlotValidationDisplay from './SlotValidationDisplay';
 
 const AppointmentRequestManager: React.FC = () => {
   const requests = useLiveQuery(() =>
@@ -20,7 +22,12 @@ const AppointmentRequestManager: React.FC = () => {
   const [proposedTime, setProposedTime] = useState('');
   const [responseMessage, setResponseMessage] = useState('');
   const [showSuggestedSlots, setShowSuggestedSlots] = useState(false);
-  const [suggestedSlots, setSuggestedSlots] = useState<any[]>([]);
+  const [suggestedSlots, setSuggestedSlots] = useState<OptimizedSlot[]>([]);
+  const [selectedSlotForValidation, setSelectedSlotForValidation] = useState<OptimizedSlot | null>(null);
+  const [alternativeDays, setAlternativeDays] = useState<Array<{ date: Date; score: number; reason: string }>>([]);
+  const [showAlternativeDays, setShowAlternativeDays] = useState(false);
+  const [searchDate, setSearchDate] = useState<Date>(new Date());
+  const [isLoadingSlots, setIsLoadingSlots] = useState(false);
 
   const settings = useLiveQuery(() => db.settings.toCollection().first());
 
@@ -153,21 +160,52 @@ const AppointmentRequestManager: React.FC = () => {
     }
   };
 
-  const loadSuggestedSlots = async (request: AppointmentRequest) => {
+  const loadSuggestedSlots = async (request: AppointmentRequest, customDate?: Date) => {
+    setIsLoadingSlots(true);
     try {
       const patient = await db.patients.get(request.patientId);
+      const targetDate = customDate || searchDate || new Date(request.requestedStartTime);
+
       const slots = await getAllAvailableSlots(
         patient?.lat,
         patient?.lng,
         request.durationMin,
-        new Date(request.requestedStartTime),
-        request.type === 'CABINET' ? 'CABINET' : 'HOME'
+        targetDate,
+        request.type === 'CABINET' ? 'CABINET' : 'HOME',
+        true // Activer la validation
       );
 
-      setSuggestedSlots([...slots.optimized, ...slots.standard]);
+      // Combiner et trier par score
+      const allSlots = [...slots.optimized, ...slots.standard];
+      allSlots.sort((a, b) => b.score - a.score);
+
+      setSuggestedSlots(allSlots);
       setShowSuggestedSlots(true);
     } catch (error) {
       console.error('Error loading slots:', error);
+      alert('Erreur lors du chargement des créneaux');
+    } finally {
+      setIsLoadingSlots(false);
+    }
+  };
+
+  const loadAlternativeDays = async (request: AppointmentRequest) => {
+    try {
+      const patient = await db.patients.get(request.patientId);
+      const alternatives = await suggestAlternativeDays(
+        new Date(request.requestedStartTime),
+        request.durationMin,
+        patient?.lat,
+        patient?.lng,
+        request.type === 'CABINET' ? 'CABINET' : 'HOME',
+        7 // 7 jours à vérifier
+      );
+
+      setAlternativeDays(alternatives);
+      setShowAlternativeDays(true);
+    } catch (error) {
+      console.error('Error loading alternative days:', error);
+      alert('Erreur lors du chargement des jours alternatifs');
     }
   };
 
@@ -292,45 +330,166 @@ const AppointmentRequestManager: React.FC = () => {
                 </p>
               </div>
 
-              {/* Bouton créneaux suggérés */}
-              <button
-                onClick={() => loadSuggestedSlots(selectedRequest)}
-                className="w-full py-2 bg-purple-100 text-purple-700 rounded-lg font-bold hover:bg-purple-200"
-              >
-                💡 Voir les créneaux optimisés
-              </button>
+              {/* Contrôles de recherche */}
+              <div className="space-y-3">
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => loadSuggestedSlots(selectedRequest)}
+                    disabled={isLoadingSlots}
+                    className="flex-1 py-2 bg-purple-100 text-purple-700 rounded-lg font-bold hover:bg-purple-200 disabled:opacity-50 flex items-center justify-center"
+                  >
+                    {isLoadingSlots ? (
+                      <>
+                        <RefreshCw size={16} className="mr-2 animate-spin" />
+                        Chargement...
+                      </>
+                    ) : (
+                      <>
+                        💡 Voir créneaux optimisés
+                      </>
+                    )}
+                  </button>
+                  <button
+                    onClick={() => loadAlternativeDays(selectedRequest)}
+                    className="py-2 px-3 bg-blue-100 text-blue-700 rounded-lg font-bold hover:bg-blue-200 flex items-center"
+                    title="Jours alternatifs"
+                  >
+                    <Calendar size={16} className="mr-1" />
+                    Jours
+                  </button>
+                </div>
 
-              {/* Créneaux suggérés */}
-              {showSuggestedSlots && (
-                <div className="max-h-60 overflow-y-auto space-y-2">
-                  {suggestedSlots.slice(0, 5).map((slot, i) => (
-                    <button
-                      key={i}
-                      onClick={() => {
-                        setProposedTime(slot.startTime);
-                        setShowSuggestedSlots(false);
+                {/* Sélecteur de date pour recalcul dynamique */}
+                {showSuggestedSlots && (
+                  <div className="flex items-center gap-2 bg-slate-50 p-2 rounded-lg">
+                    <label className="text-sm font-medium text-slate-700">Recalculer pour:</label>
+                    <input
+                      type="date"
+                      value={searchDate.toISOString().split('T')[0]}
+                      onChange={(e) => {
+                        const newDate = new Date(e.target.value);
+                        setSearchDate(newDate);
+                        loadSuggestedSlots(selectedRequest, newDate);
                       }}
-                      className={`w-full p-3 rounded-lg text-left border-2 ${
-                        slot.isOptimized
-                          ? 'border-purple-300 bg-purple-50 hover:bg-purple-100'
-                          : 'border-gray-200 bg-gray-50 hover:bg-gray-100'
-                      }`}
+                      className="px-3 py-1 border border-gray-300 rounded text-sm"
+                    />
+                    <button
+                      onClick={() => loadSuggestedSlots(selectedRequest, searchDate)}
+                      className="p-1 hover:bg-slate-200 rounded"
+                      title="Actualiser"
                     >
-                      <div className="flex justify-between items-center">
-                        <div>
-                          <p className="font-bold">
-                            {new Date(slot.startTime).toLocaleString('fr-FR')}
-                          </p>
-                          <p className="text-xs text-gray-600">{slot.reason}</p>
-                        </div>
-                        {slot.isOptimized && (
-                          <span className="px-2 py-1 bg-purple-200 text-purple-800 rounded text-xs font-bold">
-                            💡 Score: {slot.score}
-                          </span>
-                        )}
-                      </div>
+                      <RefreshCw size={16} className="text-slate-600" />
                     </button>
-                  ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Jours alternatifs */}
+              {showAlternativeDays && alternativeDays.length > 0 && (
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                  <h4 className="font-bold text-blue-900 mb-2 flex items-center">
+                    <Calendar size={16} className="mr-2" />
+                    Jours alternatifs recommandés
+                  </h4>
+                  <div className="space-y-2">
+                    {alternativeDays.map((alt, i) => (
+                      <button
+                        key={i}
+                        onClick={() => {
+                          setSearchDate(alt.date);
+                          setShowAlternativeDays(false);
+                          loadSuggestedSlots(selectedRequest, alt.date);
+                        }}
+                        className="w-full p-2 bg-white rounded border border-blue-200 hover:bg-blue-50 text-left"
+                      >
+                        <div className="flex justify-between items-center">
+                          <div>
+                            <p className="font-medium text-sm">{alt.date.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}</p>
+                            <p className="text-xs text-blue-700">{alt.reason}</p>
+                          </div>
+                          <span className="px-2 py-1 bg-blue-200 text-blue-800 rounded text-xs font-bold">
+                            Score: {alt.score}
+                          </span>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Créneaux suggérés avec validation */}
+              {showSuggestedSlots && (
+                <div className="space-y-3">
+                  <h4 className="font-bold text-slate-800">Créneaux disponibles ({suggestedSlots.length})</h4>
+                  <div className="max-h-96 overflow-y-auto space-y-2">
+                    {suggestedSlots.slice(0, 10).map((slot, i) => (
+                      <div key={i} className="border-2 rounded-lg overflow-hidden">
+                        {/* En-tête du créneau */}
+                        <button
+                          onClick={() => {
+                            if (slot.validation?.isAvailable) {
+                              setProposedTime(slot.startTime);
+                              setShowSuggestedSlots(false);
+                            } else {
+                              setSelectedSlotForValidation(slot);
+                            }
+                          }}
+                          className={`w-full p-3 text-left transition-all ${
+                            slot.validation?.isAvailable === false
+                              ? 'bg-red-50 border-red-300 cursor-not-allowed opacity-75'
+                              : slot.isOptimized
+                              ? 'bg-purple-50 border-purple-300 hover:bg-purple-100'
+                              : 'bg-gray-50 border-gray-200 hover:bg-gray-100'
+                          }`}
+                        >
+                          <div className="flex justify-between items-start">
+                            <div className="flex-1">
+                              <p className="font-bold text-lg">
+                                {new Date(slot.startTime).toLocaleString('fr-FR', {
+                                  weekday: 'short',
+                                  day: 'numeric',
+                                  month: 'short',
+                                  hour: '2-digit',
+                                  minute: '2-digit'
+                                })}
+                              </p>
+                              <p className="text-xs text-gray-600 mt-1">{slot.reason}</p>
+                            </div>
+
+                            <div className="flex flex-col items-end space-y-1">
+                              {slot.isOptimized && (
+                                <span className="px-2 py-1 bg-purple-200 text-purple-800 rounded text-xs font-bold">
+                                  💡 {slot.score}
+                                </span>
+                              )}
+                              {slot.validation && (
+                                <SlotValidationDisplay validation={slot.validation} compact />
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Conflits visibles */}
+                          {slot.validation && slot.validation.conflicts.length > 0 && (
+                            <div className="mt-2 pt-2 border-t border-red-200">
+                              <div className="flex items-center text-xs text-red-700 font-medium">
+                                <AlertTriangle size={14} className="mr-1" />
+                                {slot.validation.conflicts.length} conflit{slot.validation.conflicts.length > 1 ? 's' : ''}
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setSelectedSlotForValidation(slot);
+                                  }}
+                                  className="ml-2 underline hover:text-red-900"
+                                >
+                                  Voir détails
+                                </button>
+                              </div>
+                            </div>
+                          )}
+                        </button>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
 
@@ -378,6 +537,60 @@ const AppointmentRequestManager: React.FC = () => {
                   <Send size={18} className="mr-2" />
                   Envoyer la proposition
                 </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal détails validation d'un créneau */}
+      {selectedSlotForValidation && (
+        <div className="fixed inset-0 z-[60] bg-black/70 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl p-6 max-w-lg w-full max-h-[90vh] overflow-y-auto">
+            <h3 className="text-xl font-bold mb-4">Détails du créneau</h3>
+
+            <div className="space-y-4">
+              {/* Informations du créneau */}
+              <div className="bg-slate-50 p-3 rounded-lg">
+                <p className="text-sm text-slate-600 mb-1">Créneau proposé</p>
+                <p className="text-lg font-bold">
+                  {new Date(selectedSlotForValidation.startTime).toLocaleString('fr-FR', {
+                    weekday: 'long',
+                    day: 'numeric',
+                    month: 'long',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                  })}
+                </p>
+                <p className="text-sm text-slate-600 mt-1">{selectedSlotForValidation.reason}</p>
+              </div>
+
+              {/* Résultat de validation */}
+              {selectedSlotForValidation.validation && (
+                <SlotValidationDisplay validation={selectedSlotForValidation.validation} compact={false} />
+              )}
+
+              {/* Actions */}
+              <div className="flex gap-3 pt-4">
+                <button
+                  onClick={() => setSelectedSlotForValidation(null)}
+                  className="flex-1 py-2 bg-gray-200 text-gray-700 rounded-lg font-bold hover:bg-gray-300"
+                >
+                  Fermer
+                </button>
+                {selectedSlotForValidation.validation?.isAvailable && (
+                  <button
+                    onClick={() => {
+                      setProposedTime(selectedSlotForValidation.startTime);
+                      setSelectedSlotForValidation(null);
+                      setShowSuggestedSlots(false);
+                    }}
+                    className="flex-1 py-2 bg-purple-500 text-white rounded-lg font-bold hover:bg-purple-600"
+                  >
+                    Sélectionner ce créneau
+                  </button>
+                )}
               </div>
             </div>
           </div>
