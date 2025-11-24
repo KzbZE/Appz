@@ -2,10 +2,11 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Patient, PatientType, SessionDocument, AppSettings, Session } from '../types';
 import { generateSessionReport } from '../services/geminiService';
 import { checkAuth, listDriveFolders, uploadToDriveReal } from '../services/googleApiService';
-import { ChevronRight, ChevronLeft, Save, Video, AlertCircle, CheckCircle, Wand2, Upload, Download, Share2, Instagram, Facebook, Camera, Clock, HardDrive, FileText, Eye, Edit3, Mail } from 'lucide-react';
+import { ChevronRight, ChevronLeft, Save, Video, AlertCircle, CheckCircle, Wand2, Upload, Download, Share2, Instagram, Facebook, Camera, Clock, HardDrive, FileText, Eye, Edit3, Mail, Star } from 'lucide-react';
 import { db } from '../db';
 import { jsPDF } from 'jspdf';
 import { sendEmailWithPDF } from '../services/notificationService';
+import SatisfactionSurveyForm from './SatisfactionSurveyForm';
 
 interface SessionTemplate {
   id?: number;
@@ -49,6 +50,8 @@ const SessionWizard: React.FC<SessionWizardProps> = ({ patient, settings, onComp
   const [showDriveModal, setShowDriveModal] = useState(false);
   const [driveFolders, setDriveFolders] = useState<{id:string, name:string}[]>([]);
   const [selectedFolder, setSelectedFolder] = useState('');
+  const [showSatisfactionSurvey, setShowSatisfactionSurvey] = useState(false);
+  const [savedSessionId, setSavedSessionId] = useState<number | null>(null);
 
   // Templates selection
   const [selectedTemplates, setSelectedTemplates] = useState<number[]>([]);
@@ -571,9 +574,10 @@ TheraFlow`;
           documents: documents,
           price: calculatedPrice,
       };
-      await db.sessions.add(sessionData);
+      const sessionId = await db.sessions.add(sessionData);
+      setSavedSessionId(sessionId as number);
       localStorage.removeItem(STORAGE_KEY);
-      onComplete();
+      alert('✅ Séance enregistrée avec succès !');
   };
 
   // Définir les techniques disponibles selon le type de patient et de séance
@@ -924,6 +928,25 @@ TheraFlow`;
                </div>
            </div>
        </div>
+
+       {/* Satisfaction Survey Section */}
+       {savedSessionId && (
+         <div className="bg-gradient-to-br from-yellow-50 to-amber-50 rounded-2xl p-5 border border-yellow-200 shadow-sm">
+           <div className="flex items-center mb-4">
+               <Star size={20} className="text-amber-600 mr-2" />
+               <h4 className="font-bold text-amber-900">Enquête de Satisfaction</h4>
+           </div>
+           <p className="text-sm text-amber-800 mb-4">
+             Invitez votre patient à partager son expérience pour nous aider à améliorer nos services.
+           </p>
+           <button
+             onClick={() => setShowSatisfactionSurvey(true)}
+             className="w-full flex items-center justify-center px-4 py-3 bg-gradient-to-r from-amber-500 to-yellow-600 text-white rounded-xl text-sm font-bold shadow hover:shadow-lg transition-all"
+           >
+             <Star size={18} className="mr-2" /> Ouvrir l'enquête de satisfaction
+           </button>
+         </div>
+       )}
        
        {/* Compte-Rendu Éditable - Style Document Word */}
        <div className="bg-white border-2 border-gray-300 rounded-xl shadow-lg overflow-hidden">
@@ -1174,6 +1197,18 @@ TheraFlow`;
                 </div>
             </div>
         </div>
+      )}
+
+      {showSatisfactionSurvey && savedSessionId && patient.id && (
+        <SatisfactionSurveyForm
+          sessionId={savedSessionId}
+          patientId={patient.id}
+          patientName={patient.name}
+          onClose={() => setShowSatisfactionSurvey(false)}
+          onSubmit={() => {
+            setShowSatisfactionSurvey(false);
+          }}
+        />
       )}
     </div>
   );
