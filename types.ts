@@ -57,6 +57,16 @@ export interface Patient {
   notes?: string; // Notes privées
 }
 
+// ✅ Compte patient (Option B) pour dashboard patient
+export interface PatientAccount {
+  id?: number;
+  patientId: number; // Lien avec Patient
+  email: string;
+  passwordHash: string; // Hash bcrypt du mot de passe
+  createdAt: string;
+  lastLoginAt?: string;
+}
+
 export interface Appointment {
   id?: number | string;
   patientId: string | number;

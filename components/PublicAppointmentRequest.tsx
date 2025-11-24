@@ -224,6 +224,19 @@ const PublicAppointmentRequest: React.FC = () => {
             </p>
           </div>
 
+          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-4 mb-6">
+            <p className="text-sm text-blue-800 font-medium mb-2">
+              💡 Créez votre espace patient pour suivre vos rendez-vous, séances et factures
+            </p>
+            <a
+              href="#patient-login"
+              className="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold rounded-lg transition-colors"
+            >
+              <User size={16} className="mr-2" />
+              Accéder à mon espace
+            </a>
+          </div>
+
           <button
             onClick={handleReset}
             className="w-full py-4 bg-gradient-to-r from-teal-500 to-cyan-600 hover:from-teal-600 hover:to-cyan-700 text-white rounded-xl font-bold shadow-lg transition-all"

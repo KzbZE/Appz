@@ -27,17 +27,23 @@ import UrssafModule from './components/UrssafModule';
 import { checkAvailability, calculateLogistics, suggestOptimalTimeSlots } from './services/logisticsService';
 import { suggestOptimizedSlots, getAllAvailableSlots } from './services/optimizationService';
 import { Patient, Appointment, ApptStatus, PatientType, Invoice, InvoiceStatus, Expense, AppSettings } from './types';
-import { X, Save, Clock, MapPin, User, Globe, AlertTriangle, Search, Zap, Plus, ChevronLeft } from 'lucide-react';
+import { X, Save, Clock, MapPin, User, Globe, AlertTriangle, Search, Zap, Plus, ChevronLeft, LogOut } from 'lucide-react';
 import { initGoogleClient, checkAuth, exportAppointmentToGoogleCalendar } from './services/googleApiService';
 import { setupAutomaticBackup } from './services/backupService';
 import LoginScreen from './components/LoginScreen';
 import AppointmentValidation from './components/AppointmentValidation';
+import PatientLoginScreen from './components/PatientLoginScreen';
+import PatientDashboard from './components/PatientDashboard';
 
 const App: React.FC = () => {
-  // ✅ État d'authentification
+  // ✅ État d'authentification praticien
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
-  // ✅ Routing simple avec hash (#validate?token=xxx)
+  // ✅ État d'authentification patient
+  const [isPatientAuthenticated, setIsPatientAuthenticated] = useState(false);
+  const [patientId, setPatientId] = useState<number | null>(null);
+
+  // ✅ Routing simple avec hash (#validate?token=xxx, #patient-login, #patient-dashboard)
   const [currentRoute, setCurrentRoute] = useState<{view: string, params: URLSearchParams}>({
     view: 'app',
     params: new URLSearchParams()
@@ -90,7 +96,7 @@ const App: React.FC = () => {
   const [suggestedTimeSlots, setSuggestedTimeSlots] = useState<any[]>([]);
   const [quickSearchTerm, setQuickSearchTerm] = useState('');
 
-  // ✅ Parser l'URL hash pour routing (#validate?token=xxx)
+  // ✅ Parser l'URL hash pour routing (#validate?token=xxx, #patient-login, #patient-dashboard)
   useEffect(() => {
     const handleHashChange = () => {
       const hash = window.location.hash.slice(1); // Enlever le #
@@ -99,6 +105,10 @@ const App: React.FC = () => {
 
       if (path === 'validate') {
         setCurrentRoute({ view: 'validate', params });
+      } else if (path === 'patient-login') {
+        setCurrentRoute({ view: 'patient-login', params });
+      } else if (path === 'patient-dashboard') {
+        setCurrentRoute({ view: 'patient-dashboard', params });
       } else {
         setCurrentRoute({ view: 'app', params });
       }
@@ -112,7 +122,7 @@ const App: React.FC = () => {
     return () => window.removeEventListener('hashchange', handleHashChange);
   }, []);
 
-  // ✅ Vérifier l'authentification au démarrage
+  // ✅ Vérifier l'authentification praticien au démarrage
   useEffect(() => {
     const sessionToken = localStorage.getItem('theraflow_session');
     if (sessionToken) {
@@ -134,6 +144,34 @@ const App: React.FC = () => {
         // Token invalide, le supprimer
         localStorage.removeItem('theraflow_session');
         localStorage.removeItem('theraflow_user_email');
+      }
+    }
+  }, []);
+
+  // ✅ Vérifier l'authentification patient au démarrage
+  useEffect(() => {
+    const patientSession = localStorage.getItem('theraflow_patient_session');
+    const patientIdStr = localStorage.getItem('theraflow_patient_id');
+
+    if (patientSession && patientIdStr) {
+      try {
+        const tokenData = atob(patientSession).split(':');
+        const timestamp = parseInt(tokenData[2]);
+        const now = Date.now();
+        const sevenDays = 7 * 24 * 60 * 60 * 1000;
+
+        if (now - timestamp < sevenDays) {
+          setIsPatientAuthenticated(true);
+          setPatientId(parseInt(patientIdStr));
+        } else {
+          // Token expiré, le supprimer
+          localStorage.removeItem('theraflow_patient_session');
+          localStorage.removeItem('theraflow_patient_id');
+        }
+      } catch (error) {
+        // Token invalide, le supprimer
+        localStorage.removeItem('theraflow_patient_session');
+        localStorage.removeItem('theraflow_patient_id');
       }
     }
   }, []);
@@ -688,9 +726,34 @@ const App: React.FC = () => {
       );
   };
 
-  // ✅ Handler pour succès de connexion
+  // ✅ Handler pour succès de connexion praticien
   const handleLoginSuccess = () => {
     setIsAuthenticated(true);
+  };
+
+  // ✅ Handler pour déconnexion praticien
+  const handlePractitionerLogout = () => {
+    if (confirm('Voulez-vous vraiment vous déconnecter ?')) {
+      setIsAuthenticated(false);
+      localStorage.removeItem('theraflow_session');
+      localStorage.removeItem('theraflow_user_email');
+    }
+  };
+
+  // ✅ Handler pour succès de connexion patient
+  const handlePatientLoginSuccess = (patId: number) => {
+    setIsPatientAuthenticated(true);
+    setPatientId(patId);
+    window.location.hash = 'patient-dashboard';
+  };
+
+  // ✅ Handler pour déconnexion patient
+  const handlePatientLogout = () => {
+    setIsPatientAuthenticated(false);
+    setPatientId(null);
+    localStorage.removeItem('theraflow_patient_session');
+    localStorage.removeItem('theraflow_patient_id');
+    window.location.hash = 'patient-login';
   };
 
   // ✅ Route: Validation de créneau (public, pas besoin d'auth)
@@ -710,7 +773,21 @@ const App: React.FC = () => {
     }
   }
 
-  // ✅ Afficher l'écran de connexion si non authentifié
+  // ✅ Route: Connexion patient
+  if (currentRoute.view === 'patient-login') {
+    return <PatientLoginScreen onLoginSuccess={handlePatientLoginSuccess} />;
+  }
+
+  // ✅ Route: Dashboard patient
+  if (currentRoute.view === 'patient-dashboard') {
+    if (!isPatientAuthenticated || !patientId) {
+      window.location.hash = 'patient-login';
+      return null;
+    }
+    return <PatientDashboard patientId={patientId} onLogout={handlePatientLogout} />;
+  }
+
+  // ✅ Afficher l'écran de connexion praticien si non authentifié
   if (!isAuthenticated) {
     return <LoginScreen onLoginSuccess={handleLoginSuccess} />;
   }
@@ -730,22 +807,28 @@ const App: React.FC = () => {
 
         <div className="hidden md:flex justify-between items-center p-6 pb-2 shrink-0">
             <h1 className="text-2xl font-bold text-slate-800 capitalize">
-                {currentView === 'dashboard' ? 'Tableau de Bord' : 
-                 currentView === 'calendar' ? 'Agenda' : 
+                {currentView === 'dashboard' ? 'Tableau de Bord' :
+                 currentView === 'calendar' ? 'Agenda' :
                  currentView === 'patients' ? 'Base Patients' : currentView}
             </h1>
             <div className="flex items-center space-x-3">
-                <button 
+                <button
                     onClick={() => setIsClientBookingOpen(true)}
                     className="flex items-center px-4 py-2 bg-white border border-gray-200 text-slate-600 font-bold rounded-lg hover:bg-gray-50 shadow-sm"
                 >
                     <Globe size={16} className="mr-2" /> Page Client
                 </button>
-                <button 
+                <button
                     onClick={() => setIsQuickSessionModalOpen(true)}
                     className="flex items-center px-4 py-2 bg-amber-500 text-white font-bold rounded-lg hover:bg-amber-600 shadow-lg shadow-amber-200"
                 >
                     <Zap size={16} className="mr-2" /> Séance Flash
+                </button>
+                <button
+                    onClick={handlePractitionerLogout}
+                    className="flex items-center px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium rounded-lg transition-colors"
+                >
+                    <LogOut size={16} className="mr-2" /> Déconnexion
                 </button>
             </div>
         </div>
