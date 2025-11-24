@@ -10,7 +10,3 @@
 
 [build.environment]
   NODE_VERSION = "18"
-
-[functions]
-  # Timeout for functions (default: 10s, max: 26s for free tier)
-  timeout = 10
