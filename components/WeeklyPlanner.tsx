@@ -3,7 +3,7 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../db';
 import { Appointment, Patient, ApptStatus, PatientType } from '../types';
 import { ChevronLeft, ChevronRight, Plus, Calendar, Clock, MapPin, User, X, Edit, Trash2, Sun, Cloud, CloudRain, Save } from 'lucide-react';
-import { checkAuth, createCalendarEvent } from '../services/googleApiService';
+import { exportAppointmentToGoogleCalendar } from '../services/googleApiService';
 
 const WeeklyPlanner: React.FC = () => {
   const appointments = useLiveQuery(() => db.appointments.toArray()) || [];
@@ -136,30 +136,18 @@ const WeeklyPlanner: React.FC = () => {
 
     // ✅ Exporter automatiquement vers Google Calendar si connecté
     try {
-      const isAuthed = await checkAuth();
-      if (isAuthed) {
-        const patient = patients.find(p => String(p.id) === String(newApptData.patientId));
-        const patientName = patient?.name || 'Patient';
-
-        const endDate = new Date(slotDate);
-        endDate.setMinutes(endDate.getMinutes() + newApptData.durationMin);
-
-        const googleEvent = await createCalendarEvent({
-          summary: `${patientName} - ${newApptData.type}`,
-          description: newApptData.notes || '',
-          start: slotDate.toISOString(),
-          end: endDate.toISOString(),
-          location: patient?.address || ''
-        });
-
-        // Sauvegarder l'ID Google pour la synchro bidirectionnelle
-        if (googleEvent && googleEvent.id) {
-          await db.appointments.update(appointmentId, { googleEventId: googleEvent.id });
-        }
-      }
+      const patient = patients.find(p => String(p.id) === String(newApptData.patientId));
+      await exportAppointmentToGoogleCalendar({
+        id: appointmentId,
+        patientName: patient?.name || 'Patient',
+        type: newApptData.type,
+        notes: newApptData.notes || '',
+        startTime: slotDate.toISOString(),
+        durationMin: newApptData.durationMin,
+        address: patient?.address || ''
+      });
     } catch (error) {
-      console.log("Export Google Calendar échoué (normal si non connecté):", error);
-      // Ne pas bloquer la création du RDV si l'export Google échoue
+      console.log("Export Google Calendar échoué (non bloquant):", error);
     }
 
     // Reset et fermer

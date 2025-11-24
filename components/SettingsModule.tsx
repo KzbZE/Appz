@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { AppSettings } from '../types';
 import { Save, MapPin, DollarSign, Share2, Instagram, Facebook, Palette, Image, User, Type, Upload, Settings as SettingsIcon, Briefcase, Cloud, Database, Download, UploadCloud, AlertTriangle, CheckCircle } from 'lucide-react';
-import { signInToGoogle } from '../services/googleApiService';
+import { signInToGoogle, syncAllAppointmentsToGoogleCalendar } from '../services/googleApiService';
 import { downloadBackup, importBackup, getLastBackupDate, restoreFromAutoBackup } from '../services/backupService';
 
 interface SettingsModuleProps {
@@ -37,9 +37,25 @@ const SettingsModule: React.FC<SettingsModuleProps> = ({ settings, onSave }) => 
       setIsConnecting(true);
       try {
           await signInToGoogle(localSettings);
-          alert("Connexion Google réussie !");
+          alert("Connexion Google réussie ! Vous pouvez maintenant synchroniser vos rendez-vous.");
       } catch (error) {
           alert("Erreur de connexion Google. Vérifiez vos clés API/Client ID.");
+          console.error(error);
+      }
+      setIsConnecting(false);
+  };
+
+  const handleSyncAllAppointments = async () => {
+      if (!confirm("Synchroniser tous les rendez-vous existants vers Google Calendar ?")) {
+          return;
+      }
+
+      setIsConnecting(true);
+      try {
+          const results = await syncAllAppointmentsToGoogleCalendar();
+          alert(`✅ ${results.length} rendez-vous synchronisés avec Google Calendar !`);
+      } catch (error: any) {
+          alert(`Erreur : ${error.message}\nVérifiez que vous êtes bien connecté à Google.`);
           console.error(error);
       }
       setIsConnecting(false);
@@ -227,7 +243,7 @@ const SettingsModule: React.FC<SettingsModuleProps> = ({ settings, onSave }) => 
                 </div>
                 <div className="flex justify-between items-center pt-2">
                     <p className="text-xs text-slate-500">Nécessaire pour la synchro Agenda et l'export Drive.</p>
-                    <button 
+                    <button
                         onClick={handleGoogleConnect}
                         disabled={!localSettings.google?.clientId}
                         className={`px-4 py-2 rounded-lg text-sm font-bold text-white transition-colors
@@ -236,6 +252,25 @@ const SettingsModule: React.FC<SettingsModuleProps> = ({ settings, onSave }) => 
                         {localSettings.google?.accessToken ? 'Compte Connecté' : 'Se connecter à Google'}
                     </button>
                 </div>
+
+                {/* ✅ Bouton de synchronisation des RDV existants */}
+                {localSettings.google?.accessToken && (
+                    <div className="mt-4 p-4 bg-blue-50 rounded-xl border border-blue-200">
+                        <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                                <h4 className="text-sm font-bold text-blue-900 mb-1">Synchronisation des rendez-vous</h4>
+                                <p className="text-xs text-blue-700">Exporter tous vos rendez-vous existants vers Google Calendar.</p>
+                            </div>
+                            <button
+                                onClick={handleSyncAllAppointments}
+                                disabled={isConnecting}
+                                className="ml-3 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                {isConnecting ? 'Synchronisation...' : 'Synchroniser'}
+                            </button>
+                        </div>
+                    </div>
+                )}
             </div>
         </section>
 

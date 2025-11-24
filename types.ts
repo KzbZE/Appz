@@ -96,6 +96,8 @@ export interface AppointmentRequest {
   patientAddress?: string; // Pour calcul optimisation
   patientLat?: number;
   patientLng?: number;
+  validationToken?: string; // ✅ Token pour validation par email (Option A)
+  validated?: boolean; // ✅ Si le créneau a été validé par le patient
 }
 
 export interface AppointmentRequestHistoryItem {

@@ -13,8 +13,10 @@ const DISCOVERY_DOCS = [
   'https://www.googleapis.com/discovery/v1/apis/drive/v3/rest',
   'https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest'
 ];
-// ✅ Ajout permissions ÉCRITURE pour Calendar (pas seulement readonly)
-const SCOPES = 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/calendar.events';
+// ✅ Ajout permissions ÉCRITURE pour Calendar et LECTURE Drive complète
+// drive.file = seulement fichiers créés par l'app
+// drive = accès complet Drive (nécessaire pour lister dossiers existants)
+const SCOPES = 'https://www.googleapis.com/auth/drive https://www.googleapis.com/auth/calendar.events';
 
 export const initGoogleClient = async (settings: AppSettings): Promise<void> => {
   if (!settings.google?.clientId || !settings.google?.apiKey) return;
@@ -99,13 +101,20 @@ export const checkAuth = async (): Promise<boolean> => {
 // Drive Functions
 export const listDriveFolders = async (): Promise<{id: string, name: string}[]> => {
   try {
+    console.log('🔵 Drive API: Début listDriveFolders');
+    console.log('🔵 Drive API: gapi.client.drive =', window.gapi?.client?.drive ? 'OK' : 'MANQUANT');
+
     const response = await window.gapi.client.drive.files.list({
       q: "mimeType = 'application/vnd.google-apps.folder' and trashed = false",
       fields: 'files(id, name)',
     });
-    return response.result.files;
+
+    console.log('🔵 Drive API: Réponse brute =', response);
+    console.log('🔵 Drive API: Fichiers =', response.result.files);
+
+    return response.result.files || [];
   } catch (err) {
-    console.error("Drive List Error", err);
+    console.error("❌ Drive List Error", err);
     return [];
   }
 };
@@ -282,3 +291,101 @@ function calculateDuration(start: string, end: string): number {
     const endDate = new Date(end);
     return Math.round((endDate.getTime() - startDate.getTime()) / (1000 * 60));
 }
+
+// ✅ NOUVEAU : Fonction helper pour exporter un RDV vers Google Calendar
+export const exportAppointmentToGoogleCalendar = async (appointment: {
+    id?: number;
+    patientName: string;
+    type: string;
+    notes?: string;
+    startTime: string;
+    durationMin: number;
+    address?: string;
+    googleEventId?: string;
+}) => {
+    try {
+        const isAuthed = await checkAuth();
+        if (!isAuthed) {
+            console.log("⚠️ Google Calendar: Non connecté, export ignoré");
+            return null;
+        }
+
+        const startDate = new Date(appointment.startTime);
+        const endDate = new Date(startDate);
+        endDate.setMinutes(endDate.getMinutes() + appointment.durationMin);
+
+        const eventData = {
+            summary: `${appointment.patientName} - ${appointment.type}`,
+            description: appointment.notes || '',
+            start: startDate.toISOString(),
+            end: endDate.toISOString(),
+            location: appointment.address || ''
+        };
+
+        // Si l'événement existe déjà, le mettre à jour
+        if (appointment.googleEventId) {
+            console.log('🔵 Google Calendar: Mise à jour événement', appointment.googleEventId);
+            const updated = await updateCalendarEvent(appointment.googleEventId, eventData);
+            return updated;
+        } else {
+            // Sinon, créer un nouvel événement
+            console.log('🔵 Google Calendar: Création nouvel événement');
+            const created = await createCalendarEvent(eventData);
+
+            // Mettre à jour le RDV local avec le googleEventId
+            if (created && created.id && appointment.id) {
+                await db.appointments.update(appointment.id, { googleEventId: created.id });
+                console.log('✅ Google Calendar: RDV exporté, ID =', created.id);
+            }
+
+            return created;
+        }
+    } catch (error) {
+        console.error("❌ Export Google Calendar échoué:", error);
+        return null;
+    }
+};
+
+// ✅ NOUVEAU : Synchroniser tous les RDV existants vers Google Calendar
+export const syncAllAppointmentsToGoogleCalendar = async () => {
+    try {
+        const isAuthed = await checkAuth();
+        if (!isAuthed) {
+            throw new Error("Non connecté à Google Calendar");
+        }
+
+        // Récupérer tous les RDV qui n'ont pas encore de googleEventId
+        const appointments = await db.appointments
+            .filter(appt => !appt.googleEventId)
+            .toArray();
+
+        console.log(`🔵 Google Calendar: ${appointments.length} RDV à synchroniser`);
+
+        const results = [];
+        for (const appt of appointments) {
+            // Récupérer le nom du patient
+            const patient = await db.patients.get(appt.patientId);
+            if (!patient) continue;
+
+            const exported = await exportAppointmentToGoogleCalendar({
+                id: appt.id,
+                patientName: patient.name,
+                type: appt.type,
+                notes: appt.notes,
+                startTime: appt.startTime,
+                durationMin: appt.durationMin,
+                address: patient.address
+            });
+
+            if (exported) {
+                results.push({ appointmentId: appt.id, googleEventId: exported.id });
+            }
+        }
+
+        console.log(`✅ Google Calendar: ${results.length} RDV synchronisés`);
+        return results;
+    } catch (error) {
+        console.error("❌ Synchronisation Google Calendar échouée:", error);
+        throw error;
+    }
+};

@@ -28,10 +28,14 @@ import { checkAvailability, calculateLogistics, suggestOptimalTimeSlots } from '
 import { suggestOptimizedSlots, getAllAvailableSlots } from './services/optimizationService';
 import { Patient, Appointment, ApptStatus, PatientType, Invoice, InvoiceStatus, Expense, AppSettings } from './types';
 import { X, Save, Clock, MapPin, User, Globe, AlertTriangle, Search, Zap, Plus, ChevronLeft } from 'lucide-react';
-import { initGoogleClient, checkAuth } from './services/googleApiService';
+import { initGoogleClient, checkAuth, exportAppointmentToGoogleCalendar } from './services/googleApiService';
 import { setupAutomaticBackup } from './services/backupService';
+import LoginScreen from './components/LoginScreen';
 
 const App: React.FC = () => {
+  // ✅ État d'authentification
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
   const patients = useLiveQuery(() => db.patients.toArray());
   const appointments = useLiveQuery(() => db.appointments.toArray());
   const invoices = useLiveQuery(() => db.invoices.toArray());
@@ -78,6 +82,32 @@ const App: React.FC = () => {
 
   const [suggestedTimeSlots, setSuggestedTimeSlots] = useState<any[]>([]);
   const [quickSearchTerm, setQuickSearchTerm] = useState('');
+
+  // ✅ Vérifier l'authentification au démarrage
+  useEffect(() => {
+    const sessionToken = localStorage.getItem('theraflow_session');
+    if (sessionToken) {
+      // Vérifier que le token n'est pas trop vieux (7 jours max)
+      try {
+        const tokenData = atob(sessionToken).split(':');
+        const timestamp = parseInt(tokenData[1]);
+        const now = Date.now();
+        const sevenDays = 7 * 24 * 60 * 60 * 1000;
+
+        if (now - timestamp < sevenDays) {
+          setIsAuthenticated(true);
+        } else {
+          // Token expiré, le supprimer
+          localStorage.removeItem('theraflow_session');
+          localStorage.removeItem('theraflow_user_email');
+        }
+      } catch (error) {
+        // Token invalide, le supprimer
+        localStorage.removeItem('theraflow_session');
+        localStorage.removeItem('theraflow_user_email');
+      }
+    }
+  }, []);
 
   useEffect(() => {
     db.populate();
@@ -178,10 +208,25 @@ const App: React.FC = () => {
           durationMin: 60,
           status: ApptStatus.IN_PROGRESS,
           type: patient.type === PatientType.HUMAN ? 'CABINET' : 'STABLE',
-          price: 0, 
+          price: 0,
           notes: 'Séance Hors-Planning'
       });
-      
+
+      // ✅ Exporter vers Google Calendar
+      try {
+          await exportAppointmentToGoogleCalendar({
+              id,
+              patientName: patient.name,
+              type: patient.type === PatientType.HUMAN ? 'CABINET' : 'STABLE',
+              notes: 'Séance Hors-Planning',
+              startTime: new Date().toISOString(),
+              durationMin: 60,
+              address: patient.address
+          });
+      } catch (error) {
+          console.log("Export Google Calendar échoué (non bloquant):", error);
+      }
+
       const newAppt = await db.appointments.get(id);
       if (newAppt) {
         setActiveAppointment(newAppt);
@@ -314,10 +359,27 @@ const App: React.FC = () => {
           ...logisticsData
       };
 
+      let appointmentId = editingApptId;
       if (editingApptId) {
           await db.appointments.update(editingApptId, apptData);
       } else {
-          await db.appointments.add(apptData as Appointment);
+          appointmentId = await db.appointments.add(apptData as Appointment);
+      }
+
+      // ✅ Exporter vers Google Calendar
+      try {
+          const patient = await db.patients.get(patientId);
+          await exportAppointmentToGoogleCalendar({
+              id: appointmentId,
+              patientName,
+              type: apptData.type,
+              notes: apptData.notes,
+              startTime: apptData.startTime,
+              durationMin: apptData.durationMin,
+              address: patient?.address || targetAddress
+          });
+      } catch (error) {
+          console.log("Export Google Calendar échoué (non bloquant):", error);
       }
 
       setSuggestedTimeSlots([]); // Clear suggestions on close
@@ -596,6 +658,16 @@ const App: React.FC = () => {
         </div>
       );
   };
+
+  // ✅ Handler pour succès de connexion
+  const handleLoginSuccess = () => {
+    setIsAuthenticated(true);
+  };
+
+  // ✅ Afficher l'écran de connexion si non authentifié
+  if (!isAuthenticated) {
+    return <LoginScreen onLoginSuccess={handleLoginSuccess} />;
+  }
 
   return (
     <div className="flex h-screen bg-white w-full overflow-hidden">
