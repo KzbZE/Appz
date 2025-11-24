@@ -183,19 +183,20 @@ const PublicAppointmentRequest: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-teal-50 via-cyan-50 to-blue-50 py-8 px-4 overflow-y-auto">
-      <div className="max-w-2xl mx-auto pb-20">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <div className="w-16 h-16 bg-gradient-to-br from-teal-500 to-cyan-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
-            <Calendar size={32} className="text-white" />
+    <div className="fixed inset-0 bg-gradient-to-br from-teal-50 via-cyan-50 to-blue-50 overflow-y-auto">
+      <div className="min-h-full py-4 px-4 md:py-8">
+        <div className="max-w-2xl mx-auto pb-8">
+          {/* Header */}
+          <div className="text-center mb-4 md:mb-8">
+            <div className="w-12 h-12 md:w-16 md:h-16 bg-gradient-to-br from-teal-500 to-cyan-600 rounded-2xl flex items-center justify-center mx-auto mb-3 shadow-lg">
+              <Calendar size={24} className="text-white md:w-8 md:h-8" />
+            </div>
+            <h1 className="text-2xl md:text-4xl font-black text-slate-800 mb-2">Demande de Rendez-vous</h1>
+            <p className="text-sm md:text-base text-slate-600">Remplissez le formulaire ci-dessous pour demander un rendez-vous</p>
           </div>
-          <h1 className="text-4xl font-black text-slate-800 mb-2">Demande de Rendez-vous</h1>
-          <p className="text-slate-600">Remplissez le formulaire ci-dessous pour demander un rendez-vous</p>
-        </div>
 
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="bg-white rounded-3xl shadow-2xl p-6 md:p-8 space-y-6">
+          {/* Form */}
+          <form onSubmit={handleSubmit} className="bg-white rounded-2xl md:rounded-3xl shadow-2xl p-4 md:p-8 space-y-4 md:space-y-6">
           {error && (
             <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-red-700 text-sm">
               {error}

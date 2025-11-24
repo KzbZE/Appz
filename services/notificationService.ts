@@ -22,7 +22,7 @@ interface SMSParams {
 }
 
 /**
- * Envoie un email via Resend
+ * Envoie un email via Netlify Function (qui appelle Resend API)
  */
 export async function sendEmail(params: EmailParams): Promise<boolean> {
   const notification: Notification = {
@@ -35,19 +35,17 @@ export async function sendEmail(params: EmailParams): Promise<boolean> {
   };
 
   try {
-    const response = await fetch('https://api.resend.com/emails', {
+    // Call Netlify Function instead of direct API
+    const response = await fetch('/.netlify/functions/send-email', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${RESEND_API_KEY}`,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        from: 'TheraFlow <onboarding@resend.dev>', // Remplacer par votre domaine vérifié
-        to: [params.to],
+        to: params.to,
         subject: params.subject,
-        html: `<div style="font-family: Arial, sans-serif; padding: 20px;">
-          ${params.message.replace(/\n/g, '<br>')}
-        </div>`
+        message: params.message,
+        relatedRequestId: params.relatedRequestId
       })
     });
 
@@ -74,7 +72,7 @@ export async function sendEmail(params: EmailParams): Promise<boolean> {
 }
 
 /**
- * Envoie un SMS via Twilio
+ * Envoie un SMS via Netlify Function (qui appelle Twilio API)
  */
 export async function sendSMS(params: SMSParams): Promise<boolean> {
   const notification: Notification = {
@@ -86,24 +84,18 @@ export async function sendSMS(params: SMSParams): Promise<boolean> {
   };
 
   try {
-    // Format du numéro: +33XXXXXXXXX
-    const formattedPhone = params.to.startsWith('+') ? params.to : `+33${params.to.replace(/^0/, '')}`;
-
-    const response = await fetch(
-      `https://api.twilio.com/2010-04-01/Accounts/${TWILIO_ACCOUNT_SID}/Messages.json`,
-      {
-        method: 'POST',
-        headers: {
-          'Authorization': 'Basic ' + btoa(`${TWILIO_ACCOUNT_SID}:${TWILIO_AUTH_TOKEN}`),
-          'Content-Type': 'application/x-www-form-urlencoded'
-        },
-        body: new URLSearchParams({
-          From: TWILIO_PHONE_NUMBER,
-          To: formattedPhone,
-          Body: params.message
-        })
-      }
-    );
+    // Call Netlify Function instead of direct API
+    const response = await fetch('/.netlify/functions/send-sms', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        to: params.to,
+        message: params.message,
+        relatedRequestId: params.relatedRequestId
+      })
+    });
 
     if (response.ok) {
       notification.status = 'SENT';
