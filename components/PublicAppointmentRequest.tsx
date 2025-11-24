@@ -86,6 +86,9 @@ const PublicAppointmentRequest: React.FC = () => {
       // Create appointment request
       const requestedStartTime = new Date(`${formData.requestedDate}T${formData.requestedTime}`).toISOString();
 
+      // ✅ Générer un token de validation unique et sécurisé
+      const validationToken = btoa(`${Date.now()}-${Math.random().toString(36).substring(2, 15)}`);
+
       const requestId = await db.appointmentRequests.add({
         patientId,
         patientName: formData.patientName,
@@ -96,6 +99,8 @@ const PublicAppointmentRequest: React.FC = () => {
         type: formData.appointmentType,
         status: AppointmentRequestStatus.PENDING,
         notes: formData.notes,
+        validationToken, // ✅ Token pour validation email
+        validated: false, // ✅ Pas encore validé
         history: [
           {
             date: new Date().toISOString(),
@@ -128,7 +133,36 @@ const PublicAppointmentRequest: React.FC = () => {
         }
       } catch (notifError) {
         console.error('Erreur notification praticien (non bloquant):', notifError);
-        // Ne pas bloquer la création de la demande si la notification échoue
+      }
+
+      // ✅ Envoyer email de validation au patient (Option A)
+      if (formData.patientEmail) {
+        try {
+          const validationUrl = `${window.location.origin}${window.location.pathname}#validate?token=${validationToken}`;
+          const dateStr = new Date(requestedStartTime).toLocaleDateString('fr-FR', {
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+          });
+          const timeStr = new Date(requestedStartTime).toLocaleTimeString('fr-FR', {
+            hour: '2-digit',
+            minute: '2-digit'
+          });
+
+          await fetch('/.netlify/functions/send-email', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              to: formData.patientEmail,
+              subject: 'Validez votre créneau de rendez-vous',
+              message: `Bonjour ${formData.patientName},\n\nLe praticien vous propose un créneau pour votre rendez-vous :\n\nDate : ${dateStr}\nHeure : ${timeStr}\nDurée : ${formData.durationMin} minutes\nLieu : ${formData.appointmentType === 'CABINET' ? 'Cabinet' : formData.address}\n\nPour confirmer ce créneau, cliquez sur le lien ci-dessous :\n${validationUrl}\n\nSi ce créneau ne vous convient pas, vous pourrez le refuser et le praticien vous proposera une alternative.\n\nÀ bientôt !`
+            })
+          });
+          console.log('✅ Email de validation envoyé au patient:', formData.patientEmail);
+        } catch (emailError) {
+          console.error('Erreur envoi email validation (non bloquant):', emailError);
+        }
       }
 
       setStep('SUCCESS');

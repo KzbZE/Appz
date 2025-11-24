@@ -31,10 +31,17 @@ import { X, Save, Clock, MapPin, User, Globe, AlertTriangle, Search, Zap, Plus, 
 import { initGoogleClient, checkAuth, exportAppointmentToGoogleCalendar } from './services/googleApiService';
 import { setupAutomaticBackup } from './services/backupService';
 import LoginScreen from './components/LoginScreen';
+import AppointmentValidation from './components/AppointmentValidation';
 
 const App: React.FC = () => {
   // ✅ État d'authentification
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  // ✅ Routing simple avec hash (#validate?token=xxx)
+  const [currentRoute, setCurrentRoute] = useState<{view: string, params: URLSearchParams}>({
+    view: 'app',
+    params: new URLSearchParams()
+  });
 
   const patients = useLiveQuery(() => db.patients.toArray());
   const appointments = useLiveQuery(() => db.appointments.toArray());
@@ -82,6 +89,28 @@ const App: React.FC = () => {
 
   const [suggestedTimeSlots, setSuggestedTimeSlots] = useState<any[]>([]);
   const [quickSearchTerm, setQuickSearchTerm] = useState('');
+
+  // ✅ Parser l'URL hash pour routing (#validate?token=xxx)
+  useEffect(() => {
+    const handleHashChange = () => {
+      const hash = window.location.hash.slice(1); // Enlever le #
+      const [path, queryString] = hash.split('?');
+      const params = new URLSearchParams(queryString || '');
+
+      if (path === 'validate') {
+        setCurrentRoute({ view: 'validate', params });
+      } else {
+        setCurrentRoute({ view: 'app', params });
+      }
+    };
+
+    // Parser au chargement
+    handleHashChange();
+
+    // Écouter les changements d'URL
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, []);
 
   // ✅ Vérifier l'authentification au démarrage
   useEffect(() => {
@@ -663,6 +692,23 @@ const App: React.FC = () => {
   const handleLoginSuccess = () => {
     setIsAuthenticated(true);
   };
+
+  // ✅ Route: Validation de créneau (public, pas besoin d'auth)
+  if (currentRoute.view === 'validate') {
+    const token = currentRoute.params.get('token');
+    if (token) {
+      return <AppointmentValidation token={token} />;
+    } else {
+      return (
+        <div className="min-h-screen bg-red-50 flex items-center justify-center p-4">
+          <div className="text-center">
+            <h1 className="text-2xl font-bold text-red-800 mb-2">Erreur</h1>
+            <p className="text-red-600">Token de validation manquant</p>
+          </div>
+        </div>
+      );
+    }
+  }
 
   // ✅ Afficher l'écran de connexion si non authentifié
   if (!isAuthenticated) {
