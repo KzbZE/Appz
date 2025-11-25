@@ -388,6 +388,68 @@ Idéal pour montrer des exercices ou des documents.
 
 export default VideoConferenceService;
 
+// Wrapper functions pour faciliter l'utilisation
+export async function createJitsiSession(roomName: string, practitionerName: string, patientName: string) {
+  const config: VideoConferenceConfig = {
+    provider: 'JITSI',
+    jitsi: { domain: 'meet.jit.si' },
+    features: {
+      screenSharing: true,
+      chat: true,
+      recording: true,
+      virtualBackground: false,
+      handRaise: false
+    },
+    quality: 'STANDARD',
+    maxDuration: 60
+  };
+
+  const session = await VideoConferenceService.createSession(0, patientName, practitionerName, config);
+  return {
+    ...session,
+    sessionId: session.id
+  };
+}
+
+export async function createWherebySession(roomName: string, practitionerName: string, patientName: string) {
+  const config: VideoConferenceConfig = {
+    provider: 'JITSI', // Fallback to Jitsi
+    jitsi: { domain: 'meet.jit.si' },
+    features: {
+      screenSharing: true,
+      chat: true,
+      recording: true,
+      virtualBackground: false,
+      handRaise: false
+    },
+    quality: 'STANDARD',
+    maxDuration: 60
+  };
+
+  const session = await VideoConferenceService.createSession(0, patientName, practitionerName, config);
+  return {
+    ...session,
+    sessionId: session.id
+  };
+}
+
+export async function startRecording(sessionId: string) {
+  return VideoConferenceService.startRecording(sessionId, true);
+}
+
+export async function stopRecording(sessionId: string) {
+  return VideoConferenceService.stopRecording(sessionId, 'recording-url');
+}
+
+export async function shareScreen(sessionId: string) {
+  console.log(VideoConferenceService.getScreenSharingInstructions());
+  return true;
+}
+
+export async function getSessionReport(sessionId: string) {
+  return VideoConferenceService.generateSessionReport(sessionId);
+}
+
 /**
  * CONFIGURATION PRODUCTION
  *

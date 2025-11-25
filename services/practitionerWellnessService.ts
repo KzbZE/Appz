@@ -463,3 +463,28 @@ class PractitionerWellnessService {
 }
 
 export default PractitionerWellnessService;
+
+// Wrapper functions pour faciliter l'utilisation
+export function trackDailyMetrics(metrics: WellnessMetrics) {
+  return PractitionerWellnessService.trackDailyMetrics(metrics);
+}
+
+export function calculateWorkLifeBalance(startDate: Date, endDate: Date) {
+  return PractitionerWellnessService.calculateWorkLifeBalance(startDate, endDate);
+}
+
+export function checkBurnoutRisk(metrics: WellnessMetrics[]) {
+  return PractitionerWellnessService.checkBurnoutRisk(metrics);
+}
+
+export function getWellnessRecommendations(todayMetrics: WellnessMetrics, balance: WorkLifeBalance) {
+  return PractitionerWellnessService.getWellnessRecommendations(todayMetrics, balance);
+}
+
+export function getMonthlyReport(year: number, month: number) {
+  return PractitionerWellnessService.getMonthlyReport(year, month);
+}
+
+export function getAllGoals() {
+  return PractitionerWellnessService.getAllGoals();
+}

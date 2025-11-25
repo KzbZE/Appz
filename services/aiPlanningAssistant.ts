@@ -470,3 +470,24 @@ class AIPlanningAssistant {
 }
 
 export default AIPlanningAssistant;
+
+// Wrapper functions pour faciliter l'utilisation
+export function analyzePatientHistory(patientId: number, appointments: any[], patients: any[]) {
+  return AIPlanningAssistant.analyzePatientHistory(patientId, appointments, patients);
+}
+
+export function suggestOptimalTimeSlots(patientId: number, appointments: any[], patients: any[], referenceDate: Date) {
+  return AIPlanningAssistant.suggestOptimalTimeSlots(patientId, appointments, patients, referenceDate);
+}
+
+export function sendSuggestionToPatient(patientId: number, suggestion: TimeSlotSuggestion, method: 'sms' | 'email') {
+  return AIPlanningAssistant.sendSuggestionToPatient(patientId, suggestion, method);
+}
+
+export function getPlanningInsights(appointments: any[], patients: any[]) {
+  return AIPlanningAssistant.getPlanningInsights(appointments, patients);
+}
+
+export function predictFillingRate(date: Date, appointments: any[]) {
+  return AIPlanningAssistant.predictFillingRate(date, appointments);
+}

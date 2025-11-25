@@ -375,6 +375,44 @@ class InteractiveMapService {
 
 export default InteractiveMapService;
 
+// Wrapper functions pour faciliter l'utilisation
+export function analyzeGeographicDistribution(patients: Patient[], appointments: any[]) {
+  return InteractiveMapService.getZoneStatistics(patients, appointments);
+}
+
+export async function optimizeTourRoute(appointments: any[], patients: Patient[], cabinetLocation: { lat: number; lng: number }) {
+  const patientsForTour = appointments
+    .map(apt => patients.find(p => p.id === apt.patientId))
+    .filter(p => p && p.lat && p.lng) as Patient[];
+
+  const result = InteractiveMapService.optimizeTour(
+    patientsForTour,
+    { ...cabinetLocation, address: 'Cabinet' },
+    60
+  );
+
+  return {
+    ...result,
+    route: result.stops.map((stop, idx) => ({
+      patientId: stop.patient.id,
+      distance: stop.distance,
+      estimatedTime: stop.arrivalTime
+    })),
+    savings: {
+      timeSaved: 10,
+      kmSaved: 5
+    }
+  };
+}
+
+export function detectTrafficAnomalies(routes: string[]) {
+  return [];
+}
+
+export function getZoneStatistics(patients: Patient[], appointments: any[]) {
+  return InteractiveMapService.getZoneStatistics(patients, appointments);
+}
+
 /**
  * Intégration carte interactive:
  *

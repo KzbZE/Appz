@@ -26,6 +26,10 @@ import MigrationWizard from './components/MigrationWizard';
 import UrssafModule from './components/UrssafModule';
 import DashboardAnalytics from './components/DashboardAnalytics';
 import ThemeSettings from './components/ThemeSettings';
+import InteractiveMap from './components/InteractiveMap';
+import VideoConference from './components/VideoConference';
+import WellnessDashboard from './components/WellnessDashboard';
+import AIPlanning from './components/AIPlanning';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { checkAvailability, calculateLogistics, suggestOptimalTimeSlots } from './services/logisticsService';
 import { suggestOptimizedSlots, getAllAvailableSlots } from './services/optimizationService';
@@ -964,6 +968,14 @@ const AppContent: React.FC = () => {
           {currentView === 'goals' && <GoalsWidget />}
 
           {currentView === 'analytics' && <DashboardAnalytics onClose={() => setCurrentView('dashboard')} />}
+
+          {currentView === 'map' && <InteractiveMap />}
+
+          {currentView === 'video' && <VideoConference />}
+
+          {currentView === 'wellness' && <WellnessDashboard />}
+
+          {currentView === 'ai-planning' && <AIPlanning />}
 
           {currentView === 'migration' && <MigrationWizard />}
         </div>
