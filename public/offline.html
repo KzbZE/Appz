@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TheraFlow - Hors ligne</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-center;
+      padding: 20px;
+    }
+
+    .container {
+      background: white;
+      border-radius: 24px;
+      padding: 48px 32px;
+      max-width: 500px;
+      width: 100%;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      text-align: center;
+    }
+
+    .icon {
+      width: 120px;
+      height: 120px;
+      margin: 0 auto 24px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-center;
+      font-size: 64px;
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% {
+        transform: scale(1);
+      }
+      50% {
+        transform: scale(1.05);
+      }
+    }
+
+    h1 {
+      font-size: 32px;
+      font-weight: 700;
+      color: #1F2937;
+      margin-bottom: 16px;
+    }
+
+    p {
+      font-size: 16px;
+      color: #6B7280;
+      line-height: 1.6;
+      margin-bottom: 32px;
+    }
+
+    button {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      padding: 16px 32px;
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    }
+
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(102, 126, 234, 0.6);
+    }
+
+    button:active {
+      transform: translateY(0);
+    }
+
+    .features {
+      margin-top: 32px;
+      padding-top: 32px;
+      border-top: 2px solid #E5E7EB;
+      text-align: left;
+    }
+
+    .features h3 {
+      font-size: 18px;
+      font-weight: 600;
+      color: #1F2937;
+      margin-bottom: 16px;
+    }
+
+    .features ul {
+      list-style: none;
+    }
+
+    .features li {
+      padding: 8px 0;
+      color: #6B7280;
+      font-size: 14px;
+      padding-left: 24px;
+      position: relative;
+    }
+
+    .features li::before {
+      content: "✓";
+      position: absolute;
+      left: 0;
+      color: #10B981;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="icon">
+      📡
+    </div>
+
+    <h1>Mode Hors Ligne</h1>
+
+    <p>
+      Vous êtes actuellement hors ligne. TheraFlowDB fonctionne même sans connexion Internet grâce à la technologie PWA.
+    </p>
+
+    <button onclick="location.reload()">
+      🔄 Réessayer
+    </button>
+
+    <div class="features">
+      <h3>Fonctionnalités disponibles hors ligne :</h3>
+      <ul>
+        <li>Consulter votre planning</li>
+        <li>Accéder aux fiches patients</li>
+        <li>Voir l'historique des séances</li>
+        <li>Consulter les statistiques</li>
+      </ul>
+    </div>
+
+    <p style="margin-top: 24px; font-size: 14px; color: #9CA3AF;">
+      Les modifications effectuées hors ligne seront synchronisées automatiquement lors de la reconnexion.
+    </p>
+  </div>
+
+  <script>
+    // Vérifier périodiquement la connexion
+    setInterval(() => {
+      if (navigator.onLine) {
+        location.reload();
+      }
+    }, 5000);
+
+    // Écouter l'événement online
+    window.addEventListener('online', () => {
+      location.reload();
+    });
+  </script>
+</body>
+</html>
