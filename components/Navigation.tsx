@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { LayoutDashboard, Users, TrendingUp, Calendar, Settings, PieChart, BarChart, FileText, Bell, CalendarDays, FileCode, Send, Package, Zap, Star, Gift, Shield, Target, Cloud, Menu, X, FileSpreadsheet } from 'lucide-react';
+import { LayoutDashboard, Users, TrendingUp, Calendar, Settings, PieChart, BarChart, FileText, Bell, CalendarDays, FileCode, Send, Package, Zap, Star, Gift, Shield, Target, Cloud, Menu, X, FileSpreadsheet, LineChart } from 'lucide-react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../db';
 
@@ -15,6 +15,7 @@ const Navigation: React.FC<NavigationProps> = ({ currentView, setView }) => {
   const navItems = [
     { id: 'dashboard', label: 'Pilotage', icon: LayoutDashboard, gradient: 'from-teal-500 to-cyan-600' },
     { id: 'goals', label: 'Objectifs', icon: Target, gradient: 'from-indigo-500 to-purple-600' },
+    { id: 'analytics', label: 'Analytics', icon: LineChart, gradient: 'from-violet-500 to-purple-600' },
     { id: 'calendar', label: 'Agenda', icon: Calendar, gradient: 'from-blue-500 to-indigo-600' },
     { id: 'planner', label: 'Planning', icon: CalendarDays, gradient: 'from-cyan-500 to-teal-600' },
     { id: 'patients', label: 'Patients', icon: Users, gradient: 'from-emerald-500 to-teal-600' },
@@ -35,6 +36,7 @@ const Navigation: React.FC<NavigationProps> = ({ currentView, setView }) => {
 
   const mobileNavItems = [
     { id: 'dashboard', label: 'Accueil', icon: LayoutDashboard, gradient: 'from-teal-500 to-cyan-600' },
+    { id: 'analytics', label: 'Analytics', icon: LineChart, gradient: 'from-violet-500 to-purple-600' },
     { id: 'patients', label: 'Patients', icon: Users, gradient: 'from-emerald-500 to-teal-600' },
     { id: 'calendar', label: 'Agenda', icon: Calendar, gradient: 'from-blue-500 to-indigo-600' },
     { id: 'finance', label: 'Finance', icon: PieChart, gradient: 'from-green-500 to-emerald-600' },

@@ -24,6 +24,7 @@ import LoyaltyPromoModule from './components/LoyaltyPromoModule';
 import RGPDModule from './components/RGPDModule';
 import MigrationWizard from './components/MigrationWizard';
 import UrssafModule from './components/UrssafModule';
+import DashboardAnalytics from './components/DashboardAnalytics';
 import { checkAvailability, calculateLogistics, suggestOptimalTimeSlots } from './services/logisticsService';
 import { suggestOptimizedSlots, getAllAvailableSlots } from './services/optimizationService';
 import { Patient, Appointment, ApptStatus, PatientType, Invoice, InvoiceStatus, Expense, AppSettings } from './types';
@@ -914,6 +915,8 @@ const App: React.FC = () => {
           {currentView === 'rgpd' && <RGPDModule />}
 
           {currentView === 'goals' && <GoalsWidget />}
+
+          {currentView === 'analytics' && <DashboardAnalytics onClose={() => setCurrentView('dashboard')} />}
 
           {currentView === 'migration' && <MigrationWizard />}
         </div>
