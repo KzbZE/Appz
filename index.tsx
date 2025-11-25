@@ -1,7 +1,8 @@
 import React from 'react';
 import { createRoot } from 'react-dom/client';
-import App from './App';
+import Router from './Router';
 import EnvErrorFallback from './components/EnvErrorFallback';
+import './styles/animations.css';
 
 // Vérifier les variables d'environnement requises
 const checkRequiredEnvVars = () => {
@@ -37,7 +38,7 @@ if (container) {
     console.log('✅ Variables d\'environnement configurées');
     root.render(
       <React.StrictMode>
-        <App />
+        <Router />
       </React.StrictMode>
     );
   }

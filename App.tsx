@@ -31,6 +31,9 @@ import VideoConference from './components/VideoConference';
 import WellnessDashboard from './components/WellnessDashboard';
 import AIPlanning from './components/AIPlanning';
 import AdvancedSettings from './components/AdvancedSettings';
+import FinancialManagementPro from './components/FinancialManagementPro';
+import SchedulingManagementPro from './components/SchedulingManagementPro';
+import ModernNavigation from './components/ModernNavigation';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { checkAvailability, calculateLogistics, suggestOptimalTimeSlots } from './services/logisticsService';
 import { suggestOptimizedSlots, getAllAvailableSlots } from './services/optimizationService';
@@ -76,6 +79,7 @@ const AppContent: React.FC = () => {
   const appSettings = settings?.[0] || DEFAULT_SETTINGS;
 
   const [currentView, setCurrentView] = useState<string>('dashboard');
+  const [userRole, setUserRole] = useState<'practitioner' | 'patient'>('practitioner');
   const [activeAppointment, setActiveAppointment] = useState<Appointment | null>(null);
   const [isNewApptModalOpen, setIsNewApptModalOpen] = useState(false);
   const [isClientBookingOpen, setIsClientBookingOpen] = useState(false);
@@ -920,26 +924,54 @@ const AppContent: React.FC = () => {
     return <LoginScreen onLoginSuccess={handleLoginSuccess} />;
   }
 
+  // Gestion switch praticien/patient
+  const handleRoleSwitch = (role: 'practitioner' | 'patient') => {
+    setUserRole(role);
+    if (role === 'patient') {
+      // Rediriger vers dashboard patient
+      if (isPatientAuthenticated && patientId) {
+        window.location.hash = 'patient-dashboard';
+      } else {
+        window.location.hash = 'patient-login';
+      }
+    } else {
+      // Retour praticien
+      setCurrentView('dashboard');
+      window.location.hash = '';
+    }
+  };
+
   return (
     <div className="flex h-screen bg-white w-full overflow-hidden">
-      <Navigation currentView={currentView} setView={setCurrentView} />
-      
-      <main className="flex-1 h-full w-full overflow-hidden md:pl-64 flex flex-col relative">
-        <header className="md:hidden h-14 bg-white border-b border-gray-200 flex items-center justify-between px-4 shrink-0 z-10">
-             <div className="font-bold text-lg text-slate-800">{appSettings?.appName || 'TheraFlow'}</div>
-             <div className="flex items-center space-x-2">
-                 <button onClick={() => setIsClientBookingOpen(true)} className="p-2 bg-slate-100 rounded-full text-slate-600"><Globe size={18}/></button>
-                 <button onClick={() => setIsQuickSessionModalOpen(true)} className="p-2 bg-amber-100 rounded-full text-amber-600"><Zap size={18}/></button>
-             </div>
-        </header>
+      <ModernNavigation
+        currentView={currentView}
+        setView={setCurrentView}
+        userRole={userRole}
+        onRoleSwitch={handleRoleSwitch}
+        practitionerName={appSettings.practitionerName}
+        patientName={patients?.find(p => p.id === patientId)?.name || 'Patient'}
+      />
 
-        <div className="hidden md:flex justify-between items-center p-6 pb-2 shrink-0">
-            <h1 className="text-2xl font-bold text-slate-800 capitalize">
-                {currentView === 'dashboard' ? 'Tableau de Bord' :
+      {/* Main content - adjusted for ModernNavigation */}
+      <main className="flex-1 h-full w-full overflow-hidden lg:ml-64 flex flex-col relative pt-16 lg:pt-0">
+        {/* Desktop header avec actions */}
+        <div className="hidden lg:flex justify-between items-center px-6 py-4 border-b border-neutral-200 bg-white">
+            <h1 className="text-2xl font-semibold text-neutral-900">
+                {currentView === 'dashboard' ? 'Tableau de bord' :
                  currentView === 'calendar' ? 'Agenda' :
-                 currentView === 'patients' ? 'Base Patients' : currentView}
+                 currentView === 'patients' ? 'Patients' :
+                 currentView === 'analytics' ? 'Analytics' :
+                 currentView === 'ai-planning' ? 'IA Planning' :
+                 currentView === 'map' ? 'Carte interactive' :
+                 currentView === 'video' ? 'Téléconsultation' :
+                 currentView === 'wellness' ? 'Bien-être' :
+                 currentView === 'finance' ? 'Finance' :
+                 currentView === 'finance-pro' ? 'Gestion Financière Pro' :
+                 currentView === 'scheduling-pro' ? 'Planning Intelligent' :
+                 currentView === 'advanced-settings' ? 'Paramètres Pro' :
+                 currentView.charAt(0).toUpperCase() + currentView.slice(1)}
             </h1>
-            <div className="flex items-center space-x-3">
+            <div className="flex items-center gap-3">
                 <button
                     onClick={() => setIsClientBookingOpen(true)}
                     className="flex items-center px-4 py-2 bg-white border border-gray-200 text-slate-600 font-bold rounded-lg hover:bg-gray-50 shadow-sm"
@@ -1004,6 +1036,10 @@ const AppContent: React.FC = () => {
               expenses={expenses || []}
             />
           )}
+
+          {currentView === 'finance-pro' && <FinancialManagementPro />}
+
+          {currentView === 'scheduling-pro' && <SchedulingManagementPro />}
 
           {currentView === 'urssaf' && <UrssafModule />}
 
