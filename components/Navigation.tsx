@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { LayoutDashboard, Users, TrendingUp, Calendar, Settings, PieChart, BarChart, FileText, Bell, CalendarDays, FileCode, Send, Package, Zap, Star, Gift, Shield, Target, Cloud, Menu, X, FileSpreadsheet, LineChart } from 'lucide-react';
+import { LayoutDashboard, Users, TrendingUp, Calendar, Settings, PieChart, BarChart, FileText, Bell, CalendarDays, FileCode, Send, Package, Zap, Star, Gift, Shield, Target, Cloud, Menu, X, FileSpreadsheet, LineChart, Palette } from 'lucide-react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../db';
 
@@ -150,6 +150,23 @@ const Navigation: React.FC<NavigationProps> = ({ currentView, setView }) => {
                   );
                 })}
 
+                {/* Theme */}
+                <button
+                  onClick={() => handleMenuItemClick('theme')}
+                  className={`flex flex-col items-center p-3 rounded-2xl transition-all ${
+                    currentView === 'theme'
+                      ? 'bg-gradient-to-br from-slate-100 to-slate-50 shadow-md'
+                      : 'bg-slate-50 hover:bg-slate-100'
+                  }`}
+                >
+                  <div className="p-3 rounded-xl mb-2 bg-gradient-to-br from-purple-500 to-pink-600 text-white shadow-lg">
+                    <Palette size={24} strokeWidth={2} />
+                  </div>
+                  <span className="text-xs font-bold text-center text-slate-700 leading-tight">
+                    Apparence
+                  </span>
+                </button>
+
                 {/* Settings */}
                 <button
                   onClick={() => handleMenuItemClick('settings')}
@@ -242,8 +259,24 @@ const Navigation: React.FC<NavigationProps> = ({ currentView, setView }) => {
           })}
         </nav>
 
-        {/* Settings Button */}
-        <div className="p-3 border-t border-slate-800/50">
+        {/* Settings & Theme Buttons */}
+        <div className="p-3 border-t border-slate-800/50 space-y-2">
+          <button
+            onClick={() => setView('theme')}
+            className={`group flex items-center w-full px-4 py-3 rounded-xl transition-all duration-300 ${
+              currentView === 'theme'
+                ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-xl'
+                : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
+            }`}
+          >
+            <div className={`mr-3 p-1.5 rounded-lg transition-all ${
+              currentView === 'theme' ? 'bg-white/20' : 'group-hover:bg-slate-700/50'
+            }`}>
+              <Palette size={18} strokeWidth={currentView === 'theme' ? 2.5 : 2} />
+            </div>
+            <span className="text-sm font-bold">Apparence</span>
+          </button>
+
           <button
             onClick={() => setView('settings')}
             className={`group flex items-center w-full px-4 py-3 rounded-xl transition-all duration-300 ${

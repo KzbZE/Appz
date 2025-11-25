@@ -25,6 +25,8 @@ import RGPDModule from './components/RGPDModule';
 import MigrationWizard from './components/MigrationWizard';
 import UrssafModule from './components/UrssafModule';
 import DashboardAnalytics from './components/DashboardAnalytics';
+import ThemeSettings from './components/ThemeSettings';
+import { ThemeProvider } from './contexts/ThemeContext';
 import { checkAvailability, calculateLogistics, suggestOptimalTimeSlots } from './services/logisticsService';
 import { suggestOptimizedSlots, getAllAvailableSlots } from './services/optimizationService';
 import { Patient, Appointment, ApptStatus, PatientType, Invoice, InvoiceStatus, Expense, AppSettings } from './types';
@@ -36,7 +38,7 @@ import AppointmentValidation from './components/AppointmentValidation';
 import PatientLoginScreen from './components/PatientLoginScreen';
 import PatientDashboard from './components/PatientDashboard';
 
-const App: React.FC = () => {
+const AppContent: React.FC = () => {
   // ✅ État d'authentification praticien
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
@@ -937,6 +939,8 @@ const App: React.FC = () => {
              <SettingsModule settings={appSettings} onSave={handleUpdateSettings} />
           )}
 
+          {currentView === 'theme' && <ThemeSettings />}
+
           {currentView === 'stats' && <AdvancedStatistics />}
 
           {currentView === 'reminders' && <ReminderModule invoices={invoices || []} />}
@@ -979,6 +983,14 @@ const App: React.FC = () => {
         )}
       </main>
     </div>
+  );
+};
+
+const App: React.FC = () => {
+  return (
+    <ThemeProvider>
+      <AppContent />
+    </ThemeProvider>
   );
 };
 
