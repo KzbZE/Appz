@@ -264,6 +264,18 @@ const App: React.FC = () => {
   }, [newApptData.date, newApptData.patientId, newApptData.newPatientAddress, newApptData.isNewPatient, newApptData.type, patients, appointments, appSettings.cabinetAddress]);
 
   const handleStartSession = (appt: Appointment) => {
+    console.log('Starting session for appointment:', appt);
+
+    // Vérifier que le patient existe
+    const patient = patients?.find(p => String(p.id) === String(appt.patientId));
+
+    if (!patient) {
+      console.error('Patient not found for appointment:', appt);
+      alert('❌ Erreur: Patient introuvable.\n\nPatientId: ' + appt.patientId + '\n\nVeuillez vérifier que le patient existe dans la base de données.');
+      return;
+    }
+
+    console.log('Patient found:', patient);
     setActiveAppointment(appt);
     setCurrentView('session');
   };
@@ -880,13 +892,44 @@ const App: React.FC = () => {
 
           {currentView === 'urssaf' && <UrssafModule />}
 
-          {currentView === 'session' && activeAppointment && (
-            <SessionWizard 
-              patient={patients?.find(p => String(p.id) === String(activeAppointment.patientId)) || {} as Patient}
-              settings={appSettings}
-              onComplete={handleCompleteSession}
-            />
-          )}
+          {currentView === 'session' && activeAppointment && (() => {
+            const sessionPatient = patients?.find(p => String(p.id) === String(activeAppointment.patientId));
+
+            if (!sessionPatient) {
+              return (
+                <div className="flex items-center justify-center min-h-screen bg-gray-100">
+                  <div className="bg-white rounded-2xl p-8 shadow-lg max-w-md">
+                    <div className="text-center">
+                      <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <span className="text-3xl">❌</span>
+                      </div>
+                      <h2 className="text-2xl font-bold text-gray-900 mb-2">Patient introuvable</h2>
+                      <p className="text-gray-600 mb-4">
+                        Le patient associé à ce rendez-vous (ID: {activeAppointment.patientId}) n'existe pas dans la base de données.
+                      </p>
+                      <button
+                        onClick={() => {
+                          setActiveAppointment(null);
+                          setCurrentView('dashboard');
+                        }}
+                        className="px-6 py-3 bg-gradient-to-r from-teal-600 to-cyan-600 text-white rounded-lg font-semibold hover:shadow-lg transition-all"
+                      >
+                        Retour au tableau de bord
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            }
+
+            return (
+              <SessionWizard
+                patient={sessionPatient}
+                settings={appSettings}
+                onComplete={handleCompleteSession}
+              />
+            );
+          })()}
 
           {currentView === 'coach' && <AICoach />}
 

@@ -71,10 +71,12 @@ export interface Appointment {
   id?: number | string;
   patientId: string | number;
   startTime: string;
+  endTime?: string; // Calculé automatiquement depuis startTime + durationMin si non fourni
   durationMin: number;
   status: ApptStatus;
   type: 'CABINET' | 'DOMICILE' | 'STABLE' | 'BLOCK';
   notes?: string;
+  location?: string; // Lieu du RDV (pour iCal, etc.)
   weather?: {
     temp: number;
     condition: 'sunny' | 'rain' | 'cloudy' | 'storm';

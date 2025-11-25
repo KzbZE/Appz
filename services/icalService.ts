@@ -11,7 +11,11 @@ import { format } from 'date-fns';
  */
 export function generateICalEvent(appointment: Appointment, patientName: string, practitionerName: string): string {
   const startDate = new Date(appointment.startTime);
-  const endDate = new Date(appointment.endTime);
+
+  // Calculer endDate si pas fourni
+  const endDate = appointment.endTime
+    ? new Date(appointment.endTime)
+    : new Date(startDate.getTime() + appointment.durationMin * 60000);
 
   // Format iCal pour les dates (YYYYMMDDTHHMMSSZ)
   const formatDateForICal = (date: Date): string => {
@@ -81,7 +85,11 @@ X-WR-TIMEZONE:Europe/Paris\n`;
 
   appointments.forEach(({ appointment, patientName }) => {
     const startDate = new Date(appointment.startTime);
-    const endDate = new Date(appointment.endTime);
+
+    // Calculer endDate si pas fourni
+    const endDate = appointment.endTime
+      ? new Date(appointment.endTime)
+      : new Date(startDate.getTime() + appointment.durationMin * 60000);
 
     const uid = `theraflow-${appointment.id}@theraflow.app`;
     const dtstamp = formatDateForICal(new Date());
