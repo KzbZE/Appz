@@ -36,6 +36,7 @@ const Navigation: React.FC<NavigationProps> = ({ currentView, setView }) => {
     { id: 'migration', label: 'Migration Cloud', icon: Cloud, gradient: 'from-sky-500 to-blue-600' },
     { id: 'rgpd', label: 'RGPD', icon: Shield, gradient: 'from-blue-600 to-cyan-700' },
     { id: 'stats', label: 'Stats', icon: BarChart, gradient: 'from-blue-600 to-indigo-600' },
+    { id: 'advanced-settings', label: 'Paramètres Pro', icon: Settings, gradient: 'from-purple-600 to-pink-600' },
   ];
 
   const mobileNavItems = [

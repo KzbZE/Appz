@@ -30,6 +30,7 @@ import InteractiveMap from './components/InteractiveMap';
 import VideoConference from './components/VideoConference';
 import WellnessDashboard from './components/WellnessDashboard';
 import AIPlanning from './components/AIPlanning';
+import AdvancedSettings from './components/AdvancedSettings';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { checkAvailability, calculateLogistics, suggestOptimalTimeSlots } from './services/logisticsService';
 import { suggestOptimizedSlots, getAllAvailableSlots } from './services/optimizationService';
@@ -1086,6 +1087,8 @@ const AppContent: React.FC = () => {
           {currentView === 'ai-planning' && <AIPlanning />}
 
           {currentView === 'migration' && <MigrationWizard />}
+
+          {currentView === 'advanced-settings' && <AdvancedSettings />}
         </div>
 
         {isNewApptModalOpen && renderNewApptModal()}
