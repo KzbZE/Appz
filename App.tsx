@@ -102,6 +102,7 @@ const AppContent: React.FC = () => {
 
   const [suggestedTimeSlots, setSuggestedTimeSlots] = useState<any[]>([]);
   const [quickSearchTerm, setQuickSearchTerm] = useState('');
+  const [slotWarnings, setSlotWarnings] = useState<{type: 'error' | 'warning', message: string}[]>([]);
 
   // ✅ Parser l'URL hash pour routing (#validate?token=xxx, #patient-login, #patient-dashboard)
   useEffect(() => {
@@ -472,8 +473,86 @@ const AppContent: React.FC = () => {
       setIsNewApptModalOpen(false);
   };
 
+  const validateTimeSlot = (date: string, time: string) => {
+    if (!date || !time || !appointments) {
+      setSlotWarnings([]);
+      return;
+    }
+
+    const warnings: {type: 'error' | 'warning', message: string}[] = [];
+    const selectedDateTime = new Date(`${date}T${time}`);
+    const selectedStart = selectedDateTime.getTime();
+    const selectedEnd = selectedStart + (60 * 60 * 1000); // Assume 60 min session
+
+    // Check for direct conflicts (overlapping appointments)
+    const conflicts = appointments.filter(apt => {
+      if (editingApptId && apt.id === editingApptId) return false; // Skip current appointment when editing
+
+      const aptStart = new Date(apt.startTime).getTime();
+      const aptEnd = aptStart + (apt.durationMin * 60 * 1000);
+
+      // Check if there's overlap
+      return (selectedStart < aptEnd && selectedEnd > aptStart);
+    });
+
+    if (conflicts.length > 0) {
+      const conflict = conflicts[0];
+      const conflictPatient = patients?.find(p => p.id === conflict.patientId);
+      warnings.push({
+        type: 'error',
+        message: `⚠️ Conflit: RDV avec ${conflictPatient?.name || 'patient'} à ${new Date(conflict.startTime).toLocaleTimeString('fr-FR', {hour: '2-digit', minute: '2-digit'})}`
+      });
+    }
+
+    // Check for travel time issues (appointments need travel time between them)
+    const sortedAppts = [...appointments]
+      .filter(apt => apt.id !== editingApptId && apt.type !== 'CABINET' && newApptData.type !== 'CABINET')
+      .sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
+
+    const selectedDate = new Date(date).toDateString();
+    const todayAppts = sortedAppts.filter(apt =>
+      new Date(apt.startTime).toDateString() === selectedDate
+    );
+
+    // Check appointment before
+    const beforeAppt = todayAppts.filter(apt =>
+      new Date(apt.startTime).getTime() < selectedStart
+    ).pop();
+
+    if (beforeAppt && beforeAppt.type !== 'CABINET' && newApptData.type !== 'CABINET') {
+      const beforeEnd = new Date(beforeAppt.startTime).getTime() + (beforeAppt.durationMin * 60 * 1000);
+      const timeDiff = (selectedStart - beforeEnd) / 1000 / 60; // minutes
+
+      if (timeDiff < 30) {
+        warnings.push({
+          type: 'warning',
+          message: `⏱️ Attention: Seulement ${Math.round(timeDiff)} min de trajet depuis le RDV précédent (recommandé: 30 min minimum)`
+        });
+      }
+    }
+
+    // Check appointment after
+    const afterAppt = todayAppts.find(apt =>
+      new Date(apt.startTime).getTime() > selectedEnd
+    );
+
+    if (afterAppt && afterAppt.type !== 'CABINET' && newApptData.type !== 'CABINET') {
+      const timeDiff = (new Date(afterAppt.startTime).getTime() - selectedEnd) / 1000 / 60; // minutes
+
+      if (timeDiff < 30) {
+        warnings.push({
+          type: 'warning',
+          message: `⏱️ Attention: Seulement ${Math.round(timeDiff)} min de trajet vers le RDV suivant (recommandé: 30 min minimum)`
+        });
+      }
+    }
+
+    setSlotWarnings(warnings);
+  };
+
   const handleCloseApptModal = () => {
       setSuggestedTimeSlots([]);
+      setSlotWarnings([]);
       setIsNewApptModalOpen(false);
   };
 
@@ -546,7 +625,11 @@ const AppContent: React.FC = () => {
                             type="date"
                             className="w-full p-3 border border-gray-200 rounded-xl"
                             value={newApptData.date}
-                            onChange={e => setNewApptData({...newApptData, date: e.target.value})}
+                            onChange={e => {
+                              const newDate = e.target.value;
+                              setNewApptData({...newApptData, date: newDate});
+                              validateTimeSlot(newDate, newApptData.time);
+                            }}
                           />
                       </div>
                       <div>
@@ -555,10 +638,35 @@ const AppContent: React.FC = () => {
                             type="time"
                             className="w-full p-3 border border-gray-200 rounded-xl"
                             value={newApptData.time}
-                            onChange={e => setNewApptData({...newApptData, time: e.target.value})}
+                            onChange={e => {
+                              const newTime = e.target.value;
+                              setNewApptData({...newApptData, time: newTime});
+                              validateTimeSlot(newApptData.date, newTime);
+                            }}
                           />
                       </div>
                   </div>
+
+                  {/* Warnings/Errors display */}
+                  {slotWarnings.length > 0 && (
+                    <div className="space-y-2 animate-fadeIn">
+                      {slotWarnings.map((warning, idx) => (
+                        <div
+                          key={idx}
+                          className={`p-3 rounded-xl border-2 ${
+                            warning.type === 'error'
+                              ? 'bg-red-50 border-red-300 text-red-800'
+                              : 'bg-yellow-50 border-yellow-300 text-yellow-800'
+                          }`}
+                        >
+                          <div className="flex items-start gap-2">
+                            <AlertTriangle size={18} className="flex-shrink-0 mt-0.5" />
+                            <p className="text-sm font-semibold">{warning.message}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
 
                   {suggestedTimeSlots.length > 0 && (
                     <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-3 animate-fadeIn">

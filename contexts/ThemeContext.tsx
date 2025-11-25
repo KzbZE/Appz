@@ -281,28 +281,38 @@ export const ThemeProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       ? (actualTheme === 'dark' ? highContrastDark : highContrastLight)
       : (actualTheme === 'dark' ? darkTheme : lightTheme);
 
-    setTheme(prev => ({
-      ...prev,
+    const newTheme = {
+      ...theme,
       mode,
       actualTheme,
       colors
-    }));
+    };
+    setTheme(newTheme);
+    localStorage.setItem('theraflow_theme', JSON.stringify(newTheme));
   };
 
   const setFontSize = (fontSize: 'small' | 'medium' | 'large') => {
-    setTheme(prev => ({ ...prev, fontSize }));
+    const newTheme = { ...theme, fontSize };
+    setTheme(newTheme);
+    localStorage.setItem('theraflow_theme', JSON.stringify(newTheme));
   };
 
   const setFontFamily = (fontFamily: string) => {
-    setTheme(prev => ({ ...prev, fontFamily }));
+    const newTheme = { ...theme, fontFamily };
+    setTheme(newTheme);
+    localStorage.setItem('theraflow_theme', JSON.stringify(newTheme));
   };
 
   const setBorderRadius = (borderRadius: 'none' | 'small' | 'medium' | 'large') => {
-    setTheme(prev => ({ ...prev, borderRadius }));
+    const newTheme = { ...theme, borderRadius };
+    setTheme(newTheme);
+    localStorage.setItem('theraflow_theme', JSON.stringify(newTheme));
   };
 
   const toggleAnimations = () => {
-    setTheme(prev => ({ ...prev, animations: !prev.animations }));
+    const newTheme = { ...theme, animations: !theme.animations };
+    setTheme(newTheme);
+    localStorage.setItem('theraflow_theme', JSON.stringify(newTheme));
   };
 
   const toggleHighContrast = () => {
@@ -311,11 +321,13 @@ export const ThemeProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       ? (theme.actualTheme === 'dark' ? highContrastDark : highContrastLight)
       : (theme.actualTheme === 'dark' ? darkTheme : lightTheme);
 
-    setTheme(prev => ({
-      ...prev,
+    const newTheme = {
+      ...theme,
       highContrast: newHighContrast,
       colors
-    }));
+    };
+    setTheme(newTheme);
+    localStorage.setItem('theraflow_theme', JSON.stringify(newTheme));
   };
 
   const resetTheme = () => {

@@ -21,47 +21,70 @@ const InteractiveMap: React.FC = () => {
   const [trafficAlerts, setTrafficAlerts] = useState<any[]>([]);
 
   useEffect(() => {
+    if (!patients || !appointments) {
+      return;
+    }
+
     // Analyse géographique
     const loadAnalysis = async () => {
-      const analysis = await analyzeGeographicDistribution(patients, appointments);
-      const formattedAnalysis = {
-        zones: analysis.map((stat: any) => ({
-          zone: stat.zone,
-          patients: stat.patientCount,
-          monthlyVisits: stat.appointmentCount,
-          avgRevenue: Math.round(stat.revenue)
-        }))
-      };
-      setGeoAnalysis(formattedAnalysis);
+      try {
+        const analysis = await analyzeGeographicDistribution(patients, appointments);
+        if (analysis && Array.isArray(analysis)) {
+          const formattedAnalysis = {
+            zones: analysis.map((stat: any) => ({
+              zone: stat.zone,
+              patients: stat.patientCount || 0,
+              monthlyVisits: stat.appointmentCount || 0,
+              avgRevenue: Math.round(stat.revenue || 0)
+            }))
+          };
+          setGeoAnalysis(formattedAnalysis);
+        }
+      } catch (error) {
+        console.error('Erreur analyse géographique:', error);
+        setGeoAnalysis({ zones: [] });
+      }
     };
 
     loadAnalysis();
 
     // Détection anomalies trafic
-    const alerts = detectTrafficAnomalies([]);
-    setTrafficAlerts(alerts);
+    try {
+      const alerts = detectTrafficAnomalies([]);
+      setTrafficAlerts(alerts || []);
+    } catch (error) {
+      console.error('Erreur détection trafic:', error);
+      setTrafficAlerts([]);
+    }
   }, [patients, appointments]);
 
   const handleOptimizeRoute = async () => {
-    const today = new Date();
-    const todayAppointments = appointments.filter(apt => {
-      const aptDate = new Date(apt.startTime);
-      return aptDate.toDateString() === today.toDateString();
-    });
+    try {
+      const today = new Date();
+      const todayAppointments = appointments.filter(apt => {
+        const aptDate = new Date(apt.startTime);
+        return aptDate.toDateString() === today.toDateString();
+      });
 
-    if (todayAppointments.length === 0) {
-      alert('Aucun rendez-vous aujourd\'hui pour optimiser');
-      return;
+      if (todayAppointments.length === 0) {
+        alert('Aucun rendez-vous aujourd\'hui pour optimiser');
+        return;
+      }
+
+      const route = await optimizeTourRoute(
+        todayAppointments,
+        patients,
+        { lat: 48.8566, lng: 2.3522 } // Cabinet par défaut (à remplacer)
+      );
+
+      if (route) {
+        setOptimizedRoute(route);
+        setShowRoute(true);
+      }
+    } catch (error) {
+      console.error('Erreur optimisation tournée:', error);
+      alert('Erreur lors de l\'optimisation de la tournée');
     }
-
-    const route = await optimizeTourRoute(
-      todayAppointments,
-      patients,
-      { lat: 48.8566, lng: 2.3522 } // Cabinet par défaut (à remplacer)
-    );
-
-    setOptimizedRoute(route);
-    setShowRoute(true);
   };
 
   const getPatientsByZone = (zone: 'A' | 'B' | 'C') => {

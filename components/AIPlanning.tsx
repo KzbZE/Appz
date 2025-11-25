@@ -62,6 +62,13 @@ const AIPlanning: React.FC = () => {
 
     try {
       const analysis = await analyzePatientHistory(selectedPatientId, appointments, patients);
+
+      if (!analysis) {
+        alert('Pas assez de données pour analyser ce patient.\n\nCe patient n\'a pas encore d\'historique de rendez-vous.');
+        setLoading(false);
+        return;
+      }
+
       setPatientAnalysis(analysis);
 
       if (analysis.needsFollowUp) {
