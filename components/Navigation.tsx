@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { LayoutDashboard, Users, TrendingUp, Calendar, Settings, PieChart, BarChart, FileText, Bell, CalendarDays, FileCode, Send, Package, Zap, Star, Gift, Shield, Target, Cloud, Menu, X, FileSpreadsheet, Download, Camera, BellRing, CreditCard, Scan, Map, Mic } from 'lucide-react';
+import { LayoutDashboard, Users, TrendingUp, Calendar, Settings, PieChart, BarChart, FileText, Bell, CalendarDays, FileCode, Send, Package, Zap, Star, Gift, Shield, Target, Cloud, Menu, X, FileSpreadsheet, Download, Camera, BellRing, CreditCard, Scan, Map, Mic, Sparkles, Brain } from 'lucide-react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../db';
 
@@ -25,8 +25,10 @@ const Navigation: React.FC<NavigationProps> = ({ currentView, setView }) => {
     { id: 'map', label: 'Carte', icon: Map, gradient: 'from-teal-600 to-cyan-700' },
     { id: 'templates', label: 'Templates', icon: FileCode, gradient: 'from-blue-600 to-cyan-600' },
     { id: 'coach', label: 'IA Coach', icon: TrendingUp, gradient: 'from-indigo-500 to-blue-600' },
+    { id: 'ai-assistant', label: 'Assistant IA', icon: Sparkles, gradient: 'from-purple-600 to-pink-600' },
+    { id: 'business-intelligence', label: 'BI Dashboard', icon: Brain, gradient: 'from-indigo-600 to-purple-700' },
+    { id: 'multi-practitioners', label: 'Multi-Praticiens', icon: Users, gradient: 'from-blue-500 to-cyan-500' },
     { id: 'finance', label: 'Finance', icon: PieChart, gradient: 'from-green-500 to-emerald-600' },
-    { id: 'payments', label: 'Paiements Stripe', icon: CreditCard, gradient: 'from-blue-600 to-purple-600' },
     { id: 'urssaf', label: 'URSSAF', icon: FileSpreadsheet, gradient: 'from-blue-500 to-indigo-500' },
     { id: 'exports', label: 'Exports Compta', icon: Download, gradient: 'from-green-600 to-emerald-600' },
     { id: 'inventory', label: 'Produits', icon: Package, gradient: 'from-yellow-500 to-amber-600' },

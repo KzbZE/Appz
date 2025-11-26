@@ -32,6 +32,11 @@ import AdminPanel from './components/AdminPanel';
 import OCRScannerModule from './components/OCRScannerModule';
 import InteractiveMapModule from './components/InteractiveMapModule';
 import VoiceNotesModule from './components/VoiceNotesModule';
+import MultiPractitionerModule from './components/MultiPractitionerModule';
+import AIAssistantModule from './components/AIAssistantModule';
+import BusinessIntelligenceDashboard from './components/BusinessIntelligenceDashboard';
+import KeyboardShortcutsPanel from './components/KeyboardShortcutsPanel';
+import OnboardingWizard from './components/OnboardingWizard';
 import { checkAvailability, calculateLogistics, suggestOptimalTimeSlots } from './services/logisticsService';
 import { suggestOptimizedSlots, getAllAvailableSlots } from './services/optimizationService';
 import { Patient, Appointment, ApptStatus, PatientType, Invoice, InvoiceStatus, Expense, AppSettings } from './types';
@@ -87,6 +92,8 @@ const App: React.FC = () => {
   const [suggestedTimeSlots, setSuggestedTimeSlots] = useState<any[]>([]);
   const [quickSearchTerm, setQuickSearchTerm] = useState('');
   const [showAdminPanel, setShowAdminPanel] = useState(false);
+  const [showKeyboardShortcuts, setShowKeyboardShortcuts] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(!localStorage.getItem('onboarding_completed'));
 
   useEffect(() => {
     db.populate();
@@ -98,16 +105,48 @@ const App: React.FC = () => {
       setShowAdminPanel(true);
     }
 
-    // Ajouter listener pour combinaison de touches Ctrl+Shift+A
+    // Ajouter listener pour combinaison de touches
     const handleKeyPress = (e: KeyboardEvent) => {
       if (e.ctrlKey && e.shiftKey && e.key === 'A') {
         e.preventDefault();
         setShowAdminPanel(true);
       }
+      if (e.ctrlKey && e.shiftKey && e.key === 'H') {
+        e.preventDefault();
+        setShowKeyboardShortcuts(true);
+      }
+    };
+
+    // Écouter les événements personnalisés des raccourcis
+    const handleShortcutAction = (e: CustomEvent) => {
+      switch (e.detail.action) {
+        case 'openAdmin':
+          setShowAdminPanel(true);
+          break;
+        case 'showHelp':
+          setShowKeyboardShortcuts(true);
+          break;
+        case 'quickSearch':
+          // Focus sur le champ de recherche si existe
+          const searchInput = document.querySelector('input[type="search"]') as HTMLInputElement;
+          if (searchInput) searchInput.focus();
+          break;
+      }
+    };
+
+    const handleNavigate = (e: CustomEvent) => {
+      setCurrentView(e.detail.view);
     };
 
     window.addEventListener('keydown', handleKeyPress);
-    return () => window.removeEventListener('keydown', handleKeyPress);
+    window.addEventListener('shortcutAction', handleShortcutAction as EventListener);
+    window.addEventListener('navigate', handleNavigate as EventListener);
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyPress);
+      window.removeEventListener('shortcutAction', handleShortcutAction as EventListener);
+      window.removeEventListener('navigate', handleNavigate as EventListener);
+    };
   }, []);
 
   useEffect(() => {
@@ -719,6 +758,12 @@ const App: React.FC = () => {
 
           {currentView === 'voice' && <VoiceNotesModule />}
 
+          {currentView === 'multi-practitioners' && <MultiPractitionerModule />}
+
+          {currentView === 'ai-assistant' && <AIAssistantModule />}
+
+          {currentView === 'business-intelligence' && <BusinessIntelligenceDashboard />}
+
           {currentView === 'session' && activeAppointment && (
             <SessionWizard 
               patient={patients?.find(p => String(p.id) === String(activeAppointment.patientId)) || {} as Patient}
@@ -773,6 +818,21 @@ const App: React.FC = () => {
         )}
 
         {showAdminPanel && <AdminPanel onClose={() => setShowAdminPanel(false)} />}
+
+        {showKeyboardShortcuts && (
+          <KeyboardShortcutsPanel onClose={() => setShowKeyboardShortcuts(false)} />
+        )}
+
+        {showOnboarding && (
+          <OnboardingWizard
+            onComplete={(data) => {
+              console.log('Onboarding completed:', data);
+              localStorage.setItem('onboarding_completed', 'true');
+              setShowOnboarding(false);
+              // Optionnellement, sauvegarder les données dans les settings
+            }}
+          />
+        )}
       </main>
     </div>
   );

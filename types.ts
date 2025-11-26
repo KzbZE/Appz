@@ -284,6 +284,20 @@ export interface SurveyConfig {
   questions: SurveyQuestion[];
 }
 
+export interface StripeConfig {
+  enabled?: boolean;
+  publishableKey?: string;
+  secretKey?: string;
+  testMode?: boolean;
+}
+
+export interface PayPalConfig {
+  enabled?: boolean;
+  clientId?: string;
+  secret?: string;
+  sandbox?: boolean;
+}
+
 export interface Goal {
   id?: number;
   type: 'REVENUE' | 'SESSIONS' | 'NEW_PATIENTS' | 'CUSTOM';
@@ -368,4 +382,6 @@ export interface AppSettings {
   google?: GoogleConfig;
   sms?: SMSConfig;
   survey?: SurveyConfig;
+  stripe?: StripeConfig;
+  paypal?: PayPalConfig;
 }

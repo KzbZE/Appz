@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { AppSettings } from '../types';
-import { Save, MapPin, DollarSign, Share2, Instagram, Facebook, Palette, Image, User, Type, Upload, Settings as SettingsIcon, Briefcase, Cloud, Database, Download, UploadCloud, AlertTriangle, CheckCircle } from 'lucide-react';
+import { Save, MapPin, DollarSign, Share2, Instagram, Facebook, Palette, Image, User, Type, Upload, Settings as SettingsIcon, Briefcase, Cloud, Database, Download, UploadCloud, AlertTriangle, CheckCircle, CreditCard } from 'lucide-react';
 import { signInToGoogle } from '../services/googleApiService';
 import { downloadBackup, importBackup, getLastBackupDate, restoreFromAutoBackup } from '../services/backupService';
 
@@ -207,6 +207,205 @@ const SettingsModule: React.FC<SettingsModuleProps> = ({ settings, onSave }) => 
                     >
                         {localSettings.google?.accessToken ? 'Compte Connecté' : 'Se connecter à Google'}
                     </button>
+                </div>
+            </div>
+        </section>
+
+        <hr className="border-gray-100" />
+
+        {/* SECTION: PAIEMENTS EN LIGNE */}
+        <section className="animate-fadeIn">
+            <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center">
+                <div className="p-2 bg-green-50 text-green-600 rounded-lg mr-3"><CreditCard size={20}/></div>
+                Paiements en Ligne (Stripe & PayPal)
+            </h3>
+
+            {/* Stripe Configuration */}
+            <div className="bg-indigo-50 p-5 rounded-xl border border-indigo-200 space-y-4 mb-6">
+                <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-3">
+                        <div className="p-2 bg-indigo-600 rounded-lg">
+                            <CreditCard size={20} className="text-white" />
+                        </div>
+                        <div>
+                            <h4 className="font-bold text-indigo-900">Stripe</h4>
+                            <p className="text-xs text-indigo-600">Configuration API Stripe</p>
+                        </div>
+                    </div>
+                    <label className="flex items-center gap-2">
+                        <input
+                            type="checkbox"
+                            checked={localSettings.stripe?.enabled || false}
+                            onChange={(e) => setLocalSettings({
+                                ...localSettings,
+                                stripe: { ...localSettings.stripe || {}, enabled: e.target.checked }
+                            })}
+                            className="w-5 h-5 rounded border-indigo-300 text-indigo-600 focus:ring-2 focus:ring-indigo-500"
+                        />
+                        <span className="text-sm font-semibold text-indigo-900">Activer</span>
+                    </label>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label className="block text-sm font-medium text-indigo-900 mb-1">
+                            Publishable Key (pk_...)
+                        </label>
+                        <input
+                            type="text"
+                            className="w-full p-3 border border-indigo-200 rounded-xl bg-white focus:ring-2 focus:ring-indigo-500 outline-none font-mono text-xs"
+                            value={localSettings.stripe?.publishableKey || ''}
+                            onChange={(e) => setLocalSettings({
+                                ...localSettings,
+                                stripe: { ...localSettings.stripe || {}, publishableKey: e.target.value }
+                            })}
+                            placeholder="pk_live_xxxxx ou pk_test_xxxxx"
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium text-indigo-900 mb-1">
+                            Secret Key (sk_...)
+                        </label>
+                        <input
+                            type="password"
+                            className="w-full p-3 border border-indigo-200 rounded-xl bg-white focus:ring-2 focus:ring-indigo-500 outline-none font-mono text-xs"
+                            value={localSettings.stripe?.secretKey || ''}
+                            onChange={(e) => setLocalSettings({
+                                ...localSettings,
+                                stripe: { ...localSettings.stripe || {}, secretKey: e.target.value }
+                            })}
+                            placeholder="sk_live_xxxxx ou sk_test_xxxxx"
+                        />
+                    </div>
+                </div>
+
+                <div className="flex items-center justify-between bg-white p-3 rounded-lg">
+                    <div className="flex items-center gap-2">
+                        <input
+                            type="checkbox"
+                            checked={localSettings.stripe?.testMode || false}
+                            onChange={(e) => setLocalSettings({
+                                ...localSettings,
+                                stripe: { ...localSettings.stripe || {}, testMode: e.target.checked }
+                            })}
+                            className="w-4 h-4 rounded border-gray-300 text-indigo-600 focus:ring-2 focus:ring-indigo-500"
+                        />
+                        <label className="text-sm font-medium text-slate-700">Mode Test</label>
+                    </div>
+                    <span className="text-xs text-slate-500">Utilisez pk_test_ et sk_test_ en mode test</span>
+                </div>
+
+                <div className="bg-white p-3 rounded-lg">
+                    <p className="text-xs font-semibold text-slate-600 mb-1">Webhook URL :</p>
+                    <code className="text-xs text-indigo-600 bg-indigo-50 px-2 py-1 rounded">
+                        {window.location.origin}/.netlify/functions/stripe-webhook
+                    </code>
+                </div>
+
+                <p className="text-xs text-indigo-700">
+                    <strong>Tutoriel :</strong> Obtenez vos clés sur{' '}
+                    <a href="https://dashboard.stripe.com/apikeys" target="_blank" rel="noopener noreferrer" className="underline font-bold">
+                        dashboard.stripe.com/apikeys
+                    </a>
+                </p>
+            </div>
+
+            {/* PayPal Configuration */}
+            <div className="bg-blue-50 p-5 rounded-xl border border-blue-200 space-y-4">
+                <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-3">
+                        <div className="p-2 bg-blue-600 rounded-lg">
+                            <DollarSign size={20} className="text-white" />
+                        </div>
+                        <div>
+                            <h4 className="font-bold text-blue-900">PayPal</h4>
+                            <p className="text-xs text-blue-600">Configuration API PayPal</p>
+                        </div>
+                    </div>
+                    <label className="flex items-center gap-2">
+                        <input
+                            type="checkbox"
+                            checked={localSettings.paypal?.enabled || false}
+                            onChange={(e) => setLocalSettings({
+                                ...localSettings,
+                                paypal: { ...localSettings.paypal || {}, enabled: e.target.checked }
+                            })}
+                            className="w-5 h-5 rounded border-blue-300 text-blue-600 focus:ring-2 focus:ring-blue-500"
+                        />
+                        <span className="text-sm font-semibold text-blue-900">Activer</span>
+                    </label>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label className="block text-sm font-medium text-blue-900 mb-1">
+                            Client ID
+                        </label>
+                        <input
+                            type="text"
+                            className="w-full p-3 border border-blue-200 rounded-xl bg-white focus:ring-2 focus:ring-blue-500 outline-none font-mono text-xs"
+                            value={localSettings.paypal?.clientId || ''}
+                            onChange={(e) => setLocalSettings({
+                                ...localSettings,
+                                paypal: { ...localSettings.paypal || {}, clientId: e.target.value }
+                            })}
+                            placeholder="AxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxV"
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium text-blue-900 mb-1">
+                            Secret
+                        </label>
+                        <input
+                            type="password"
+                            className="w-full p-3 border border-blue-200 rounded-xl bg-white focus:ring-2 focus:ring-blue-500 outline-none font-mono text-xs"
+                            value={localSettings.paypal?.secret || ''}
+                            onChange={(e) => setLocalSettings({
+                                ...localSettings,
+                                paypal: { ...localSettings.paypal || {}, secret: e.target.value }
+                            })}
+                            placeholder="ExxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxV"
+                        />
+                    </div>
+                </div>
+
+                <div className="flex items-center justify-between bg-white p-3 rounded-lg">
+                    <div className="flex items-center gap-2">
+                        <input
+                            type="checkbox"
+                            checked={localSettings.paypal?.sandbox || false}
+                            onChange={(e) => setLocalSettings({
+                                ...localSettings,
+                                paypal: { ...localSettings.paypal || {}, sandbox: e.target.checked }
+                            })}
+                            className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-2 focus:ring-blue-500"
+                        />
+                        <label className="text-sm font-medium text-slate-700">Mode Sandbox (Test)</label>
+                    </div>
+                    <span className="text-xs text-slate-500">Utilisez les credentials sandbox pour tester</span>
+                </div>
+
+                <p className="text-xs text-blue-700">
+                    <strong>Tutoriel :</strong> Obtenez vos credentials sur{' '}
+                    <a href="https://developer.paypal.com/dashboard/applications" target="_blank" rel="noopener noreferrer" className="underline font-bold">
+                        developer.paypal.com/dashboard
+                    </a>
+                </p>
+            </div>
+
+            {/* Info Box */}
+            <div className="bg-yellow-50 border-l-4 border-yellow-400 rounded-lg p-4 mt-4">
+                <div className="flex items-start gap-3">
+                    <AlertTriangle size={20} className="text-yellow-600 flex-shrink-0 mt-0.5" />
+                    <div>
+                        <h4 className="font-bold text-yellow-800 mb-1">🔐 Sécurité</h4>
+                        <ul className="text-sm text-yellow-700 space-y-1 list-disc list-inside">
+                            <li>Ces clés sont stockées localement dans votre navigateur</li>
+                            <li>Pour une production sécurisée, utilisez les Netlify Functions avec variables d'environnement</li>
+                            <li>Ne partagez JAMAIS vos clés secrètes (Secret Key, Secret)</li>
+                            <li>Testez d'abord en mode Test/Sandbox avant d'utiliser les clés de production</li>
+                        </ul>
+                    </div>
                 </div>
             </div>
         </section>
