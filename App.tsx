@@ -37,6 +37,10 @@ import AIAssistantModule from './components/AIAssistantModule';
 import BusinessIntelligenceDashboard from './components/BusinessIntelligenceDashboard';
 import KeyboardShortcutsPanel from './components/KeyboardShortcutsPanel';
 import OnboardingWizard from './components/OnboardingWizard';
+import LoginPage from './components/LoginPage';
+import BackendAdminPanel from './components/BackendAdminPanel';
+import { authService } from './services/authService';
+import { featuresService } from './services/featuresService';
 import { checkAvailability, calculateLogistics, suggestOptimalTimeSlots } from './services/logisticsService';
 import { suggestOptimizedSlots, getAllAvailableSlots } from './services/optimizationService';
 import { Patient, Appointment, ApptStatus, PatientType, Invoice, InvoiceStatus, Expense, AppSettings } from './types';
@@ -95,9 +99,56 @@ const App: React.FC = () => {
   const [showKeyboardShortcuts, setShowKeyboardShortcuts] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(!localStorage.getItem('onboarding_completed'));
 
+  // Auth states
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+  const [userRole, setUserRole] = useState<'ADMIN' | 'PRACTITIONER' | 'PATIENT' | null>(null);
+
+  // Fonction de vérification de l'authentification
+  const checkAuthentication = async () => {
+    try {
+      const authenticated = await authService.isAuthenticated();
+      setIsAuthenticated(authenticated);
+
+      if (authenticated) {
+        const user = await authService.getAuthUser();
+        setUserRole(user?.role || null);
+      }
+    } catch (error) {
+      console.error('Auth check error:', error);
+      setIsAuthenticated(false);
+      setUserRole(null);
+    } finally {
+      setIsCheckingAuth(false);
+    }
+  };
+
+  const handleLoginSuccess = () => {
+    checkAuthentication();
+  };
+
+  const handleOnboardingComplete = async (data: any) => {
+    // Créer le compte praticien depuis l'onboarding
+    await authService.createPractitionerFromOnboarding({
+      name: data.practitionerName,
+      email: data.email,
+      phone: data.phone
+    });
+
+    // Activer les features sélectionnées
+    featuresService.activateFeaturesFromOnboarding(data.features);
+
+    localStorage.setItem('onboarding_completed', 'true');
+    setShowOnboarding(false);
+
+    // Recharger pour vérifier l'auth
+    checkAuthentication();
+  };
+
   useEffect(() => {
     db.populate();
     setupAutomaticBackup();
+    checkAuthentication();
 
     // Vérifier si admin mode est activé via URL (?admin=true)
     const urlParams = new URLSearchParams(window.location.search);
@@ -663,6 +714,34 @@ const App: React.FC = () => {
       );
   };
 
+  // Loading state pendant la vérification auth
+  if (isCheckingAuth) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-purple-500 mx-auto mb-4"></div>
+          <p className="text-white font-medium">Chargement...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Afficher Onboarding si jamais complété ET pas authentifié
+  if (showOnboarding && !isAuthenticated) {
+    return <OnboardingWizard onComplete={handleOnboardingComplete} />;
+  }
+
+  // Afficher LoginPage si pas authentifié
+  if (!isAuthenticated) {
+    return <LoginPage onLoginSuccess={handleLoginSuccess} />;
+  }
+
+  // Afficher BackendAdminPanel si utilisateur est ADMIN
+  if (userRole === 'ADMIN') {
+    return <BackendAdminPanel />;
+  }
+
+  // Interface praticien/patient normale
   return (
     <div className="flex h-screen bg-white w-full overflow-hidden">
       <Navigation currentView={currentView} setView={setCurrentView} />
