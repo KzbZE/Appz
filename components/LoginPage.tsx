@@ -29,26 +29,18 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
     }
   };
 
-  // Quick login buttons pour d�mo
+  // Quick login pour démo
   const quickLogin = async (role: 'ADMIN' | 'PRACTITIONER') => {
     setError('');
     setIsLoading(true);
 
     let credentials;
     if (role === 'ADMIN') {
+      // Pour admin, créer via Supabase Dashboard
       credentials = { email: 'admin@theraflow.local', password: 'admin123' };
     } else {
-      // Trouver ou cr�er un praticien
-      const users = authService.getAllUsersForAdmin?.() || [];
-      const practitioner = users.find(u => u.role === 'PRACTITIONER');
-
-      if (practitioner) {
-        credentials = { email: practitioner.email, password: 'theraflow2024' };
-      } else {
-        setError('Aucun praticien trouv�. Compl�tez l\'onboarding d\'abord.');
-        setIsLoading(false);
-        return;
-      }
+      // Pour praticien de test
+      credentials = { email: 'praticien@theraflow.local', password: 'theraflow2024' };
     }
 
     const result = await authService.login(credentials);
@@ -57,7 +49,11 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
     if (result.success) {
       onLoginSuccess();
     } else {
-      setError(result.error || 'Erreur de connexion');
+      if (role === 'ADMIN') {
+        setError('Créez un compte ADMIN via Supabase Dashboard (email: admin@theraflow.local, rôle: ADMIN)');
+      } else {
+        setError('Compte non trouvé. Complétez l\'onboarding pour créer un compte praticien.');
+      }
     }
   };
 
@@ -86,7 +82,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
               TheraFlow
             </h1>
             <p className="text-gray-600">
-              Connexion � votre espace
+              Connexion à votre espace
             </p>
           </div>
 
@@ -129,7 +125,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="w-full pl-12 pr-12 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition-all"
-                  placeholder=""""""""""
+                  placeholder="••••••••"
                   required
                 />
                 <button
@@ -166,7 +162,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
             </div>
             <div className="relative flex justify-center text-sm">
               <span className="px-4 bg-white text-gray-500 font-medium">
-                Connexion rapide (D�mo)
+                Connexion rapide (Démo)
               </span>
             </div>
           </div>
@@ -176,27 +172,28 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
             <button
               onClick={() => quickLogin('ADMIN')}
               disabled={isLoading}
-              className="w-full py-3 bg-slate-800 text-white rounded-xl font-bold hover:bg-slate-900 transition-all flex items-center justify-center"
+              className="w-full py-3 bg-slate-800 text-white rounded-xl font-bold hover:bg-slate-900 transition-all flex items-center justify-center disabled:opacity-50"
             >
-              = Admin Backend
+              🔐 Admin Backend
             </button>
             <button
               onClick={() => quickLogin('PRACTITIONER')}
               disabled={isLoading}
-              className="w-full py-3 bg-teal-600 text-white rounded-xl font-bold hover:bg-teal-700 transition-all flex items-center justify-center"
+              className="w-full py-3 bg-teal-600 text-white rounded-xl font-bold hover:bg-teal-700 transition-all flex items-center justify-center disabled:opacity-50"
             >
-              =h� Praticien
+              👨‍⚕️ Praticien
             </button>
           </div>
 
           {/* Info */}
           <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
             <p className="text-xs text-blue-800 font-medium mb-2">
-              = Comptes de test :
+              🔑 Configuration Supabase :
             </p>
             <ul className="text-xs text-blue-700 space-y-1">
-              <li>" <strong>Admin:</strong> admin@theraflow.local / admin123</li>
-              <li>" <strong>Praticien:</strong> Cr�� apr�s onboarding / theraflow2024</li>
+              <li>• Créez les utilisateurs dans Supabase Dashboard</li>
+              <li>• Ajoutez metadata: name, role (ADMIN/PRACTITIONER/PATIENT)</li>
+              <li>• Ou complétez l'onboarding pour créer un compte praticien</li>
             </ul>
           </div>
         </div>
