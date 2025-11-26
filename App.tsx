@@ -38,6 +38,8 @@ import BusinessIntelligenceDashboard from './components/BusinessIntelligenceDash
 import KeyboardShortcutsPanel from './components/KeyboardShortcutsPanel';
 import OnboardingWizard from './components/OnboardingWizard';
 import LoginPage from './components/LoginPage';
+import RegisterPage from './components/RegisterPage';
+import ForgotPasswordPage from './components/ForgotPasswordPage';
 import BackendAdminPanel from './components/BackendAdminPanel';
 import { authService } from './services/authService';
 import { featuresService } from './services/featuresService';
@@ -103,6 +105,7 @@ const App: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   const [userRole, setUserRole] = useState<'ADMIN' | 'PRACTITIONER' | 'PATIENT' | null>(null);
+  const [authView, setAuthView] = useState<'login' | 'register' | 'forgot-password'>('login');
 
   // Fonction de vérification de l'authentification
   const checkAuthentication = async () => {
@@ -124,7 +127,24 @@ const App: React.FC = () => {
   };
 
   const handleLoginSuccess = () => {
+    setAuthView('login');
     checkAuthentication();
+  };
+
+  const handleRegisterSuccess = () => {
+    checkAuthentication();
+  };
+
+  const handleGoToRegister = () => {
+    setAuthView('register');
+  };
+
+  const handleGoToForgotPassword = () => {
+    setAuthView('forgot-password');
+  };
+
+  const handleBackToLogin = () => {
+    setAuthView('login');
   };
 
   const handleOnboardingComplete = async (data: any) => {
@@ -731,9 +751,32 @@ const App: React.FC = () => {
     return <OnboardingWizard onComplete={handleOnboardingComplete} />;
   }
 
-  // Afficher LoginPage si pas authentifié
+  // Afficher la page d'authentification appropriée si pas authentifié
   if (!isAuthenticated) {
-    return <LoginPage onLoginSuccess={handleLoginSuccess} />;
+    if (authView === 'register') {
+      return (
+        <RegisterPage
+          onRegisterSuccess={handleRegisterSuccess}
+          onBackToLogin={handleBackToLogin}
+        />
+      );
+    }
+
+    if (authView === 'forgot-password') {
+      return (
+        <ForgotPasswordPage
+          onBackToLogin={handleBackToLogin}
+        />
+      );
+    }
+
+    return (
+      <LoginPage
+        onLoginSuccess={handleLoginSuccess}
+        onGoToRegister={handleGoToRegister}
+        onGoToForgotPassword={handleGoToForgotPassword}
+      />
+    );
   }
 
   // Afficher BackendAdminPanel si utilisateur est ADMIN

@@ -5,9 +5,11 @@ import { LogIn, Lock, Mail, Eye, EyeOff, Sparkles } from 'lucide-react';
 
 interface LoginPageProps {
   onLoginSuccess: () => void;
+  onGoToRegister?: () => void;
+  onGoToForgotPassword?: () => void;
 }
 
-const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
+const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess, onGoToRegister, onGoToForgotPassword }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -179,6 +181,19 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
                 </>
               )}
             </button>
+
+            {/* Forgot Password Link */}
+            {onGoToForgotPassword && (
+              <div className="text-center">
+                <button
+                  type="button"
+                  onClick={onGoToForgotPassword}
+                  className="text-sm text-purple-600 font-medium hover:text-purple-700 transition-colors"
+                >
+                  Mot de passe oublié ?
+                </button>
+              </div>
+            )}
           </form>
 
           {/* Divider */}
@@ -222,6 +237,21 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
               <li className="text-green-700 font-medium mt-2">✅ Comptes créés automatiquement au premier lancement</li>
             </ul>
           </div>
+
+          {/* Register Link */}
+          {onGoToRegister && (
+            <div className="mt-6 text-center">
+              <p className="text-sm text-gray-600">
+                Pas encore de compte ?{' '}
+                <button
+                  onClick={onGoToRegister}
+                  className="text-purple-600 font-bold hover:text-purple-700 transition-colors"
+                >
+                  Créer un compte
+                </button>
+              </p>
+            </div>
+          )}
         </div>
       </div>
 
