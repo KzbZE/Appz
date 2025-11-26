@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { LayoutDashboard, Users, TrendingUp, Calendar, Settings, PieChart, BarChart, FileText, Bell, CalendarDays, FileCode, Send, Package, Zap, Star, Gift, Shield, Target, Cloud, Menu, X, FileSpreadsheet, Download } from 'lucide-react';
+import { LayoutDashboard, Users, TrendingUp, Calendar, Settings, PieChart, BarChart, FileText, Bell, CalendarDays, FileCode, Send, Package, Zap, Star, Gift, Shield, Target, Cloud, Menu, X, FileSpreadsheet, Download, Camera, BellRing, CreditCard } from 'lucide-react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../db';
 
@@ -19,9 +19,11 @@ const Navigation: React.FC<NavigationProps> = ({ currentView, setView }) => {
     { id: 'planner', label: 'Planning', icon: CalendarDays, gradient: 'from-cyan-500 to-teal-600' },
     { id: 'patients', label: 'Patients', icon: Users, gradient: 'from-emerald-500 to-teal-600' },
     { id: 'records', label: 'Dossiers', icon: FileText, gradient: 'from-amber-500 to-orange-600' },
+    { id: 'media', label: 'Photos', icon: Camera, gradient: 'from-purple-500 to-pink-600' },
     { id: 'templates', label: 'Templates', icon: FileCode, gradient: 'from-blue-600 to-cyan-600' },
     { id: 'coach', label: 'IA Coach', icon: TrendingUp, gradient: 'from-indigo-500 to-blue-600' },
     { id: 'finance', label: 'Finance', icon: PieChart, gradient: 'from-green-500 to-emerald-600' },
+    { id: 'payments', label: 'Paiements Stripe', icon: CreditCard, gradient: 'from-blue-600 to-purple-600' },
     { id: 'urssaf', label: 'URSSAF', icon: FileSpreadsheet, gradient: 'from-blue-500 to-indigo-500' },
     { id: 'exports', label: 'Exports Compta', icon: Download, gradient: 'from-green-600 to-emerald-600' },
     { id: 'inventory', label: 'Produits', icon: Package, gradient: 'from-yellow-500 to-amber-600' },
@@ -29,6 +31,7 @@ const Navigation: React.FC<NavigationProps> = ({ currentView, setView }) => {
     { id: 'marketing', label: 'Marketing', icon: Send, gradient: 'from-teal-500 to-cyan-500' },
     { id: 'satisfaction', label: 'Satisfaction', icon: Star, gradient: 'from-pink-500 to-rose-600' },
     { id: 'reminders', label: 'Rappels', icon: Bell, gradient: 'from-red-500 to-orange-600' },
+    { id: 'reminders-auto', label: 'Rappels Auto', icon: BellRing, gradient: 'from-orange-500 to-red-500' },
     { id: 'migration', label: 'Migration Cloud', icon: Cloud, gradient: 'from-sky-500 to-blue-600' },
     { id: 'rgpd', label: 'RGPD', icon: Shield, gradient: 'from-blue-600 to-cyan-700' },
     { id: 'stats', label: 'Stats', icon: BarChart, gradient: 'from-blue-600 to-indigo-600' },

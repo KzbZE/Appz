@@ -25,6 +25,9 @@ import RGPDModule from './components/RGPDModule';
 import MigrationWizard from './components/MigrationWizard';
 import UrssafModule from './components/UrssafModule';
 import AccountingExportsModule from './components/AccountingExportsModule';
+import PatientMediaGallery from './components/PatientMediaGallery';
+import ReminderSettingsModule from './components/ReminderSettingsModule';
+import StripePaymentsModule from './components/StripePaymentsModule';
 import { checkAvailability, calculateLogistics, suggestOptimalTimeSlots } from './services/logisticsService';
 import { suggestOptimizedSlots, getAllAvailableSlots } from './services/optimizationService';
 import { Patient, Appointment, ApptStatus, PatientType, Invoice, InvoiceStatus, Expense, AppSettings } from './types';
@@ -681,6 +684,12 @@ const App: React.FC = () => {
           {currentView === 'urssaf' && <UrssafModule />}
 
           {currentView === 'exports' && <AccountingExportsModule />}
+
+          {currentView === 'media' && <PatientMediaGallery />}
+
+          {currentView === 'reminders-auto' && <ReminderSettingsModule />}
+
+          {currentView === 'payments' && <StripePaymentsModule />}
 
           {currentView === 'session' && activeAppointment && (
             <SessionWizard 
