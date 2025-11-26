@@ -764,13 +764,33 @@ const App: React.FC = () => {
 
           {currentView === 'business-intelligence' && <BusinessIntelligenceDashboard />}
 
-          {currentView === 'session' && activeAppointment && (
-            <SessionWizard 
-              patient={patients?.find(p => String(p.id) === String(activeAppointment.patientId)) || {} as Patient}
-              settings={appSettings}
-              onComplete={handleCompleteSession}
-            />
-          )}
+          {currentView === 'session' && activeAppointment && (() => {
+            const foundPatient = patients?.find(p => String(p.id) === String(activeAppointment.patientId));
+            if (!foundPatient) {
+              return (
+                <div className="flex items-center justify-center h-full bg-white rounded-2xl">
+                  <div className="text-center p-8">
+                    <div className="text-6xl mb-4">⚠️</div>
+                    <h3 className="text-xl font-bold text-slate-800 mb-2">Patient introuvable</h3>
+                    <p className="text-slate-600 mb-4">Le patient associé à ce rendez-vous n'a pas été trouvé.</p>
+                    <button
+                      onClick={() => setCurrentView('dashboard')}
+                      className="px-6 py-2 bg-primary-600 text-white rounded-lg font-medium hover:bg-primary-700"
+                    >
+                      Retour au Dashboard
+                    </button>
+                  </div>
+                </div>
+              );
+            }
+            return (
+              <SessionWizard
+                patient={foundPatient}
+                settings={appSettings}
+                onComplete={handleCompleteSession}
+              />
+            );
+          })()}
 
           {currentView === 'coach' && <AICoach />}
 

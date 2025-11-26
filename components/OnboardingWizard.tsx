@@ -8,7 +8,7 @@ interface OnboardingWizardProps {
 interface OnboardingData {
   practitionerName: string;
   cabinetName: string;
-  specialty: string;
+  specialties: string[];
   phone: string;
   email: string;
   address: string;
@@ -29,7 +29,7 @@ const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete }) => {
   const [data, setData] = useState<OnboardingData>({
     practitionerName: '',
     cabinetName: '',
-    specialty: 'kinésithérapie',
+    specialties: [],
     phone: '',
     email: '',
     address: '',
@@ -112,6 +112,26 @@ const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete }) => {
     });
   };
 
+  const toggleSpecialty = (specialty: string) => {
+    setData({
+      ...data,
+      specialties: data.specialties.includes(specialty)
+        ? data.specialties.filter(s => s !== specialty)
+        : [...data.specialties, specialty]
+    });
+  };
+
+  const availableSpecialties = [
+    { id: 'kinesio-humain', name: 'Kinésiologie Humaine', icon: '🧘', color: 'blue' },
+    { id: 'kinesio-animal', name: 'Kinésiologie Animale', icon: '🐴', color: 'green' },
+    { id: 'reiki', name: 'Reiki', icon: '✨', color: 'purple' },
+    { id: 'massage-equin', name: 'Massage Équin', icon: '🐎', color: 'amber' },
+    { id: 'massage-animaux', name: 'Massage Animaux', icon: '🐕', color: 'pink' },
+    { id: 'kinesitherapie', name: 'Kinésithérapie', icon: '💪', color: 'indigo' },
+    { id: 'osteopathie', name: 'Ostéopathie', icon: '🦴', color: 'teal' },
+    { id: 'autre', name: 'Autre', icon: '⚕️', color: 'gray' }
+  ];
+
   const renderStepContent = () => {
     switch (currentStep) {
       case 0:
@@ -178,21 +198,39 @@ const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete }) => {
                 />
               </div>
 
-              <div>
-                <label className="block text-sm font-bold text-gray-700 mb-2">
-                  Spécialité *
+              <div className="col-span-2">
+                <label className="block text-sm font-bold text-gray-700 mb-3">
+                  Spécialité(s) * <span className="text-blue-600 text-xs font-normal">(Sélection multiple)</span>
                 </label>
-                <select
-                  value={data.specialty}
-                  onChange={(e) => setData({ ...data, specialty: e.target.value })}
-                  className="w-full p-4 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 text-lg"
-                >
-                  <option value="kinésithérapie">Kinésithérapie</option>
-                  <option value="ostéopathie">Ostéopathie</option>
-                  <option value="massage">Massage thérapeutique</option>
-                  <option value="équine">Thérapie équine</option>
-                  <option value="autre">Autre</option>
-                </select>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  {availableSpecialties.map((specialty) => (
+                    <button
+                      key={specialty.id}
+                      type="button"
+                      onClick={() => toggleSpecialty(specialty.id)}
+                      className={`p-4 rounded-xl border-2 transition-all text-center ${
+                        data.specialties.includes(specialty.id)
+                          ? `border-${specialty.color}-500 bg-${specialty.color}-50 shadow-md scale-105`
+                          : 'border-gray-200 hover:border-gray-300 bg-white'
+                      }`}
+                    >
+                      <div className="text-3xl mb-2">{specialty.icon}</div>
+                      <div className={`text-sm font-bold ${
+                        data.specialties.includes(specialty.id) ? `text-${specialty.color}-900` : 'text-gray-700'
+                      }`}>
+                        {data.specialties.includes(specialty.id) && '✓ '}
+                        {specialty.name}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+                {data.specialties.length > 0 && (
+                  <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg">
+                    <p className="text-xs font-semibold text-green-800">
+                      ✓ {data.specialties.length} spécialité(s) sélectionnée(s): {availableSpecialties.filter(s => data.specialties.includes(s.id)).map(s => s.name).join(', ')}
+                    </p>
+                  </div>
+                )}
               </div>
 
               <div>
