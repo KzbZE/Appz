@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { LayoutDashboard, Users, TrendingUp, Calendar, Settings, PieChart, BarChart, FileText, Bell, CalendarDays, FileCode, Send, Package, Zap, Star, Gift, Shield, Target, Cloud, Menu, X, FileSpreadsheet, Download, Camera, BellRing, CreditCard } from 'lucide-react';
+import { LayoutDashboard, Users, TrendingUp, Calendar, Settings, PieChart, BarChart, FileText, Bell, CalendarDays, FileCode, Send, Package, Zap, Star, Gift, Shield, Target, Cloud, Menu, X, FileSpreadsheet, Download, Camera, BellRing, CreditCard, Scan, Map, Mic } from 'lucide-react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../db';
 
@@ -20,6 +20,9 @@ const Navigation: React.FC<NavigationProps> = ({ currentView, setView }) => {
     { id: 'patients', label: 'Patients', icon: Users, gradient: 'from-emerald-500 to-teal-600' },
     { id: 'records', label: 'Dossiers', icon: FileText, gradient: 'from-amber-500 to-orange-600' },
     { id: 'media', label: 'Photos', icon: Camera, gradient: 'from-purple-500 to-pink-600' },
+    { id: 'ocr', label: 'Scanner OCR', icon: Scan, gradient: 'from-indigo-600 to-purple-700' },
+    { id: 'voice', label: 'Notes Vocales', icon: Mic, gradient: 'from-pink-600 to-rose-600' },
+    { id: 'map', label: 'Carte', icon: Map, gradient: 'from-teal-600 to-cyan-700' },
     { id: 'templates', label: 'Templates', icon: FileCode, gradient: 'from-blue-600 to-cyan-600' },
     { id: 'coach', label: 'IA Coach', icon: TrendingUp, gradient: 'from-indigo-500 to-blue-600' },
     { id: 'finance', label: 'Finance', icon: PieChart, gradient: 'from-green-500 to-emerald-600' },

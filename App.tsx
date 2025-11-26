@@ -28,6 +28,10 @@ import AccountingExportsModule from './components/AccountingExportsModule';
 import PatientMediaGallery from './components/PatientMediaGallery';
 import ReminderSettingsModule from './components/ReminderSettingsModule';
 import StripePaymentsModule from './components/StripePaymentsModule';
+import AdminPanel from './components/AdminPanel';
+import OCRScannerModule from './components/OCRScannerModule';
+import InteractiveMapModule from './components/InteractiveMapModule';
+import VoiceNotesModule from './components/VoiceNotesModule';
 import { checkAvailability, calculateLogistics, suggestOptimalTimeSlots } from './services/logisticsService';
 import { suggestOptimizedSlots, getAllAvailableSlots } from './services/optimizationService';
 import { Patient, Appointment, ApptStatus, PatientType, Invoice, InvoiceStatus, Expense, AppSettings } from './types';
@@ -82,10 +86,28 @@ const App: React.FC = () => {
 
   const [suggestedTimeSlots, setSuggestedTimeSlots] = useState<any[]>([]);
   const [quickSearchTerm, setQuickSearchTerm] = useState('');
+  const [showAdminPanel, setShowAdminPanel] = useState(false);
 
   useEffect(() => {
     db.populate();
     setupAutomaticBackup();
+
+    // Vérifier si admin mode est activé via URL (?admin=true)
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('admin') === 'true') {
+      setShowAdminPanel(true);
+    }
+
+    // Ajouter listener pour combinaison de touches Ctrl+Shift+A
+    const handleKeyPress = (e: KeyboardEvent) => {
+      if (e.ctrlKey && e.shiftKey && e.key === 'A') {
+        e.preventDefault();
+        setShowAdminPanel(true);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyPress);
+    return () => window.removeEventListener('keydown', handleKeyPress);
   }, []);
 
   useEffect(() => {
@@ -691,6 +713,12 @@ const App: React.FC = () => {
 
           {currentView === 'payments' && <StripePaymentsModule />}
 
+          {currentView === 'ocr' && <OCRScannerModule />}
+
+          {currentView === 'map' && <InteractiveMapModule />}
+
+          {currentView === 'voice' && <VoiceNotesModule />}
+
           {currentView === 'session' && activeAppointment && (
             <SessionWizard 
               patient={patients?.find(p => String(p.id) === String(activeAppointment.patientId)) || {} as Patient}
@@ -743,6 +771,8 @@ const App: React.FC = () => {
                 <PublicAppointmentRequest />
             </div>
         )}
+
+        {showAdminPanel && <AdminPanel onClose={() => setShowAdminPanel(false)} />}
       </main>
     </div>
   );
