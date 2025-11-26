@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
-import { LayoutDashboard, Users, TrendingUp, Calendar, Settings, PieChart, BarChart, FileText, Bell, CalendarDays, FileCode, Send, Package, Zap, Star, Gift, Shield, Target, Cloud, Menu, X, FileSpreadsheet, Download, Camera, BellRing, CreditCard, Scan, Map, Mic, Sparkles, Brain } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { LayoutDashboard, Users, TrendingUp, Calendar, Settings, PieChart, BarChart, FileText, Bell, CalendarDays, FileCode, Send, Package, Zap, Star, Gift, Shield, Target, Cloud, Menu, X, FileSpreadsheet, Download, Camera, BellRing, CreditCard, Scan, Map, Mic, Sparkles, Brain, LogOut, RefreshCw, User } from 'lucide-react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../db';
+import { authService } from '../services/authService';
 
 interface NavigationProps {
   currentView: string;
@@ -11,6 +12,30 @@ interface NavigationProps {
 const Navigation: React.FC<NavigationProps> = ({ currentView, setView }) => {
   const settings = useLiveQuery(() => db.settings.toArray())?.[0];
   const [showFullMenu, setShowFullMenu] = useState(false);
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [currentRole, setCurrentRole] = useState<'ADMIN' | 'PRACTITIONER' | 'PATIENT' | null>(null);
+
+  useEffect(() => {
+    loadUserInfo();
+  }, []);
+
+  const loadUserInfo = async () => {
+    const user = await authService.getAuthUser();
+    setCurrentUser(user);
+    setCurrentRole(user?.role || null);
+  };
+
+  const handleLogout = async () => {
+    if (confirm('Êtes-vous sûr de vouloir vous déconnecter ?')) {
+      await authService.logout();
+      window.location.reload();
+    }
+  };
+
+  const handleSwitchRole = async () => {
+    const newRole = currentRole === 'PRACTITIONER' ? 'PATIENT' : 'PRACTITIONER';
+    await authService.switchRole(newRole);
+  };
 
   const navItems = [
     { id: 'dashboard', label: 'Pilotage', icon: LayoutDashboard, gradient: 'from-teal-500 to-cyan-600' },
@@ -249,11 +274,51 @@ const Navigation: React.FC<NavigationProps> = ({ currentView, setView }) => {
           })}
         </nav>
 
-        {/* Settings Button */}
-        <div className="p-3 border-t border-slate-800/50">
+        {/* User Info & Actions */}
+        <div className="p-3 space-y-2 border-t border-slate-800/50">
+          {/* User Info Card */}
+          {currentUser && (
+            <div className="glass bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl p-3 mb-2">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-gradient-to-br from-teal-500 to-cyan-600 rounded-full flex items-center justify-center text-white font-bold shadow-lg">
+                  {currentUser.name?.substring(0,2).toUpperCase() || 'U'}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-bold text-white truncate">{currentUser.name || 'Utilisateur'}</p>
+                  <div className="flex items-center gap-1">
+                    <span className={`text-xs px-2 py-0.5 rounded-full font-bold ${
+                      currentRole === 'PRACTITIONER' ? 'bg-teal-500/20 text-teal-300' :
+                      currentRole === 'PATIENT' ? 'bg-blue-500/20 text-blue-300' :
+                      'bg-purple-500/20 text-purple-300'
+                    }`}>
+                      {currentRole === 'PRACTITIONER' ? '👨‍⚕️ Praticien' :
+                       currentRole === 'PATIENT' ? '👤 Patient' : '🔐 Admin'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Switch Interface Button */}
+          {currentRole && (currentRole === 'PRACTITIONER' || currentRole === 'PATIENT') && (
+            <button
+              onClick={handleSwitchRole}
+              className="group flex items-center w-full px-4 py-2.5 rounded-xl transition-all duration-300 text-slate-300 hover:text-white hover:bg-gradient-to-r hover:from-teal-600/20 hover:to-cyan-600/20 border border-slate-700/50 hover:border-teal-500/50"
+            >
+              <div className="mr-3 p-1.5 rounded-lg transition-all bg-teal-600/20 group-hover:bg-teal-500/30">
+                <RefreshCw size={16} strokeWidth={2} />
+              </div>
+              <span className="text-xs font-bold">
+                Basculer en {currentRole === 'PRACTITIONER' ? 'Patient' : 'Praticien'}
+              </span>
+            </button>
+          )}
+
+          {/* Settings Button */}
           <button
             onClick={() => setView('settings')}
-            className={`group flex items-center w-full px-4 py-3 rounded-xl transition-all duration-300 ${
+            className={`group flex items-center w-full px-4 py-2.5 rounded-xl transition-all duration-300 ${
               currentView === 'settings'
                 ? 'bg-gradient-to-r from-slate-700 to-slate-600 text-white shadow-xl'
                 : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
@@ -262,9 +327,20 @@ const Navigation: React.FC<NavigationProps> = ({ currentView, setView }) => {
             <div className={`mr-3 p-1.5 rounded-lg transition-all ${
               currentView === 'settings' ? 'bg-white/20' : 'group-hover:bg-slate-700/50'
             }`}>
-              <Settings size={18} strokeWidth={currentView === 'settings' ? 2.5 : 2} />
+              <Settings size={16} strokeWidth={currentView === 'settings' ? 2.5 : 2} />
             </div>
-            <span className="text-sm font-bold">Paramètres</span>
+            <span className="text-xs font-bold">Paramètres</span>
+          </button>
+
+          {/* Logout Button */}
+          <button
+            onClick={handleLogout}
+            className="group flex items-center w-full px-4 py-2.5 rounded-xl transition-all duration-300 text-red-300 hover:text-white hover:bg-gradient-to-r hover:from-red-600/20 hover:to-red-500/20 border border-red-900/30 hover:border-red-500/50"
+          >
+            <div className="mr-3 p-1.5 rounded-lg transition-all bg-red-600/20 group-hover:bg-red-500/30">
+              <LogOut size={16} strokeWidth={2} />
+            </div>
+            <span className="text-xs font-bold">Déconnexion</span>
           </button>
         </div>
       </div>
