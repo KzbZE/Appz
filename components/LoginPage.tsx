@@ -1,0 +1,225 @@
+import React, { useState } from 'react';
+import { authService } from '../services/authService';
+import { LogIn, Lock, Mail, Eye, EyeOff, Sparkles } from 'lucide-react';
+
+interface LoginPageProps {
+  onLoginSuccess: () => void;
+}
+
+const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setIsLoading(true);
+
+    const result = await authService.login({ email, password });
+
+    setIsLoading(false);
+
+    if (result.success) {
+      onLoginSuccess();
+    } else {
+      setError(result.error || 'Erreur de connexion');
+    }
+  };
+
+  // Quick login buttons pour démo
+  const quickLogin = async (role: 'ADMIN' | 'PRACTITIONER') => {
+    setError('');
+    setIsLoading(true);
+
+    let credentials;
+    if (role === 'ADMIN') {
+      credentials = { email: 'admin@theraflow.local', password: 'admin123' };
+    } else {
+      // Trouver ou créer un praticien
+      const users = authService.getAllUsersForAdmin?.() || [];
+      const practitioner = users.find(u => u.role === 'PRACTITIONER');
+
+      if (practitioner) {
+        credentials = { email: practitioner.email, password: 'theraflow2024' };
+      } else {
+        setError('Aucun praticien trouvé. Complétez l\'onboarding d\'abord.');
+        setIsLoading(false);
+        return;
+      }
+    }
+
+    const result = await authService.login(credentials);
+    setIsLoading(false);
+
+    if (result.success) {
+      onLoginSuccess();
+    } else {
+      setError(result.error || 'Erreur de connexion');
+    }
+  };
+
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 p-4">
+      {/* Animated background */}
+      <div className="absolute inset-0 overflow-hidden">
+        <div className="absolute -inset-[10px] opacity-50">
+          <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-purple-500 rounded-full mix-blend-multiply filter blur-xl animate-blob"></div>
+          <div className="absolute top-1/3 right-1/4 w-96 h-96 bg-blue-500 rounded-full mix-blend-multiply filter blur-xl animate-blob animation-delay-2000"></div>
+          <div className="absolute bottom-1/4 left-1/3 w-96 h-96 bg-pink-500 rounded-full mix-blend-multiply filter blur-xl animate-blob animation-delay-4000"></div>
+        </div>
+      </div>
+
+      {/* Login Card */}
+      <div className="relative w-full max-w-md">
+        <div className="absolute -inset-1 bg-gradient-to-r from-purple-600 to-pink-600 rounded-2xl blur opacity-75"></div>
+
+        <div className="relative bg-white rounded-2xl shadow-2xl p-8">
+          {/* Logo & Title */}
+          <div className="text-center mb-8">
+            <div className="w-20 h-20 mx-auto mb-4 bg-gradient-to-br from-purple-600 to-pink-600 rounded-2xl flex items-center justify-center shadow-lg">
+              <Sparkles className="text-white" size={40} />
+            </div>
+            <h1 className="text-3xl font-black text-gray-900 mb-2">
+              TheraFlow
+            </h1>
+            <p className="text-gray-600">
+              Connexion à votre espace
+            </p>
+          </div>
+
+          {/* Error Message */}
+          {error && (
+            <div className="mb-6 p-4 bg-red-50 border-l-4 border-red-500 rounded-lg">
+              <p className="text-sm text-red-700 font-medium">{error}</p>
+            </div>
+          )}
+
+          {/* Login Form */}
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Email */}
+            <div>
+              <label className="block text-sm font-bold text-gray-700 mb-2">
+                Email
+              </label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-3.5 text-gray-400" size={20} />
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full pl-12 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition-all"
+                  placeholder="votre@email.com"
+                  required
+                />
+              </div>
+            </div>
+
+            {/* Password */}
+            <div>
+              <label className="block text-sm font-bold text-gray-700 mb-2">
+                Mot de passe
+              </label>
+              <div className="relative">
+                <Lock className="absolute left-3 top-3.5 text-gray-400" size={20} />
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full pl-12 pr-12 py-3 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition-all"
+                  placeholder=""""""""""
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-3.5 text-gray-400 hover:text-gray-600"
+                >
+                  {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                </button>
+              </div>
+            </div>
+
+            {/* Submit Button */}
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="w-full py-3.5 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl font-bold text-lg shadow-lg hover:shadow-xl transform hover:scale-[1.02] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+            >
+              {isLoading ? (
+                <span className="animate-pulse">Connexion...</span>
+              ) : (
+                <>
+                  <LogIn size={20} className="mr-2" />
+                  Se connecter
+                </>
+              )}
+            </button>
+          </form>
+
+          {/* Divider */}
+          <div className="relative my-8">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-gray-200"></div>
+            </div>
+            <div className="relative flex justify-center text-sm">
+              <span className="px-4 bg-white text-gray-500 font-medium">
+                Connexion rapide (Démo)
+              </span>
+            </div>
+          </div>
+
+          {/* Quick Login Buttons */}
+          <div className="space-y-3">
+            <button
+              onClick={() => quickLogin('ADMIN')}
+              disabled={isLoading}
+              className="w-full py-3 bg-slate-800 text-white rounded-xl font-bold hover:bg-slate-900 transition-all flex items-center justify-center"
+            >
+              = Admin Backend
+            </button>
+            <button
+              onClick={() => quickLogin('PRACTITIONER')}
+              disabled={isLoading}
+              className="w-full py-3 bg-teal-600 text-white rounded-xl font-bold hover:bg-teal-700 transition-all flex items-center justify-center"
+            >
+              =h• Praticien
+            </button>
+          </div>
+
+          {/* Info */}
+          <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <p className="text-xs text-blue-800 font-medium mb-2">
+              = Comptes de test :
+            </p>
+            <ul className="text-xs text-blue-700 space-y-1">
+              <li>" <strong>Admin:</strong> admin@theraflow.local / admin123</li>
+              <li>" <strong>Praticien:</strong> Créé après onboarding / theraflow2024</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <style>{`
+        @keyframes blob {
+          0%, 100% { transform: translate(0px, 0px) scale(1); }
+          33% { transform: translate(30px, -50px) scale(1.1); }
+          66% { transform: translate(-20px, 20px) scale(0.9); }
+        }
+        .animate-blob {
+          animation: blob 7s infinite;
+        }
+        .animation-delay-2000 {
+          animation-delay: 2s;
+        }
+        .animation-delay-4000 {
+          animation-delay: 4s;
+        }
+      `}</style>
+    </div>
+  );
+};
+
+export default LoginPage;
