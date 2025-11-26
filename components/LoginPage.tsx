@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { authService } from '../services/authService';
 import { initService } from '../services/initService';
-import { LogIn, Lock, Mail, Eye, EyeOff, Sparkles } from 'lucide-react';
+import { diagnosticService } from '../services/diagnosticService';
+import { LogIn, Lock, Mail, Eye, EyeOff, Sparkles, RefreshCw, Bug } from 'lucide-react';
 
 interface LoginPageProps {
   onLoginSuccess: () => void;
@@ -70,6 +71,37 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess, onGoToRegister, o
     } else {
       setError(result.error || 'Erreur de connexion');
     }
+  };
+
+  // Fonction de debug pour réinitialiser la base
+  const handleDebugReset = async () => {
+    if (confirm('⚠️ ATTENTION: Cette action va réinitialiser complètement la base de données et recréer les comptes par défaut. Continuer ?')) {
+      setIsLoading(true);
+      setError('');
+
+      try {
+        console.log('🔧 Début de la réinitialisation...');
+        await diagnosticService.resetDatabase();
+
+        setError('');
+        alert('✅ Base de données réinitialisée! Les comptes par défaut ont été recréés. Essayez de vous connecter maintenant.');
+
+        // Recharger la page
+        window.location.reload();
+      } catch (error: any) {
+        console.error('Erreur lors de la réinitialisation:', error);
+        setError('Erreur lors de la réinitialisation: ' + error.message);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+  };
+
+  // Fonction de diagnostic complet
+  const handleRunDiagnostic = async () => {
+    console.log('🏥 Lancement du diagnostic...');
+    await diagnosticService.runFullDiagnostic();
+    alert('✅ Diagnostic terminé! Vérifiez la console (F12) pour les résultats.');
   };
 
   // Afficher un spinner pendant l'initialisation
@@ -236,6 +268,34 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess, onGoToRegister, o
               <li><strong>Admin:</strong> admin@admin.com / adminadmin</li>
               <li className="text-green-700 font-medium mt-2">✅ Comptes créés automatiquement au premier lancement</li>
             </ul>
+          </div>
+
+          {/* Debug Tools */}
+          <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+            <p className="text-xs text-yellow-800 font-medium mb-3">
+              🔧 Outils de dépannage
+            </p>
+            <div className="space-y-2">
+              <button
+                onClick={handleDebugReset}
+                disabled={isLoading}
+                className="w-full py-2 bg-orange-600 text-white rounded-lg font-bold hover:bg-orange-700 transition-all flex items-center justify-center gap-2 disabled:opacity-50 text-sm"
+              >
+                <RefreshCw size={16} />
+                Réinitialiser la base de données
+              </button>
+              <button
+                onClick={handleRunDiagnostic}
+                disabled={isLoading}
+                className="w-full py-2 bg-blue-600 text-white rounded-lg font-bold hover:bg-blue-700 transition-all flex items-center justify-center gap-2 disabled:opacity-50 text-sm"
+              >
+                <Bug size={16} />
+                Lancer le diagnostic (Console F12)
+              </button>
+            </div>
+            <p className="text-xs text-yellow-700 mt-2">
+              ℹ️ Utilisez ces outils si les identifiants ne fonctionnent pas
+            </p>
           </div>
 
           {/* Register Link */}
