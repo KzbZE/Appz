@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Création des comptes TheraFlow</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      max-width: 800px;
+      margin: 50px auto;
+      padding: 20px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+    }
+    .container {
+      background: white;
+      border-radius: 20px;
+      padding: 40px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    }
+    h1 {
+      color: #333;
+      margin-bottom: 30px;
+      text-align: center;
+    }
+    .account {
+      background: #f8f9fa;
+      border-left: 4px solid #667eea;
+      padding: 20px;
+      margin: 20px 0;
+      border-radius: 8px;
+    }
+    .account h3 {
+      margin-top: 0;
+      color: #667eea;
+    }
+    .account p {
+      margin: 8px 0;
+      color: #666;
+    }
+    .account code {
+      background: #e9ecef;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-family: 'Courier New', monospace;
+    }
+    button {
+      width: 100%;
+      padding: 15px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      border-radius: 10px;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+      margin-top: 20px;
+      transition: transform 0.2s;
+    }
+    button:hover {
+      transform: translateY(-2px);
+    }
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    #result {
+      margin-top: 20px;
+      padding: 15px;
+      border-radius: 8px;
+      display: none;
+    }
+    .success {
+      background: #d4edda;
+      border: 1px solid #c3e6cb;
+      color: #155724;
+    }
+    .error {
+      background: #f8d7da;
+      border: 1px solid #f5c6cb;
+      color: #721c24;
+    }
+    .info {
+      background: #d1ecf1;
+      border: 1px solid #bee5eb;
+      color: #0c5460;
+      padding: 15px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+    }
+    .spinner {
+      border: 3px solid #f3f3f3;
+      border-top: 3px solid #667eea;
+      border-radius: 50%;
+      width: 20px;
+      height: 20px;
+      animation: spin 1s linear infinite;
+      display: inline-block;
+      margin-right: 10px;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🔐 Création des Comptes TheraFlow</h1>
+
+    <div class="info">
+      <strong>📋 Instructions:</strong><br>
+      1. Cliquez sur le bouton ci-dessous pour créer les comptes<br>
+      2. Les comptes seront stockés localement dans IndexedDB<br>
+      3. Vous pourrez ensuite vous connecter sur l'application
+    </div>
+
+    <div class="account">
+      <h3>👨‍⚕️ Compte Praticien</h3>
+      <p><strong>Email:</strong> <code>arnaudvb7@gmail.com</code></p>
+      <p><strong>Mot de passe:</strong> <code>Jiskan22</code></p>
+      <p><strong>Nom:</strong> Arnaud VB</p>
+      <p><strong>Rôle:</strong> PRACTITIONER</p>
+    </div>
+
+    <div class="account">
+      <h3>🔐 Compte Administrateur</h3>
+      <p><strong>Email:</strong> <code>admin@admin.com</code></p>
+      <p><strong>Mot de passe:</strong> <code>adminadmin</code></p>
+      <p><strong>Nom:</strong> Administrateur</p>
+      <p><strong>Rôle:</strong> ADMIN</p>
+    </div>
+
+    <button id="createBtn" onclick="createAccounts()">
+      Créer les comptes
+    </button>
+
+    <div id="result"></div>
+  </div>
+
+  <script type="module">
+    import { localAuthService } from './services/localAuthService.js';
+
+    window.createAccounts = async function() {
+      const btn = document.getElementById('createBtn');
+      const result = document.getElementById('result');
+
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner"></span>Création en cours...';
+      result.style.display = 'none';
+
+      const accounts = [
+        {
+          email: 'arnaudvb7@gmail.com',
+          password: 'Jiskan22',
+          name: 'Arnaud VB',
+          role: 'PRACTITIONER'
+        },
+        {
+          email: 'admin@admin.com',
+          password: 'adminadmin',
+          name: 'Administrateur',
+          role: 'ADMIN'
+        }
+      ];
+
+      let messages = [];
+      let successCount = 0;
+      let errorCount = 0;
+
+      for (const account of accounts) {
+        try {
+          const res = await localAuthService.register(account);
+
+          if (res.success) {
+            messages.push(`✅ ${account.role}: ${account.email} créé avec succès`);
+            successCount++;
+          } else {
+            messages.push(`❌ ${account.role}: ${res.error || 'Erreur inconnue'}`);
+            errorCount++;
+          }
+        } catch (error) {
+          messages.push(`❌ ${account.role}: ${error.message}`);
+          errorCount++;
+        }
+
+        // Petite pause entre les créations
+        await new Promise(r => setTimeout(r, 500));
+      }
+
+      // Afficher les résultats
+      result.innerHTML = messages.join('<br><br>');
+      result.className = successCount > 0 ? 'success' : 'error';
+      result.style.display = 'block';
+
+      if (successCount > 0) {
+        result.innerHTML += '<br><br><strong>🎉 Vous pouvez maintenant vous connecter sur l\'application!</strong>';
+        setTimeout(() => {
+          window.location.href = '/';
+        }, 3000);
+      }
+
+      btn.disabled = false;
+      btn.innerHTML = successCount === accounts.length ? '✅ Comptes créés!' : 'Réessayer';
+    };
+  </script>
+</body>
+</html>

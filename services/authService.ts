@@ -1,5 +1,6 @@
-import { supabase } from '../lib/supabase';
+import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { User, Session } from '@supabase/supabase-js';
+import { localAuthService } from './localAuthService';
 
 export type UserRole = 'ADMIN' | 'PRACTITIONER' | 'PATIENT';
 
@@ -20,8 +21,8 @@ export interface LoginCredentials {
 }
 
 /**
- * Service d'authentification Supabase
- * Gère la connexion, inscription, et gestion des sessions avec rôles
+ * Service d'authentification hybride
+ * Utilise Supabase si configuré, sinon utilise IndexedDB local
  */
 export class AuthService {
   /**
@@ -34,6 +35,11 @@ export class AuthService {
     role: UserRole;
     practitionerId?: string;
   }): Promise<{ success: boolean; user?: AuthUser; error?: string }> {
+    // Utiliser le stockage local si Supabase n'est pas configuré
+    if (!isSupabaseConfigured()) {
+      return await localAuthService.register(userData);
+    }
+
     const { data, error } = await supabase.auth.signUp({
       email: userData.email,
       password: userData.password,
@@ -72,6 +78,11 @@ export class AuthService {
    * Connexion utilisateur
    */
   async login(credentials: LoginCredentials): Promise<{ success: boolean; user?: AuthUser; error?: string }> {
+    // Utiliser le stockage local si Supabase n'est pas configuré
+    if (!isSupabaseConfigured()) {
+      return await localAuthService.login(credentials);
+    }
+
     const { data, error } = await supabase.auth.signInWithPassword({
       email: credentials.email,
       password: credentials.password
@@ -93,6 +104,9 @@ export class AuthService {
    * Déconnexion
    */
   async logout(): Promise<void> {
+    if (!isSupabaseConfigured()) {
+      return await localAuthService.logout();
+    }
     await supabase.auth.signOut();
   }
 
@@ -100,6 +114,9 @@ export class AuthService {
    * Récupération de la session courante
    */
   async getCurrentSession(): Promise<Session | null> {
+    if (!isSupabaseConfigured()) {
+      return await localAuthService.getCurrentSession();
+    }
     const { data } = await supabase.auth.getSession();
     return data.session;
   }
@@ -108,6 +125,9 @@ export class AuthService {
    * Récupération de l'utilisateur Supabase courant
    */
   async getCurrentUser(): Promise<User | null> {
+    if (!isSupabaseConfigured()) {
+      return await localAuthService.getCurrentUser();
+    }
     const { data } = await supabase.auth.getUser();
     return data.user;
   }
@@ -116,6 +136,10 @@ export class AuthService {
    * Extraction des métadonnées utilisateur formatées
    */
   async getAuthUser(): Promise<AuthUser | null> {
+    if (!isSupabaseConfigured()) {
+      return await localAuthService.getAuthUser();
+    }
+
     const user = await this.getCurrentUser();
     if (!user) return null;
 
@@ -135,6 +159,9 @@ export class AuthService {
    * Vérifier si connecté
    */
   async isAuthenticated(): Promise<boolean> {
+    if (!isSupabaseConfigured()) {
+      return await localAuthService.isAuthenticated();
+    }
     const session = await this.getCurrentSession();
     return !!session;
   }
@@ -268,21 +295,24 @@ export class AuthService {
   }
 
   /**
-   * Obtenir tous les utilisateurs (admin only - nécessite RLS)
-   * NOTE: Cette méthode nécessite une table publique 'profiles' avec les métadonnées utilisateurs
+   * Obtenir tous les utilisateurs (admin only)
    */
   async getAllUsersForAdmin(): Promise<AuthUser[]> {
+    if (!isSupabaseConfigured()) {
+      return await localAuthService.getAllUsersForAdmin();
+    }
     // TODO: Implémenter avec une table profiles Supabase
-    // Pour l'instant, retourne un tableau vide
     console.warn('getAllUsersForAdmin: Nécessite une table profiles dans Supabase');
     return [];
   }
 
   /**
    * Supprimer un utilisateur (admin only)
-   * NOTE: Nécessite une fonction Supabase edge ou un trigger
    */
   async deleteUser(userId: string): Promise<boolean> {
+    if (!isSupabaseConfigured()) {
+      return await localAuthService.deleteUser(userId);
+    }
     // TODO: Implémenter avec une fonction edge Supabase
     console.warn('deleteUser: Nécessite une fonction edge Supabase');
     return false;

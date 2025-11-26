@@ -1,6 +1,18 @@
 import Dexie, { Table } from 'dexie';
 import { Patient, Appointment, Invoice, RecurringInvoice, Expense, AppSettings, PatientType, ApptStatus, InvoiceStatus, Session, SMSLog, SurveyResponse, Goal, LoyaltyCard, LoyaltyTransaction, Referral, Promotion, AppointmentRequest, Notification } from './types';
 
+export interface LocalUser {
+  id?: number;
+  email: string;
+  passwordHash: string;
+  name: string;
+  role: 'ADMIN' | 'PRACTITIONER' | 'PATIENT';
+  practitionerId?: string;
+  avatarUrl?: string;
+  createdAt: string;
+  lastLogin?: string;
+}
+
 class TheraFlowDB extends Dexie {
   patients!: Table<Patient>;
   appointments!: Table<Appointment>;
@@ -18,6 +30,7 @@ class TheraFlowDB extends Dexie {
   promotions!: Table<Promotion>;
   appointmentRequests!: Table<AppointmentRequest>;
   notifications!: Table<Notification>;
+  users!: Table<LocalUser>;
 
   constructor() {
     super('TheraFlowDB');
@@ -39,6 +52,27 @@ class TheraFlowDB extends Dexie {
       promotions: '++id, code, isActive, startDate, endDate',
       appointmentRequests: '++id, patientId, status, requestedStartTime, createdAt',
       notifications: '++id, type, status, sentAt, relatedRequestId'
+    });
+
+    // ✅ Version 102: Add users table for local authentication
+    (this as any).version(102).stores({
+      patients: '++id, name, type, lat, lng',
+      appointments: '++id, patientId, startTime, status, isOptimizedSlot, googleEventId',
+      invoices: '++id, number, status, patientName',
+      recurringInvoices: '++id, patientName, isActive, nextDueDate',
+      expenses: '++id, date, category',
+      settings: '++id',
+      sessions: '++id, patientId, date, type',
+      smsLogs: '++id, date, status',
+      surveyResponses: '++id, patientId, date, npsScore',
+      goals: '++id, type, period, isActive, endDate',
+      loyaltyCards: '++id, patientId, isActive, type',
+      loyaltyTransactions: '++id, cardId, patientId, date, type',
+      referrals: '++id, referrerId, status, createdDate',
+      promotions: '++id, code, isActive, startDate, endDate',
+      appointmentRequests: '++id, patientId, status, requestedStartTime, createdAt',
+      notifications: '++id, type, status, sentAt, relatedRequestId',
+      users: '++id, email, role, createdAt'
     });
   }
 
