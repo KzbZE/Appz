@@ -39,6 +39,7 @@ const Navigation: React.FC<NavigationProps> = ({ currentView, setView }) => {
 
   const navItems = [
     { id: 'dashboard', label: 'Pilotage', icon: LayoutDashboard, gradient: 'from-teal-500 to-cyan-600' },
+    { id: 'profile', label: 'Mon Profil', icon: User, gradient: 'from-purple-500 to-pink-600' },
     { id: 'goals', label: 'Objectifs', icon: Target, gradient: 'from-indigo-500 to-purple-600' },
     { id: 'calendar', label: 'Agenda', icon: Calendar, gradient: 'from-blue-500 to-indigo-600' },
     { id: 'planner', label: 'Planning', icon: CalendarDays, gradient: 'from-cyan-500 to-teal-600' },

@@ -41,6 +41,7 @@ import LoginPage from './components/LoginPage';
 import RegisterPage from './components/RegisterPage';
 import ForgotPasswordPage from './components/ForgotPasswordPage';
 import BackendAdminPanel from './components/BackendAdminPanel';
+import ProfileSettings from './components/ProfileSettings';
 import { authService } from './services/authService';
 import { featuresService } from './services/featuresService';
 import { checkAvailability, calculateLogistics, suggestOptimalTimeSlots } from './services/logisticsService';
@@ -941,6 +942,8 @@ const App: React.FC = () => {
           {currentView === 'rgpd' && <RGPDModule />}
 
           {currentView === 'goals' && <GoalsWidget />}
+
+          {currentView === 'profile' && <ProfileSettings />}
 
           {currentView === 'migration' && <MigrationWizard />}
         </div>
