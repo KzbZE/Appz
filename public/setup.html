@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Configuration des Comptes - TheraFlow</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .container {
+      background: white;
+      border-radius: 24px;
+      padding: 48px;
+      max-width: 600px;
+      width: 100%;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+      animation: slideIn 0.5s ease-out;
+    }
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateY(-20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    h1 {
+      color: #333;
+      margin-bottom: 12px;
+      font-size: 28px;
+      text-align: center;
+    }
+    .subtitle {
+      color: #666;
+      text-align: center;
+      margin-bottom: 32px;
+      font-size: 14px;
+    }
+    .account-card {
+      background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+      border-radius: 16px;
+      padding: 24px;
+      margin: 16px 0;
+      border-left: 4px solid #667eea;
+    }
+    .account-card h3 {
+      color: #667eea;
+      margin-bottom: 16px;
+      font-size: 18px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .account-card p {
+      margin: 8px 0;
+      color: #495057;
+      font-size: 14px;
+    }
+    .account-card strong {
+      color: #212529;
+      display: inline-block;
+      min-width: 120px;
+    }
+    .account-card code {
+      background: white;
+      padding: 4px 8px;
+      border-radius: 6px;
+      font-family: 'Courier New', monospace;
+      color: #667eea;
+      font-weight: 600;
+    }
+    button {
+      width: 100%;
+      padding: 16px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      margin-top: 24px;
+      transition: all 0.3s;
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    }
+    button:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(102, 126, 234, 0.5);
+    }
+    button:active:not(:disabled) {
+      transform: translateY(0);
+    }
+    button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+    #result {
+      margin-top: 24px;
+      padding: 16px;
+      border-radius: 12px;
+      display: none;
+      animation: fadeIn 0.3s;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    .success {
+      background: #d4edda;
+      border: 2px solid #28a745;
+      color: #155724;
+    }
+    .error {
+      background: #f8d7da;
+      border: 2px solid #dc3545;
+      color: #721c24;
+    }
+    .info {
+      background: #cff4fc;
+      border: 2px solid #0dcaf0;
+      color: #055160;
+      padding: 16px;
+      border-radius: 12px;
+      margin-bottom: 24px;
+      font-size: 13px;
+      line-height: 1.6;
+    }
+    .spinner {
+      border: 3px solid rgba(255,255,255,0.3);
+      border-top: 3px solid white;
+      border-radius: 50%;
+      width: 18px;
+      height: 18px;
+      animation: spin 0.8s linear infinite;
+      display: inline-block;
+      margin-right: 8px;
+      vertical-align: middle;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    .redirect-message {
+      text-align: center;
+      color: #666;
+      font-size: 14px;
+      margin-top: 16px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🔐 Configuration des Comptes</h1>
+    <p class="subtitle">Création automatique des comptes dans IndexedDB</p>
+
+    <div class="info">
+      <strong>📋 Ce qui sera créé:</strong><br>
+      • Compte praticien pour accéder à l'interface complète<br>
+      • Compte administrateur pour gérer la configuration système<br>
+      • Stockage 100% local (pas besoin de Supabase)
+    </div>
+
+    <div class="account-card">
+      <h3>👨‍⚕️ Praticien</h3>
+      <p><strong>Email:</strong> <code>arnaudvb7@gmail.com</code></p>
+      <p><strong>Mot de passe:</strong> <code>Jiskan22</code></p>
+    </div>
+
+    <div class="account-card">
+      <h3>🔐 Administrateur</h3>
+      <p><strong>Email:</strong> <code>admin@admin.com</code></p>
+      <p><strong>Mot de passe:</strong> <code>adminadmin</code></p>
+    </div>
+
+    <button id="createBtn" onclick="createAccounts()">
+      Créer les comptes maintenant
+    </button>
+
+    <div id="result"></div>
+  </div>
+
+  <script type="module">
+    // Import Dexie depuis CDN
+    const { default: Dexie } = await import('https://cdn.jsdelivr.net/npm/dexie@3.2.4/dist/dexie.mjs');
+
+    // Initialiser la base de données
+    const db = new Dexie('TheraFlowDB');
+
+    db.version(102).stores({
+      patients: '++id, name, type, lat, lng',
+      appointments: '++id, patientId, startTime, status, isOptimizedSlot, googleEventId',
+      invoices: '++id, number, status, patientName',
+      recurringInvoices: '++id, patientName, isActive, nextDueDate',
+      expenses: '++id, date, category',
+      settings: '++id',
+      sessions: '++id, patientId, date, type',
+      smsLogs: '++id, date, status',
+      surveyResponses: '++id, patientId, date, npsScore',
+      goals: '++id, type, period, isActive, endDate',
+      loyaltyCards: '++id, patientId, isActive, type',
+      loyaltyTransactions: '++id, cardId, patientId, date, type',
+      referrals: '++id, referrerId, status, createdDate',
+      promotions: '++id, code, isActive, startDate, endDate',
+      appointmentRequests: '++id, patientId, status, requestedStartTime, createdAt',
+      notifications: '++id, type, status, sentAt, relatedRequestId',
+      users: '++id, email, role, createdAt'
+    });
+
+    // Fonction de hash SHA-256
+    async function hashPassword(password) {
+      const encoder = new TextEncoder();
+      const data = encoder.encode(password);
+      const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    }
+
+    // Fonction de création des comptes
+    window.createAccounts = async function() {
+      const btn = document.getElementById('createBtn');
+      const result = document.getElementById('result');
+
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner"></span>Création en cours...';
+      result.style.display = 'none';
+
+      const accounts = [
+        {
+          email: 'arnaudvb7@gmail.com',
+          password: 'Jiskan22',
+          name: 'Arnaud VB',
+          role: 'PRACTITIONER'
+        },
+        {
+          email: 'admin@admin.com',
+          password: 'adminadmin',
+          name: 'Administrateur',
+          role: 'ADMIN'
+        }
+      ];
+
+      let messages = [];
+      let successCount = 0;
+      let errorCount = 0;
+
+      try {
+        for (const account of accounts) {
+          // Vérifier si l'utilisateur existe déjà
+          const existingUser = await db.users.where('email').equals(account.email).first();
+
+          if (existingUser) {
+            messages.push(`⚠️  ${account.role}: Compte ${account.email} existe déjà`);
+            errorCount++;
+            continue;
+          }
+
+          // Hasher le mot de passe
+          const passwordHash = await hashPassword(account.password);
+
+          // Créer l'utilisateur
+          const userId = await db.users.add({
+            email: account.email,
+            passwordHash: passwordHash,
+            name: account.name,
+            role: account.role,
+            createdAt: new Date().toISOString()
+          });
+
+          messages.push(`✅ ${account.role}: ${account.email} créé avec succès (ID: ${userId})`);
+          successCount++;
+
+          // Petite pause entre les créations
+          await new Promise(r => setTimeout(r, 300));
+        }
+
+        // Afficher les résultats
+        result.innerHTML = messages.join('<br>');
+        result.className = successCount > 0 ? 'success' : 'error';
+        result.style.display = 'block';
+
+        if (successCount > 0) {
+          result.innerHTML += '<br><br><strong>🎉 Comptes créés avec succès!</strong>';
+          result.innerHTML += '<div class="redirect-message">Redirection vers la page de connexion dans 3 secondes...</div>';
+
+          setTimeout(() => {
+            window.location.href = '/';
+          }, 3000);
+        } else {
+          btn.disabled = false;
+          btn.innerHTML = 'Les comptes existent déjà';
+          result.innerHTML += '<br><br><strong>ℹ️  Vous pouvez maintenant vous connecter à l\'application</strong>';
+          result.innerHTML += '<div class="redirect-message">Cliquez ici pour <a href="/" style="color: #667eea; font-weight: 600;">accéder à la connexion</a></div>';
+        }
+      } catch (error) {
+        result.innerHTML = `❌ Erreur: ${error.message}`;
+        result.className = 'error';
+        result.style.display = 'block';
+
+        btn.disabled = false;
+        btn.innerHTML = 'Réessayer';
+      }
+    };
+
+    console.log('✨ Page de configuration prête!');
+    console.log('Cliquez sur le bouton pour créer les comptes.');
+  </script>
+</body>
+</html>
