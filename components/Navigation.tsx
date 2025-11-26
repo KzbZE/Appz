@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { LayoutDashboard, Users, TrendingUp, Calendar, Settings, PieChart, BarChart, FileText, Bell, CalendarDays, FileCode, Send, Package, Zap, Star, Gift, Shield, Target, Cloud, Menu, X, FileSpreadsheet } from 'lucide-react';
+import { LayoutDashboard, Users, TrendingUp, Calendar, Settings, PieChart, BarChart, FileText, Bell, CalendarDays, FileCode, Send, Package, Zap, Star, Gift, Shield, Target, Cloud, Menu, X, FileSpreadsheet, Download } from 'lucide-react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../db';
 
@@ -23,6 +23,7 @@ const Navigation: React.FC<NavigationProps> = ({ currentView, setView }) => {
     { id: 'coach', label: 'IA Coach', icon: TrendingUp, gradient: 'from-indigo-500 to-blue-600' },
     { id: 'finance', label: 'Finance', icon: PieChart, gradient: 'from-green-500 to-emerald-600' },
     { id: 'urssaf', label: 'URSSAF', icon: FileSpreadsheet, gradient: 'from-blue-500 to-indigo-500' },
+    { id: 'exports', label: 'Exports Compta', icon: Download, gradient: 'from-green-600 to-emerald-600' },
     { id: 'inventory', label: 'Produits', icon: Package, gradient: 'from-yellow-500 to-amber-600' },
     { id: 'loyalty', label: 'Fidélité', icon: Gift, gradient: 'from-purple-500 to-pink-600' },
     { id: 'marketing', label: 'Marketing', icon: Send, gradient: 'from-teal-500 to-cyan-500' },
