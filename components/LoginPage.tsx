@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { authService } from '../services/authService';
+import { initService } from '../services/initService';
 import { LogIn, Lock, Mail, Eye, EyeOff, Sparkles } from 'lucide-react';
 
 interface LoginPageProps {
@@ -12,6 +13,24 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isInitializing, setIsInitializing] = useState(true);
+
+  // Initialiser l'application au montage du composant
+  useEffect(() => {
+    const initApp = async () => {
+      try {
+        console.log('🔍 Vérification de l\'initialisation...');
+        const result = await initService.initialize();
+        console.log(result.message);
+      } catch (error) {
+        console.error('Erreur d\'initialisation:', error);
+      } finally {
+        setIsInitializing(false);
+      }
+    };
+
+    initApp();
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -36,11 +55,9 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
 
     let credentials;
     if (role === 'ADMIN') {
-      // Pour admin, créer via Supabase Dashboard
-      credentials = { email: 'admin@theraflow.local', password: 'admin123' };
+      credentials = { email: 'admin@admin.com', password: 'adminadmin' };
     } else {
-      // Pour praticien de test
-      credentials = { email: 'praticien@theraflow.local', password: 'theraflow2024' };
+      credentials = { email: 'arnaudvb7@gmail.com', password: 'Jiskan22' };
     }
 
     const result = await authService.login(credentials);
@@ -49,13 +66,22 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
     if (result.success) {
       onLoginSuccess();
     } else {
-      if (role === 'ADMIN') {
-        setError('Créez un compte ADMIN via Supabase Dashboard (email: admin@theraflow.local, rôle: ADMIN)');
-      } else {
-        setError('Compte non trouvé. Complétez l\'onboarding pour créer un compte praticien.');
-      }
+      setError(result.error || 'Erreur de connexion');
     }
   };
+
+  // Afficher un spinner pendant l'initialisation
+  if (isInitializing) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-white border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-white text-lg font-medium">Initialisation de TheraFlow...</p>
+          <p className="text-white/60 text-sm mt-2">Création des comptes par défaut</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 p-4">
@@ -188,12 +214,12 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
           {/* Info */}
           <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
             <p className="text-xs text-blue-800 font-medium mb-2">
-              🔑 Configuration Supabase :
+              🔑 Identifiants de connexion :
             </p>
             <ul className="text-xs text-blue-700 space-y-1">
-              <li>• Créez les utilisateurs dans Supabase Dashboard</li>
-              <li>• Ajoutez metadata: name, role (ADMIN/PRACTITIONER/PATIENT)</li>
-              <li>• Ou complétez l'onboarding pour créer un compte praticien</li>
+              <li><strong>Praticien:</strong> arnaudvb7@gmail.com / Jiskan22</li>
+              <li><strong>Admin:</strong> admin@admin.com / adminadmin</li>
+              <li className="text-green-700 font-medium mt-2">✅ Comptes créés automatiquement au premier lancement</li>
             </ul>
           </div>
         </div>
