@@ -259,9 +259,48 @@ export const toCamelCase = (obj: any): any => {
 
 // Check if Supabase is configured
 export const isSupabaseConfigured = (): boolean => {
-  return !!(supabaseUrl && supabaseAnonKey &&
-    supabaseUrl !== 'https://your-project.supabase.co' &&
-    supabaseAnonKey !== 'your_anon_key_here');
+  // Vérifier si le mode local est forcé via variable d'environnement
+  const forceLocal = import.meta.env.VITE_FORCE_LOCAL_AUTH === 'true';
+
+  if (forceLocal) {
+    console.log('🔒 Mode local FORCÉ via VITE_FORCE_LOCAL_AUTH - Utilisation d\'IndexedDB');
+    return false;
+  }
+
+  // Liste des URLs factices/dev qui indiquent qu'on veut utiliser le mode local
+  const devUrls = [
+    'https://your-project.supabase.co',
+    'https://local-dev.supabase.co',
+    'local-dev',
+    'localhost'
+  ];
+
+  const devKeys = [
+    'your_anon_key_here',
+    'demo_key',
+    'demo_key_for_local_development'
+  ];
+
+  // Vérifier si l'URL ou la clé contient des patterns de dev
+  const isDevUrl = devUrls.some(devUrl => supabaseUrl.includes(devUrl));
+  const isDevKey = devKeys.some(devKey => supabaseAnonKey.includes(devKey));
+
+  // Si URL ou clé de dev, on est en mode local
+  if (isDevUrl || isDevKey) {
+    console.log('🔧 Mode local détecté (URL/clé de dev) - Utilisation d\'IndexedDB');
+    return false;
+  }
+
+  // Sinon, vérifier qu'on a bien des valeurs
+  const hasValidConfig = !!(supabaseUrl && supabaseAnonKey);
+
+  if (hasValidConfig) {
+    console.log('☁️ Supabase configuré - Utilisation de Supabase Cloud');
+  } else {
+    console.log('🔧 Pas de configuration Supabase - Utilisation d\'IndexedDB');
+  }
+
+  return hasValidConfig;
 };
 
 // Helper to check connection
