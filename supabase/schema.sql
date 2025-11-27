@@ -5,6 +5,23 @@
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 -- =====================================================
+-- TABLE PROFILS UTILISATEURS
+-- =====================================================
+
+-- Table: profiles (informations utilisateurs liées à auth.users)
+CREATE TABLE profiles (
+  id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+  email TEXT UNIQUE NOT NULL,
+  name TEXT NOT NULL,
+  role TEXT NOT NULL CHECK (role IN ('ADMIN', 'PRACTITIONER', 'PATIENT')),
+  practitioner_id TEXT,
+  avatar_url TEXT,
+  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  last_login TIMESTAMP
+);
+
+-- =====================================================
 -- TABLES PRINCIPALES
 -- =====================================================
 
@@ -282,6 +299,11 @@ CREATE TABLE settings (
 -- INDEXES POUR PERFORMANCE
 -- =====================================================
 
+-- Profiles
+CREATE INDEX idx_profiles_email ON profiles(email);
+CREATE INDEX idx_profiles_role ON profiles(role);
+CREATE INDEX idx_profiles_practitioner_id ON profiles(practitioner_id);
+
 -- Patients
 CREATE INDEX idx_patients_name ON patients(name);
 CREATE INDEX idx_patients_type ON patients(type);
@@ -341,6 +363,7 @@ END;
 $$ language 'plpgsql';
 
 -- Appliquer le trigger sur toutes les tables
+CREATE TRIGGER update_profiles_updated_at BEFORE UPDATE ON profiles FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_patients_updated_at BEFORE UPDATE ON patients FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_appointments_updated_at BEFORE UPDATE ON appointments FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_invoices_updated_at BEFORE UPDATE ON invoices FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
@@ -359,6 +382,7 @@ CREATE TRIGGER update_settings_updated_at BEFORE UPDATE ON settings FOR EACH ROW
 -- =====================================================
 
 -- Activer RLS sur toutes les tables
+ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE patients ENABLE ROW LEVEL SECURITY;
 ALTER TABLE appointments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE invoices ENABLE ROW LEVEL SECURITY;
@@ -377,7 +401,21 @@ ALTER TABLE notifications ENABLE ROW LEVEL SECURITY;
 ALTER TABLE settings ENABLE ROW LEVEL SECURITY;
 
 -- Politiques d'accès (à configurer selon vos besoins d'authentification)
--- Pour l'instant, accès total pour les utilisateurs authentifiés
+
+-- Profiles: Accès granulaire
+CREATE POLICY "Users can view own profile" ON profiles FOR SELECT USING (auth.uid() = id);
+CREATE POLICY "Users can update own profile" ON profiles FOR UPDATE USING (auth.uid() = id);
+CREATE POLICY "Admins can view all profiles" ON profiles FOR SELECT USING (
+  EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'ADMIN')
+);
+CREATE POLICY "Admins can update all profiles" ON profiles FOR UPDATE USING (
+  EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'ADMIN')
+);
+CREATE POLICY "Admins can insert profiles" ON profiles FOR INSERT WITH CHECK (
+  EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = 'ADMIN')
+);
+
+-- Autres tables: Accès total pour les utilisateurs authentifiés
 CREATE POLICY "Enable all for authenticated users" ON patients FOR ALL USING (auth.role() = 'authenticated');
 CREATE POLICY "Enable all for authenticated users" ON appointments FOR ALL USING (auth.role() = 'authenticated');
 CREATE POLICY "Enable all for authenticated users" ON invoices FOR ALL USING (auth.role() = 'authenticated');
@@ -417,6 +455,52 @@ INSERT INTO settings (
   '{"instagramHandle": "@theraflow", "facebookPage": "TheraFlow Cabinet"}'::jsonb,
   '{"primaryColor": "#0f766e", "logoUrl": "https://cdn-icons-png.flaticon.com/512/2393/2393858.png"}'::jsonb
 );
+
+-- =====================================================
+-- FONCTIONS AUTOMATIQUES POUR PROFILES
+-- =====================================================
+
+-- Fonction: Auto-création du profil lors de l'inscription
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS TRIGGER AS $$
+BEGIN
+  INSERT INTO public.profiles (id, email, name, role, created_at)
+  VALUES (
+    NEW.id,
+    NEW.email,
+    COALESCE(NEW.raw_user_meta_data->>'name', 'Utilisateur'),
+    COALESCE(NEW.raw_user_meta_data->>'role', 'PRACTITIONER'),
+    NOW()
+  );
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Trigger: Créer le profil après création d'un utilisateur
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+CREATE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW
+  EXECUTE FUNCTION public.handle_new_user();
+
+-- Fonction: Mettre à jour last_login
+CREATE OR REPLACE FUNCTION public.update_last_login()
+RETURNS TRIGGER AS $$
+BEGIN
+  UPDATE public.profiles
+  SET last_login = NOW()
+  WHERE id = NEW.id;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Trigger: Mettre à jour last_login lors de la connexion
+DROP TRIGGER IF EXISTS on_auth_user_login ON auth.users;
+CREATE TRIGGER on_auth_user_login
+  AFTER UPDATE OF last_sign_in_at ON auth.users
+  FOR EACH ROW
+  WHEN (OLD.last_sign_in_at IS DISTINCT FROM NEW.last_sign_in_at)
+  EXECUTE FUNCTION public.update_last_login();
 
 -- =====================================================
 -- VUES UTILES
@@ -461,6 +545,7 @@ SELECT
 FROM patients
 WHERE tags IS NOT NULL AND array_length(tags, 1) > 0;
 
+COMMENT ON TABLE profiles IS 'Profils des utilisateurs liés à auth.users - Stocke name, role, practitioner_id';
 COMMENT ON TABLE patients IS 'Gestion des patients (humains, équins, canins)';
 COMMENT ON TABLE appointments IS 'Rendez-vous et séances';
 COMMENT ON TABLE invoices IS 'Facturation avec suivi paiements';
