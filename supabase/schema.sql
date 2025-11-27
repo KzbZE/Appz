@@ -224,6 +224,42 @@ CREATE TABLE promotions (
   updated_at TIMESTAMP DEFAULT NOW()
 );
 
+-- Table: appointment_requests
+CREATE TABLE appointment_requests (
+  id BIGSERIAL PRIMARY KEY,
+  patient_id BIGINT REFERENCES patients(id) ON DELETE CASCADE,
+  patient_name TEXT NOT NULL,
+  patient_phone TEXT,
+  patient_email TEXT,
+  requested_start_time TIMESTAMP NOT NULL,
+  duration_min INTEGER NOT NULL DEFAULT 60,
+  type TEXT NOT NULL CHECK (type IN ('CABINET', 'DOMICILE', 'STABLE')),
+  status TEXT NOT NULL CHECK (status IN ('PENDING', 'ACCEPTED', 'REJECTED', 'EXPIRED')),
+  notes TEXT,
+  proposed_start_time TIMESTAMP,
+  proposed_by TEXT CHECK (proposed_by IN ('PATIENT', 'PRACTITIONER')),
+  history JSONB NOT NULL DEFAULT '[]'::jsonb,
+  patient_address TEXT,
+  patient_lat NUMERIC(10,7),
+  patient_lng NUMERIC(10,7),
+  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+-- Table: notifications
+CREATE TABLE notifications (
+  id BIGSERIAL PRIMARY KEY,
+  type TEXT NOT NULL CHECK (type IN ('EMAIL', 'SMS', 'BOTH')),
+  recipient TEXT NOT NULL,
+  subject TEXT,
+  message TEXT NOT NULL,
+  status TEXT NOT NULL CHECK (status IN ('PENDING', 'SENT', 'FAILED')),
+  sent_at TIMESTAMP,
+  error TEXT,
+  related_request_id BIGINT REFERENCES appointment_requests(id) ON DELETE SET NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
 -- Table: settings
 CREATE TABLE settings (
   id BIGSERIAL PRIMARY KEY,
@@ -279,6 +315,18 @@ CREATE INDEX idx_loyalty_cards_is_active ON loyalty_cards(is_active);
 CREATE INDEX idx_promotions_code ON promotions(code);
 CREATE INDEX idx_promotions_is_active ON promotions(is_active);
 
+-- Appointment Requests
+CREATE INDEX idx_appointment_requests_patient_id ON appointment_requests(patient_id);
+CREATE INDEX idx_appointment_requests_status ON appointment_requests(status);
+CREATE INDEX idx_appointment_requests_requested_start_time ON appointment_requests(requested_start_time);
+CREATE INDEX idx_appointment_requests_created_at ON appointment_requests(created_at);
+
+-- Notifications
+CREATE INDEX idx_notifications_type ON notifications(type);
+CREATE INDEX idx_notifications_status ON notifications(status);
+CREATE INDEX idx_notifications_sent_at ON notifications(sent_at);
+CREATE INDEX idx_notifications_related_request_id ON notifications(related_request_id);
+
 -- =====================================================
 -- TRIGGERS POUR AUTO-UPDATE
 -- =====================================================
@@ -303,6 +351,7 @@ CREATE TRIGGER update_goals_updated_at BEFORE UPDATE ON goals FOR EACH ROW EXECU
 CREATE TRIGGER update_loyalty_cards_updated_at BEFORE UPDATE ON loyalty_cards FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_referrals_updated_at BEFORE UPDATE ON referrals FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_promotions_updated_at BEFORE UPDATE ON promotions FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_appointment_requests_updated_at BEFORE UPDATE ON appointment_requests FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_settings_updated_at BEFORE UPDATE ON settings FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 -- =====================================================
@@ -323,6 +372,8 @@ ALTER TABLE loyalty_cards ENABLE ROW LEVEL SECURITY;
 ALTER TABLE loyalty_transactions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE referrals ENABLE ROW LEVEL SECURITY;
 ALTER TABLE promotions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE appointment_requests ENABLE ROW LEVEL SECURITY;
+ALTER TABLE notifications ENABLE ROW LEVEL SECURITY;
 ALTER TABLE settings ENABLE ROW LEVEL SECURITY;
 
 -- Politiques d'accès (à configurer selon vos besoins d'authentification)
@@ -340,6 +391,8 @@ CREATE POLICY "Enable all for authenticated users" ON loyalty_cards FOR ALL USIN
 CREATE POLICY "Enable all for authenticated users" ON loyalty_transactions FOR ALL USING (auth.role() = 'authenticated');
 CREATE POLICY "Enable all for authenticated users" ON referrals FOR ALL USING (auth.role() = 'authenticated');
 CREATE POLICY "Enable all for authenticated users" ON promotions FOR ALL USING (auth.role() = 'authenticated');
+CREATE POLICY "Enable all for authenticated users" ON appointment_requests FOR ALL USING (auth.role() = 'authenticated');
+CREATE POLICY "Enable all for authenticated users" ON notifications FOR ALL USING (auth.role() = 'authenticated');
 CREATE POLICY "Enable all for authenticated users" ON settings FOR ALL USING (auth.role() = 'authenticated');
 
 -- =====================================================
@@ -418,3 +471,5 @@ COMMENT ON TABLE goals IS 'Objectifs et KPIs de performance';
 COMMENT ON TABLE loyalty_cards IS 'Cartes de fidélité clients';
 COMMENT ON TABLE referrals IS 'Programme de parrainage';
 COMMENT ON TABLE promotions IS 'Offres promotionnelles temporaires';
+COMMENT ON TABLE appointment_requests IS 'Demandes de rendez-vous des patients avec système de proposition/contre-proposition';
+COMMENT ON TABLE notifications IS 'File d''attente des notifications email/SMS à envoyer';
