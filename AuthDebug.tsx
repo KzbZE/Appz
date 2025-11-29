@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { supabase } from "./supabaseClient"; // adapte le chemin à TON fichier
+import { supabase } from "./lib/supabase.ts"; // adapte le chemin à TON fichier
 
 const AuthDebug: React.FC = () => {
   const [email, setEmail] = useState("admin@admin.com"); // ou ton email
