@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useLiveQuery } from 'dexie-react-hooks';
-import { db } from './db';
+import { usePatients, useAppointments, useInvoices, useExpenses, useSettings } from './hooks/useSupabaseData';
 import Navigation from './components/Navigation';
 import DailyDashboard from './components/DailyDashboard';
 import SessionWizard from './components/SessionWizard';
@@ -30,15 +29,14 @@ import { Patient, Appointment, ApptStatus, PatientType, Invoice, InvoiceStatus, 
 import { X, Save, Clock, MapPin, User, Globe, AlertTriangle, Search, Zap, Plus, ChevronLeft } from 'lucide-react';
 import { initGoogleClient } from './services/googleApiService';
 import { setupAutomaticBackup } from './services/backupService';
-import { usePatients } from './hooks/usePatients';
 
 const App: React.FC = () => {
-  const { patients, isLoading: patientsLoading, addPatient, updatePatient, deletePatient } = usePatients();
-  const appointments = useLiveQuery(() => db.appointments.toArray());
-  const invoices = useLiveQuery(() => db.invoices.toArray());
-  const expenses = useLiveQuery(() => db.expenses.toArray());
-  const settings = useLiveQuery(() => db.settings.toArray());
-  
+  const { data: patients, addItem: addPatient, updateItem: updatePatient, deleteItem: deletePatient } = usePatients();
+  const { data: appointments, addItem: addAppointment, updateItem: updateAppointment, deleteItem: deleteAppointment } = useAppointments();
+  const { data: invoices } = useInvoices();
+  const { data: expenses } = useExpenses();
+  const { settings, updateSettings } = useSettings();
+
   const DEFAULT_SETTINGS: AppSettings = {
       appName: 'TheraFlow',
       practitionerName: 'Praticien',
@@ -49,7 +47,7 @@ const App: React.FC = () => {
       branding: { primaryColor: '#0f766e', logoUrl: '' }
   };
 
-  const appSettings = settings?.[0] || DEFAULT_SETTINGS;
+  const appSettings = settings || DEFAULT_SETTINGS;
 
   const [currentView, setCurrentView] = useState<string>('dashboard');
   const [activeAppointment, setActiveAppointment] = useState<Appointment | null>(null);
@@ -79,11 +77,6 @@ const App: React.FC = () => {
 
   const [suggestedTimeSlots, setSuggestedTimeSlots] = useState<any[]>([]);
   const [quickSearchTerm, setQuickSearchTerm] = useState('');
-
-  useEffect(() => {
-    db.populate();
-    setupAutomaticBackup();
-  }, []);
 
   useEffect(() => {
       if (appSettings) {
@@ -174,19 +167,18 @@ const App: React.FC = () => {
 
   const handleInstantSession = async (patient: Patient) => {
       if (!patient.id) return;
-      const id = await db.appointments.add({
-          patientId: patient.id,
-          startTime: new Date().toISOString(),
-          durationMin: 60,
+      const { data: newAppt, error } = await addAppointment({
+          patient_id: patient.id,
+          start_time: new Date().toISOString(),
+          duration_min: 60,
           status: ApptStatus.IN_PROGRESS,
           type: patient.type === PatientType.HUMAN ? 'CABINET' : 'STABLE',
-          price: 0, 
+          price: 0,
           notes: 'Séance Hors-Planning'
       });
-      
-      const newAppt = await db.appointments.get(id);
-      if (newAppt) {
-        setActiveAppointment(newAppt);
+
+      if (newAppt && !error) {
+        setActiveAppointment(newAppt as any);
         setCurrentView('session');
         setIsQuickSessionModalOpen(false);
         setIsCreatingQuickPatient(false);
@@ -196,32 +188,29 @@ const App: React.FC = () => {
   const handleCreateAndStartQuickPatient = async () => {
       if (!quickPatientForm.name) return;
 
-      const newId = await db.patients.add({
+      const { data: newPatient, error } = await addPatient({
           name: quickPatientForm.name,
           type: quickPatientForm.type as PatientType,
-          ownerName: quickPatientForm.ownerName,
+          owner_name: quickPatientForm.ownerName,
           location: quickPatientForm.type === 'HUMAN' ? 'Cabinet' : 'Extérieur',
           address: 'Adresse à compléter',
       });
 
-      const newPatient = await db.patients.get(newId);
-      if (newPatient) {
-          handleInstantSession(newPatient);
+      if (newPatient && !error) {
+          handleInstantSession(newPatient as any);
       }
   };
 
   const handleCompleteSession = async () => {
     if (activeAppointment && activeAppointment.id) {
-        await db.appointments.update(activeAppointment.id, { status: ApptStatus.COMPLETED });
+        await updateAppointment(activeAppointment.id, { status: ApptStatus.COMPLETED });
     }
     setActiveAppointment(null);
-    setCurrentView('finance'); 
+    setCurrentView('finance');
   };
 
   const handleUpdateSettings = async (newSettings: AppSettings) => {
-      if (newSettings.id) {
-          await db.settings.put(newSettings);
-      }
+      await updateSettings(newSettings);
   };
 
   const handleOpenNewAppt = (apptToEdit?: Appointment) => {
@@ -263,15 +252,17 @@ const App: React.FC = () => {
       let targetAddress = appSettings?.cabinetAddress || "Cabinet";
 
       if (newApptData.isNewPatient) {
-          const id = await db.patients.add({
+          const { data: newPatient, error } = await addPatient({
               name: newApptData.newPatientName,
               type: newApptData.newPatientType as PatientType,
               location: newApptData.type === 'CABINET' ? 'Cabinet' : 'Extérieur',
               address: newApptData.newPatientAddress || 'Adresse à compléter'
           });
-          patientId = String(id);
-          patientName = newApptData.newPatientName;
-          if (newApptData.type !== 'CABINET') targetAddress = newApptData.newPatientAddress;
+          if (newPatient && !error) {
+              patientId = String(newPatient.id);
+              patientName = newApptData.newPatientName;
+              if (newApptData.type !== 'CABINET') targetAddress = newApptData.newPatientAddress;
+          }
       } else {
           const p = patients?.find(p => String(p.id) === String(patientId));
           if (p) {
@@ -305,24 +296,23 @@ const App: React.FC = () => {
       }
 
       const apptData = {
-          patientId,
-          startTime: start.toISOString(),
-          durationMin: 60,
+          patient_id: Number(patientId),
+          start_time: start.toISOString(),
+          duration_min: 60,
           status: ApptStatus.SCHEDULED,
-          // Explicit cast to satisfy the Union Type for TypeScript
           type: newApptData.type as 'CABINET' | 'DOMICILE' | 'STABLE' | 'BLOCK',
           notes: `${patientName} - ${newApptData.notes}`,
-          price: 80, 
+          price: 80,
           ...logisticsData
       };
 
       if (editingApptId) {
-          await db.appointments.update(editingApptId, apptData);
+          await updateAppointment(editingApptId, apptData);
       } else {
-          await db.appointments.add(apptData as Appointment);
+          await addAppointment(apptData);
       }
 
-      setSuggestedTimeSlots([]); // Clear suggestions on close
+      setSuggestedTimeSlots([]);
       setIsNewApptModalOpen(false);
   };
 
@@ -666,7 +656,7 @@ const App: React.FC = () => {
               }}
               onInstantSession={handleInstantSession}
               onUpdatePatient={async (p) => {
-                  if (p.id) await db.patients.put(p);
+                  if (p.id) await updatePatient(p.id, p);
               }}
             />
           )}
