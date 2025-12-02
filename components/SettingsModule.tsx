@@ -10,7 +10,18 @@ interface SettingsModuleProps {
 }
 
 const SettingsModule: React.FC<SettingsModuleProps> = ({ settings, onSave }) => {
-  const [localSettings, setLocalSettings] = useState<AppSettings>(settings);
+  // Ensure defaultTariffs exists with fallback values
+  const normalizedSettings = {
+    ...settings,
+    defaultTariffs: settings.defaultTariffs || {
+      HUMAN_KINESIO: 0,
+      EQUINE_KINESIO: 0,
+      CANINE_KINESIO: 0,
+      MASSAGE: 0
+    }
+  };
+
+  const [localSettings, setLocalSettings] = useState<AppSettings>(normalizedSettings);
   const [isConnecting, setIsConnecting] = useState(false);
   const [lastBackupDate, setLastBackupDate] = useState<string | null>(getLastBackupDate());
 

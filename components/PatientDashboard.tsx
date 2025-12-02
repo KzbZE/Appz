@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Calendar, FileText, CreditCard, Clock, CheckCircle, XCircle, AlertCircle, CalendarPlus, Plus } from 'lucide-react';
+import { Calendar, FileText, CreditCard, Clock, CheckCircle, XCircle, AlertCircle, CalendarPlus, Plus, LogOut } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useAppointments, useInvoices, useConsultationReports, useAppointmentRequests } from '../hooks/useSupabaseData';
 import { supabase } from '../lib/supabase';
@@ -8,7 +8,7 @@ import { fr } from 'date-fns/locale';
 import PatientRequestAppointment from './PatientRequestAppointment';
 
 const PatientDashboard: React.FC = () => {
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
   const { data: appointments, isLoading: loadingAppointments } = useAppointments();
   const { data: invoices, isLoading: loadingInvoices } = useInvoices();
   const { data: reports, isLoading: loadingReports } = useConsultationReports();
@@ -187,10 +187,21 @@ const PatientDashboard: React.FC = () => {
       {/* Header */}
       <div className="max-w-7xl mx-auto mb-8">
         <div className="bg-white rounded-2xl shadow-lg p-6 border border-slate-200">
-          <h1 className="text-3xl font-black text-slate-800 mb-2">
-            Bonjour, {user?.name || 'Patient'} 👋
-          </h1>
-          <p className="text-slate-600">Gérez vos rendez-vous et consultez vos documents</p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-black text-slate-800 mb-2">
+                Bonjour, {user?.name || 'Patient'} 👋
+              </h1>
+              <p className="text-slate-600">Gérez vos rendez-vous et consultez vos documents</p>
+            </div>
+            <button
+              onClick={signOut}
+              className="flex items-center gap-2 px-4 py-2 bg-red-50 hover:bg-red-100 text-red-600 rounded-xl transition-all border-2 border-red-200 font-bold"
+            >
+              <LogOut size={18} />
+              <span className="hidden md:inline">Déconnexion</span>
+            </button>
+          </div>
         </div>
       </div>
 

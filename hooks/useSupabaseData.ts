@@ -158,7 +158,19 @@ export const useSettings = () => {
         throw fetchError;
       }
 
-      setSettings(data || null);
+      // Transformer snake_case en camelCase pour le code TypeScript
+      const toCamelCase = (obj: any): any => {
+        if (!obj) return null;
+        const camelCaseObj: any = {};
+        for (const key in obj) {
+          const camelKey = key.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
+          camelCaseObj[camelKey] = obj[key];
+        }
+        return camelCaseObj;
+      };
+
+      const normalizedData = data ? toCamelCase(data) : null;
+      setSettings(normalizedData);
     } catch (err: any) {
       console.error('Erreur lors du chargement des settings:', err);
       setError(err.message);
@@ -180,6 +192,17 @@ export const useSettings = () => {
         return snakeCaseObj;
       };
 
+      // Transformer snake_case en camelCase
+      const toCamelCase = (obj: any): any => {
+        if (!obj) return null;
+        const camelCaseObj: any = {};
+        for (const key in obj) {
+          const camelKey = key.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
+          camelCaseObj[camelKey] = obj[key];
+        }
+        return camelCaseObj;
+      };
+
       const snakeCaseUpdates = toSnakeCase(updates);
 
       if (!settings?.id) {
@@ -194,8 +217,9 @@ export const useSettings = () => {
           .single();
 
         if (insertError) throw insertError;
-        setSettings(data);
-        return { data, error: null };
+        const normalizedData = toCamelCase(data);
+        setSettings(normalizedData);
+        return { data: normalizedData, error: null };
       } else {
         // Mettre à jour
         const { data, error: updateError } = await supabase
@@ -206,8 +230,9 @@ export const useSettings = () => {
           .single();
 
         if (updateError) throw updateError;
-        setSettings(data);
-        return { data, error: null };
+        const normalizedData = toCamelCase(data);
+        setSettings(normalizedData);
+        return { data: normalizedData, error: null };
       }
     } catch (err: any) {
       console.error('Erreur lors de la mise à jour des settings:', err);
