@@ -3,7 +3,7 @@ import { Patient, PatientType, SessionDocument, AppSettings, Session } from '../
 import { generateSessionReport } from '../services/geminiService';
 import { checkAuth, listDriveFolders, uploadToDriveReal } from '../services/googleApiService';
 import { ChevronRight, ChevronLeft, Save, Video, AlertCircle, CheckCircle, Wand2, Upload, Download, Share2, Instagram, Facebook, Camera, Clock, HardDrive, FileText, Eye, Edit3 } from 'lucide-react';
-import { db } from '../db';
+import { useSessions } from '../hooks/useSupabaseData';
 import { jsPDF } from 'jspdf';
 
 interface SessionTemplate {
@@ -30,6 +30,7 @@ interface SessionWizardProps {
 }
 
 const SessionWizard: React.FC<SessionWizardProps> = ({ patient, settings, onComplete }) => {
+  const { addItem: addSession } = useSessions();
   const [step, setStep] = useState<number>(1);
   const [generatingReport, setGeneratingReport] = useState(false);
 
@@ -312,8 +313,8 @@ const SessionWizard: React.FC<SessionWizardProps> = ({ patient, settings, onComp
 
   const handleFinishSession = async () => {
       if (!patient.id) return;
-      const sessionData: Session = {
-          patientId: patient.id,
+      const sessionData = {
+          patient_id: patient.id,
           date: new Date().toISOString(),
           type: sessionType,
           anamnesis: {
@@ -322,12 +323,16 @@ const SessionWizard: React.FC<SessionWizardProps> = ({ patient, settings, onComp
             techniques: selectedTechniques.join(', ')
           },
           tensions: tensions,
-          treatmentNotes: treatmentNotes,
+          treatment_notes: treatmentNotes,
           exercises: ['Repos', 'Hydratation'],
           documents: documents,
           price: calculatedPrice,
       };
-      await db.sessions.add(sessionData);
+      const result = await addSession(sessionData);
+      if (result.error) {
+        alert(`Erreur lors de l'enregistrement: ${result.error}`);
+        return;
+      }
       localStorage.removeItem(STORAGE_KEY);
       onComplete();
   };

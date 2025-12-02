@@ -1,17 +1,17 @@
 
 import React, { useState } from 'react';
-import { useLiveQuery } from 'dexie-react-hooks';
-import { db } from '../db';
 import { Session, Patient, PatientType, TensionPoint } from '../types';
 import { Search, FileText, Edit, X, Save, Printer, Filter, Trash2, HardDrive, Mail, Download } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
 import { checkAuth, listDriveFolders, uploadToDriveReal } from '../services/googleApiService';
+import { useSessions, usePatients, useSettings } from '../hooks/useSupabaseData';
 
 const SessionHistory: React.FC = () => {
-  const sessions = useLiveQuery(() => db.sessions.toArray());
-  const patients = useLiveQuery(() => db.patients.toArray());
-  
+  const { data: sessions, updateItem: updateSession, isLoading: sessionsLoading } = useSessions();
+  const { data: patients, isLoading: patientsLoading } = usePatients();
+  const { settings } = useSettings();
+
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState<string>('ALL');
   const [selectedSession, setSelectedSession] = useState<Session | null>(null);
@@ -26,10 +26,9 @@ const SessionHistory: React.FC = () => {
   const [selectedFolder, setSelectedFolder] = useState('');
   const [showMailModal, setShowMailModal] = useState(false);
   const [mailForm, setMailForm] = useState({ to: '', subject: '', message: '' });
-  const settings = useLiveQuery(() => db.settings.toArray());
-  const currentSettings = settings?.[0];
+  const currentSettings = settings;
 
-  if (!sessions || !patients) return <div className="p-8 text-center text-slate-400">Chargement des dossiers...</div>;
+  if (sessionsLoading || patientsLoading) return <div className="p-8 text-center text-slate-400">Chargement des dossiers...</div>;
 
   const getPatient = (id: string | number) => patients.find(p => String(p.id) === String(id));
 
@@ -53,12 +52,12 @@ const SessionHistory: React.FC = () => {
 
   const handleSaveSession = async () => {
       if (selectedSession && selectedSession.id) {
-          await db.sessions.update(selectedSession.id, { 
-              treatmentNotes: editNotes,
+          await updateSession(selectedSession.id, {
+              treatment_notes: editNotes,
               tensions: editTensions
           });
-          setSelectedSession({ 
-              ...selectedSession, 
+          setSelectedSession({
+              ...selectedSession,
               treatmentNotes: editNotes,
               tensions: editTensions
           });

@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import { LayoutDashboard, Users, TrendingUp, Calendar, Settings, PieChart, BarChart, FileText, Bell, CalendarDays, FileCode, Send, Package, Zap, Star, Gift, Shield, Target, Cloud, Menu, X, FileSpreadsheet, LogOut, ClipboardList, FileCheck } from 'lucide-react';
-import { useLiveQuery } from 'dexie-react-hooks';
-import { db } from '../db';
 import { useAuth } from '../contexts/AuthContext';
+import { useSettings } from '../hooks/useSupabaseData';
 
 interface NavigationProps {
   currentView: string;
@@ -10,7 +9,7 @@ interface NavigationProps {
 }
 
 const Navigation: React.FC<NavigationProps> = ({ currentView, setView }) => {
-  const settings = useLiveQuery(() => db.settings.toArray())?.[0];
+  const { settings } = useSettings();
   const [showFullMenu, setShowFullMenu] = useState(false);
   const { signOut, user } = useAuth();
 
