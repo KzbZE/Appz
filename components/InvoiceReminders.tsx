@@ -1,8 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { Invoice, InvoiceStatus } from '../types';
 import { AlertCircle, Send, Clock, Euro, Calendar, Mail, X, Check, TrendingDown, Bell } from 'lucide-react';
-import { useLiveQuery } from 'dexie-react-hooks';
-import { db } from '../db';
+import { useInvoices, useSettings } from '../hooks/useSupabaseData';
 import { jsPDF } from 'jspdf';
 
 interface ReminderConfig {
@@ -12,9 +11,9 @@ interface ReminderConfig {
 }
 
 const InvoiceReminders: React.FC = () => {
-  const invoices = useLiveQuery(() => db.invoices.toArray()) || [];
-  const settings = useLiveQuery(() => db.settings.toArray());
-  const currentSettings = settings?.[0];
+  const { data: invoices } = useInvoices();
+  const { settings } = useSettings();
+  const currentSettings = settings;
 
   const [showMailModal, setShowMailModal] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);

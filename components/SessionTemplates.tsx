@@ -1,6 +1,4 @@
 import React, { useState } from 'react';
-import { useLiveQuery } from 'dexie-react-hooks';
-import { db } from '../db';
 import { Plus, Search, Edit, Trash2, Copy, FileText, X, Save, Star, Eye, CheckCircle } from 'lucide-react';
 
 interface SessionTemplate {

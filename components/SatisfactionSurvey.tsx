@@ -1,14 +1,14 @@
 import React, { useState } from 'react';
 import { SurveyResponse, Patient } from '../types';
-import { db } from '../db';
-import { useLiveQuery } from 'dexie-react-hooks';
+import { usePatients, useSettings } from '../hooks/useSupabaseData';
 import { Star, ThumbsUp, ThumbsDown, TrendingUp, Users, AlertCircle, CheckCircle, MessageSquare, BarChart3, X, Send } from 'lucide-react';
 
 const SatisfactionSurvey: React.FC = () => {
-  const surveyResponses = useLiveQuery(() => db.surveyResponses.toArray()) || [];
-  const patients = useLiveQuery(() => db.patients.toArray()) || [];
-  const settings = useLiveQuery(() => db.settings.toArray());
-  const currentSettings = settings?.[0];
+  // TODO: Create useSurveyResponses hook when survey_responses table is added to Supabase
+  const surveyResponses: SurveyResponse[] = [];
+  const { data: patients } = usePatients();
+  const { settings } = useSettings();
+  const currentSettings = settings;
 
   const [selectedResponse, setSelectedResponse] = useState<SurveyResponse | null>(null);
   const [showDetailModal, setShowDetailModal] = useState(false);

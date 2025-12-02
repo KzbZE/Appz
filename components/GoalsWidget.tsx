@@ -1,14 +1,20 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Goal } from '../types';
-import { db } from '../db';
-import { useLiveQuery } from 'dexie-react-hooks';
+import { useInvoices, usePatients, useAppointments } from '../hooks/useSupabaseData';
 import { Target, TrendingUp, Users, Euro, Plus, X, Check, AlertCircle } from 'lucide-react';
 
 const GoalsWidget: React.FC = () => {
-  const goals = useLiveQuery(() => db.goals.where('isActive').equals(1).toArray()) || [];
-  const invoices = useLiveQuery(() => db.invoices.toArray()) || [];
-  const patients = useLiveQuery(() => db.patients.toArray()) || [];
-  const appointments = useLiveQuery(() => db.appointments.where('status').equals('COMPLETED').toArray()) || [];
+  // TODO: Create useGoals hook when goals table is added to Supabase
+  const goals: Goal[] = [];
+  const { data: allInvoices } = useInvoices();
+  const { data: patients } = usePatients();
+  const { data: allAppointments } = useAppointments();
+
+  const invoices = allInvoices || [];
+  const appointments = useMemo(() =>
+    (allAppointments || []).filter(a => a.status === 'COMPLETED'),
+    [allAppointments]
+  );
 
   const [showAddModal, setShowAddModal] = useState(false);
   const [newGoal, setNewGoal] = useState<Partial<Goal>>({

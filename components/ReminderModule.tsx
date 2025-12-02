@@ -1,16 +1,15 @@
 import React, { useState } from 'react';
 import { Invoice, ReminderRecord, ReminderStageConfig } from '../types';
 import { Bell, Send, Mail, Calendar, AlertTriangle, CheckCircle, X } from 'lucide-react';
-import { db } from '../db';
-import { useLiveQuery } from 'dexie-react-hooks';
+import { useSettings } from '../hooks/useSupabaseData';
 
 interface ReminderModuleProps {
   invoices: Invoice[];
 }
 
 const ReminderModule: React.FC<ReminderModuleProps> = ({ invoices }) => {
-  const settings = useLiveQuery(() => db.settings.toArray());
-  const currentSettings = settings?.[0];
+  const { settings } = useSettings();
+  const currentSettings = settings;
 
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
   const [showSendModal, setShowSendModal] = useState(false);
