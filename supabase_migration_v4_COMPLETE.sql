@@ -97,8 +97,8 @@ CREATE TABLE IF NOT EXISTS public.patients (
   updated_at TIMESTAMPTZ DEFAULT NOW() NOT NULL
 );
 
-CREATE INDEX idx_patients_user_id ON public.patients(user_id);
-CREATE INDEX idx_patients_type ON public.patients(type);
+CREATE INDEX IF NOT EXISTS idx_patients_user_id ON public.patients(user_id);
+CREATE INDEX IF NOT EXISTS idx_patients_type ON public.patients(type);
 
 -- RLS
 ALTER TABLE public.patients ENABLE ROW LEVEL SECURITY;
@@ -144,10 +144,10 @@ CREATE TABLE IF NOT EXISTS public.appointments (
   updated_at TIMESTAMPTZ DEFAULT NOW() NOT NULL
 );
 
-CREATE INDEX idx_appointments_user_id ON public.appointments(user_id);
-CREATE INDEX idx_appointments_patient_id ON public.appointments(patient_id);
-CREATE INDEX idx_appointments_start_time ON public.appointments(start_time);
-CREATE INDEX idx_appointments_status ON public.appointments(status);
+CREATE INDEX IF NOT EXISTS idx_appointments_user_id ON public.appointments(user_id);
+CREATE INDEX IF NOT EXISTS idx_appointments_patient_id ON public.appointments(patient_id);
+CREATE INDEX IF NOT EXISTS idx_appointments_start_time ON public.appointments(start_time);
+CREATE INDEX IF NOT EXISTS idx_appointments_status ON public.appointments(status);
 
 -- RLS
 ALTER TABLE public.appointments ENABLE ROW LEVEL SECURITY;
@@ -203,9 +203,9 @@ CREATE TABLE public.appointment_requests (
   updated_at TIMESTAMPTZ DEFAULT NOW() NOT NULL
 );
 
-CREATE INDEX idx_appointment_requests_patient ON public.appointment_requests(patient_id);
-CREATE INDEX idx_appointment_requests_practitioner ON public.appointment_requests(practitioner_id);
-CREATE INDEX idx_appointment_requests_status ON public.appointment_requests(status);
+CREATE INDEX IF NOT EXISTS idx_appointment_requests_patient ON public.appointment_requests(patient_id);
+CREATE INDEX IF NOT EXISTS idx_appointment_requests_practitioner ON public.appointment_requests(practitioner_id);
+CREATE INDEX IF NOT EXISTS idx_appointment_requests_status ON public.appointment_requests(status);
 
 -- RLS
 ALTER TABLE public.appointment_requests ENABLE ROW LEVEL SECURITY;
@@ -250,9 +250,9 @@ CREATE TABLE IF NOT EXISTS public.consultation_reports (
   updated_at TIMESTAMPTZ DEFAULT NOW() NOT NULL
 );
 
-CREATE INDEX idx_consultation_reports_user_id ON public.consultation_reports(user_id);
-CREATE INDEX idx_consultation_reports_patient_id ON public.consultation_reports(patient_id);
-CREATE INDEX idx_consultation_reports_date ON public.consultation_reports(date);
+CREATE INDEX IF NOT EXISTS idx_consultation_reports_user_id ON public.consultation_reports(user_id);
+CREATE INDEX IF NOT EXISTS idx_consultation_reports_patient_id ON public.consultation_reports(patient_id);
+CREATE INDEX IF NOT EXISTS idx_consultation_reports_date ON public.consultation_reports(date);
 
 -- RLS
 ALTER TABLE public.consultation_reports ENABLE ROW LEVEL SECURITY;
@@ -293,9 +293,9 @@ CREATE TABLE IF NOT EXISTS public.invoices (
   updated_at TIMESTAMPTZ DEFAULT NOW() NOT NULL
 );
 
-CREATE INDEX idx_invoices_user_id ON public.invoices(user_id);
-CREATE INDEX idx_invoices_status ON public.invoices(status);
-CREATE INDEX idx_invoices_date ON public.invoices(date);
+CREATE INDEX IF NOT EXISTS idx_invoices_user_id ON public.invoices(user_id);
+CREATE INDEX IF NOT EXISTS idx_invoices_status ON public.invoices(status);
+CREATE INDEX IF NOT EXISTS idx_invoices_date ON public.invoices(date);
 
 -- RLS
 ALTER TABLE public.invoices ENABLE ROW LEVEL SECURITY;
@@ -329,8 +329,8 @@ CREATE TABLE IF NOT EXISTS public.expenses (
   updated_at TIMESTAMPTZ DEFAULT NOW() NOT NULL
 );
 
-CREATE INDEX idx_expenses_user_id ON public.expenses(user_id);
-CREATE INDEX idx_expenses_date ON public.expenses(date);
+CREATE INDEX IF NOT EXISTS idx_expenses_user_id ON public.expenses(user_id);
+CREATE INDEX IF NOT EXISTS idx_expenses_date ON public.expenses(date);
 
 -- RLS
 ALTER TABLE public.expenses ENABLE ROW LEVEL SECURITY;
@@ -369,7 +369,7 @@ CREATE TABLE IF NOT EXISTS public.settings (
   updated_at TIMESTAMPTZ DEFAULT NOW() NOT NULL
 );
 
-CREATE INDEX idx_settings_user_id ON public.settings(user_id);
+CREATE INDEX IF NOT EXISTS idx_settings_user_id ON public.settings(user_id);
 
 -- RLS
 ALTER TABLE public.settings ENABLE ROW LEVEL SECURITY;
@@ -408,9 +408,9 @@ CREATE TABLE IF NOT EXISTS public.sessions (
   updated_at TIMESTAMPTZ DEFAULT NOW() NOT NULL
 );
 
-CREATE INDEX idx_sessions_user_id ON public.sessions(user_id);
-CREATE INDEX idx_sessions_patient_id ON public.sessions(patient_id);
-CREATE INDEX idx_sessions_date ON public.sessions(date);
+CREATE INDEX IF NOT EXISTS idx_sessions_user_id ON public.sessions(user_id);
+CREATE INDEX IF NOT EXISTS idx_sessions_patient_id ON public.sessions(patient_id);
+CREATE INDEX IF NOT EXISTS idx_sessions_date ON public.sessions(date);
 
 -- RLS
 ALTER TABLE public.sessions ENABLE ROW LEVEL SECURITY;
@@ -445,7 +445,7 @@ CREATE TABLE IF NOT EXISTS public.session_templates (
   updated_at TIMESTAMPTZ DEFAULT NOW() NOT NULL
 );
 
-CREATE INDEX idx_session_templates_user_id ON public.session_templates(user_id);
+CREATE INDEX IF NOT EXISTS idx_session_templates_user_id ON public.session_templates(user_id);
 
 -- RLS
 ALTER TABLE public.session_templates ENABLE ROW LEVEL SECURITY;
