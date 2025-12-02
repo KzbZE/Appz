@@ -145,13 +145,14 @@ export const useSettings = () => {
       const { data: userData } = await supabase.auth.getUser();
       if (!userData.user) throw new Error('Utilisateur non connecté');
 
+      // RLS filtre automatiquement par user_id, pas besoin de .eq()
       const { data, error: fetchError } = await supabase
         .from('settings')
         .select('*')
-        .eq('user_id', userData.user.id)
-        .single();
+        .limit(1)
+        .maybeSingle();
 
-      if (fetchError && fetchError.code !== 'PGRST116') {
+      if (fetchError) {
         throw fetchError;
       }
 
@@ -159,6 +160,7 @@ export const useSettings = () => {
     } catch (err: any) {
       console.error('Erreur lors du chargement des settings:', err);
       setError(err.message);
+      setSettings(null);
     } finally {
       setIsLoading(false);
     }
