@@ -78,7 +78,7 @@ const AuthModal: React.FC = () => {
 
         const { error } = await signUp(formData.email, formData.password, {
           name: formData.name,
-          role: formData.role
+          role: formData.role.toUpperCase() as 'ADMIN' | 'PRACTITIONER' | 'ASSISTANT'
         });
 
         if (error) {
