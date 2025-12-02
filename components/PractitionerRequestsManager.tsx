@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { CheckCircle, XCircle, Clock, Calendar, User } from 'lucide-react';
+import { CheckCircle, XCircle, Clock, Calendar, User, CalendarPlus } from 'lucide-react';
 import { useAppointmentRequests } from '../hooks/useSupabaseData';
 import { supabase } from '../lib/supabase';
 import { format } from 'date-fns';
@@ -9,6 +9,34 @@ const PractitionerRequestsManager: React.FC = () => {
   const { data: requests, isLoading, refresh } = useAppointmentRequests();
   const [processingId, setProcessingId] = useState<number | null>(null);
   const [responseText, setResponseText] = useState<Record<number, string>>({});
+  const [showAlternativeDates, setShowAlternativeDates] = useState<Record<number, boolean>>({});
+  const [alternativeDates, setAlternativeDates] = useState<Record<number, Array<{date: string, time: string}>>>({});
+
+  const addAlternativeDate = (requestId: number) => {
+    const current = alternativeDates[requestId] || [];
+    setAlternativeDates({
+      ...alternativeDates,
+      [requestId]: [...current, { date: '', time: '' }]
+    });
+  };
+
+  const updateAlternativeDate = (requestId: number, index: number, field: 'date' | 'time', value: string) => {
+    const current = alternativeDates[requestId] || [];
+    const updated = [...current];
+    updated[index] = { ...updated[index], [field]: value };
+    setAlternativeDates({
+      ...alternativeDates,
+      [requestId]: updated
+    });
+  };
+
+  const removeAlternativeDate = (requestId: number, index: number) => {
+    const current = alternativeDates[requestId] || [];
+    setAlternativeDates({
+      ...alternativeDates,
+      [requestId]: current.filter((_, i) => i !== index)
+    });
+  };
 
   const handleApprove = async (request: any) => {
     try {
@@ -82,7 +110,50 @@ const PractitionerRequestsManager: React.FC = () => {
     }
   };
 
-  const pendingRequests = requests.filter((r: any) => r.status === 'PENDING');
+  const handleProposeAlternative = async (request: any) => {
+    try {
+      const dates = alternativeDates[request.id] || [];
+
+      if (dates.length === 0 || dates.some(d => !d.date || !d.time)) {
+        alert('❌ Veuillez ajouter au moins une date alternative complète');
+        return;
+      }
+
+      setProcessingId(request.id);
+
+      // Format alternative dates as ISO strings
+      const formattedDates = dates.map(d => ({
+        date: new Date(`${d.date}T${d.time}`).toISOString(),
+        proposed_by: 'PRACTITIONER'
+      }));
+
+      const response = responseText[request.id] || 'Je vous propose les créneaux suivants :';
+
+      const { error } = await supabase
+        .from('appointment_requests')
+        .update({
+          status: 'COUNTER_PROPOSAL_PRACTITIONER',
+          practitioner_response: response,
+          alternative_dates: JSON.stringify(formattedDates),
+        })
+        .eq('id', request.id);
+
+      if (error) throw error;
+
+      alert('✅ Contre-proposition envoyée au patient !');
+      setResponseText(prev => ({ ...prev, [request.id]: '' }));
+      setAlternativeDates(prev => ({ ...prev, [request.id]: [] }));
+      setShowAlternativeDates(prev => ({ ...prev, [request.id]: false }));
+      await refresh();
+    } catch (error: any) {
+      console.error('Error proposing alternative:', error);
+      alert(`❌ Erreur: ${error.message}`);
+    } finally {
+      setProcessingId(null);
+    }
+  };
+
+  const pendingRequests = requests.filter((r: any) => r.status === 'PENDING' || r.status === 'COUNTER_PROPOSAL_PATIENT');
 
   return (
     <div className="bg-white rounded-2xl shadow-lg p-6 border border-slate-200">
@@ -114,7 +185,7 @@ const PractitionerRequestsManager: React.FC = () => {
                   </div>
                   <div>
                     <p className="font-black text-slate-800 text-lg mb-1">
-                      Nouvelle demande
+                      {request.status === 'COUNTER_PROPOSAL_PATIENT' ? '🔄 Contre-proposition patient' : 'Nouvelle demande'}
                     </p>
                     <p className="text-sm text-slate-600">
                       Demandé le {format(new Date(request.created_at), 'd MMM yyyy à HH:mm', { locale: fr })}
@@ -160,6 +231,26 @@ const PractitionerRequestsManager: React.FC = () => {
                     <p className="text-slate-700 text-sm">{request.notes}</p>
                   </div>
                 )}
+
+                {/* Show patient's counter proposal if exists */}
+                {request.status === 'COUNTER_PROPOSAL_PATIENT' && request.patient_response && (
+                  <div className="mt-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                    <p className="text-sm font-bold text-blue-800 mb-1">💬 Réponse du patient:</p>
+                    <p className="text-sm text-blue-700">{request.patient_response}</p>
+
+                    {request.alternative_dates && Array.isArray(JSON.parse(request.alternative_dates)) && (
+                      <div className="mt-2">
+                        <p className="text-xs font-bold text-blue-700 mb-1">Dates proposées par le patient:</p>
+                        {JSON.parse(request.alternative_dates).filter((d: any) => d.proposed_by === 'PATIENT').map((alt: any, idx: number) => (
+                          <div key={idx} className="text-xs text-blue-600 flex items-center gap-1 mt-1">
+                            <Calendar size={12} />
+                            {format(new Date(alt.date), 'EEEE d MMMM yyyy à HH:mm', { locale: fr })}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
 
               {/* Response TextArea */}
@@ -176,24 +267,104 @@ const PractitionerRequestsManager: React.FC = () => {
                 />
               </div>
 
+              {/* Alternative Dates Section */}
+              {showAlternativeDates[request.id] && (
+                <div className="mb-4 p-4 bg-blue-50 rounded-xl border border-blue-200">
+                  <div className="flex items-center justify-between mb-3">
+                    <p className="text-sm font-bold text-blue-800">📅 Proposer des créneaux alternatifs</p>
+                    <button
+                      onClick={() => addAlternativeDate(request.id)}
+                      className="text-xs px-3 py-1 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
+                    >
+                      + Ajouter un créneau
+                    </button>
+                  </div>
+
+                  <div className="space-y-2">
+                    {(alternativeDates[request.id] || []).map((alt, idx) => (
+                      <div key={idx} className="flex gap-2 items-center">
+                        <input
+                          type="date"
+                          value={alt.date}
+                          onChange={(e) => updateAlternativeDate(request.id, idx, 'date', e.target.value)}
+                          min={new Date().toISOString().split('T')[0]}
+                          className="flex-1 px-3 py-2 border border-blue-300 rounded-lg text-sm"
+                        />
+                        <input
+                          type="time"
+                          value={alt.time}
+                          onChange={(e) => updateAlternativeDate(request.id, idx, 'time', e.target.value)}
+                          className="flex-1 px-3 py-2 border border-blue-300 rounded-lg text-sm"
+                        />
+                        <button
+                          onClick={() => removeAlternativeDate(request.id, idx)}
+                          className="px-3 py-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 text-sm"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+
+                  {(alternativeDates[request.id] || []).length === 0 && (
+                    <p className="text-xs text-blue-600 text-center py-4">
+                      Cliquez sur "+ Ajouter un créneau" pour proposer des dates
+                    </p>
+                  )}
+                </div>
+              )}
+
               {/* Action Buttons */}
-              <div className="flex gap-3">
-                <button
-                  onClick={() => handleApprove(request)}
-                  disabled={processingId === request.id}
-                  className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl font-bold hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <CheckCircle size={20} />
-                  {processingId === request.id ? 'Traitement...' : 'Approuver'}
-                </button>
-                <button
-                  onClick={() => handleReject(request)}
-                  disabled={processingId === request.id}
-                  className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-red-500 to-pink-600 text-white rounded-xl font-bold hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <XCircle size={20} />
-                  {processingId === request.id ? 'Traitement...' : 'Refuser'}
-                </button>
+              <div className="flex flex-col gap-2">
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => handleApprove(request)}
+                    disabled={processingId === request.id}
+                    className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-xl font-bold hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <CheckCircle size={20} />
+                    {processingId === request.id ? 'Traitement...' : 'Approuver'}
+                  </button>
+                  <button
+                    onClick={() => handleReject(request)}
+                    disabled={processingId === request.id}
+                    className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-red-500 to-pink-600 text-white rounded-xl font-bold hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <XCircle size={20} />
+                    {processingId === request.id ? 'Traitement...' : 'Refuser'}
+                  </button>
+                </div>
+
+                {/* Toggle Alternative Dates */}
+                {!showAlternativeDates[request.id] ? (
+                  <button
+                    onClick={() => setShowAlternativeDates(prev => ({ ...prev, [request.id]: true }))}
+                    className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-blue-100 text-blue-700 rounded-xl font-bold hover:bg-blue-200 transition-all"
+                  >
+                    <CalendarPlus size={20} />
+                    Proposer d'autres dates
+                  </button>
+                ) : (
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => handleProposeAlternative(request)}
+                      disabled={processingId === request.id || (alternativeDates[request.id] || []).length === 0}
+                      className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-xl font-bold hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <CalendarPlus size={20} />
+                      Envoyer proposition
+                    </button>
+                    <button
+                      onClick={() => {
+                        setShowAlternativeDates(prev => ({ ...prev, [request.id]: false }));
+                        setAlternativeDates(prev => ({ ...prev, [request.id]: [] }));
+                      }}
+                      className="px-4 py-3 bg-slate-200 text-slate-700 rounded-xl font-bold hover:bg-slate-300 transition-all"
+                    >
+                      Annuler
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           ))}
@@ -201,12 +372,12 @@ const PractitionerRequestsManager: React.FC = () => {
       )}
 
       {/* History Section */}
-      {requests.filter((r: any) => r.status !== 'PENDING').length > 0 && (
+      {requests.filter((r: any) => !['PENDING', 'COUNTER_PROPOSAL_PATIENT'].includes(r.status)).length > 0 && (
         <div className="mt-8 pt-6 border-t border-slate-200">
           <h3 className="text-lg font-black text-slate-800 mb-4">Historique</h3>
           <div className="space-y-3">
             {requests
-              .filter((r: any) => r.status !== 'PENDING')
+              .filter((r: any) => !['PENDING', 'COUNTER_PROPOSAL_PATIENT'].includes(r.status))
               .slice(0, 10)
               .map((request: any) => (
                 <div key={request.id} className="p-4 bg-slate-50 rounded-xl border border-slate-200">
@@ -223,10 +394,12 @@ const PractitionerRequestsManager: React.FC = () => {
                     <span className={`px-2 py-1 rounded-full text-xs font-bold ${
                       request.status === 'APPROVED' ? 'bg-green-100 text-green-800' :
                       request.status === 'REJECTED' ? 'bg-red-100 text-red-800' :
+                      request.status === 'COUNTER_PROPOSAL_PRACTITIONER' ? 'bg-blue-100 text-blue-800' :
                       'bg-gray-100 text-gray-800'
                     }`}>
                       {request.status === 'APPROVED' ? '✅ Approuvé' :
                        request.status === 'REJECTED' ? '❌ Refusé' :
+                       request.status === 'COUNTER_PROPOSAL_PRACTITIONER' ? '📅 Proposition envoyée' :
                        request.status}
                     </span>
                   </div>
