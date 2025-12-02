@@ -4,7 +4,7 @@ import { User, Session } from '@supabase/supabase-js';
 export interface AuthUser {
   id: string;
   email: string;
-  role: 'admin' | 'practitioner' | 'assistant';
+  role: 'ADMIN' | 'PRACTITIONER' | 'PATIENT' | 'ASSISTANT';
   name?: string;
   createdAt: string;
 }
@@ -19,7 +19,7 @@ export class AuthService {
    */
   async signUp(email: string, password: string, metadata?: {
     name?: string;
-    role?: 'admin' | 'practitioner' | 'assistant';
+    role?: 'ADMIN' | 'PRACTITIONER' | 'PATIENT' | 'ASSISTANT';
   }): Promise<{ user: User | null; error: any }> {
     const { data, error } = await supabase.auth.signUp({
       email,
@@ -27,7 +27,7 @@ export class AuthService {
       options: {
         data: {
           name: metadata?.name || '',
-          role: metadata?.role || 'practitioner'
+          role: metadata?.role || 'PRACTITIONER'
         }
       }
     });
@@ -105,7 +105,7 @@ export class AuthService {
    */
   async updateProfile(updates: {
     name?: string;
-    role?: 'admin' | 'practitioner' | 'assistant';
+    role?: 'ADMIN' | 'PRACTITIONER' | 'PATIENT' | 'ASSISTANT';
   }): Promise<{ error: any }> {
     const { error } = await supabase.auth.updateUser({
       data: updates
@@ -124,17 +124,18 @@ export class AuthService {
   /**
    * Vérification du rôle utilisateur
    */
-  async hasRole(requiredRole: 'admin' | 'practitioner' | 'assistant'): Promise<boolean> {
+  async hasRole(requiredRole: 'ADMIN' | 'PRACTITIONER' | 'PATIENT' | 'ASSISTANT'): Promise<boolean> {
     const user = await this.getCurrentUser();
     if (!user) return false;
 
-    const userRole = user.user_metadata?.role || 'practitioner';
+    const userRole = user.user_metadata?.role || 'PRACTITIONER';
 
-    // Hiérarchie: admin > practitioner > assistant
+    // Hiérarchie: ADMIN > PRACTITIONER > ASSISTANT > PATIENT
     const roleHierarchy = {
-      admin: 3,
-      practitioner: 2,
-      assistant: 1
+      ADMIN: 4,
+      PRACTITIONER: 3,
+      ASSISTANT: 2,
+      PATIENT: 1
     };
 
     return roleHierarchy[userRole] >= roleHierarchy[requiredRole];
@@ -150,7 +151,7 @@ export class AuthService {
     return {
       id: user.id,
       email: user.email || '',
-      role: user.user_metadata?.role || 'practitioner',
+      role: user.user_metadata?.role || 'PRACTITIONER',
       name: user.user_metadata?.name || '',
       createdAt: user.created_at
     };

@@ -16,7 +16,7 @@ const AuthModal: React.FC = () => {
     password: '',
     confirmPassword: '',
     name: '',
-    role: 'practitioner' as 'admin' | 'practitioner' | 'assistant'
+    role: 'practitioner' as 'admin' | 'practitioner' | 'assistant' | 'patient'
   });
 
   // Validation de complexité du mot de passe
@@ -78,7 +78,7 @@ const AuthModal: React.FC = () => {
 
         const { error } = await signUp(formData.email, formData.password, {
           name: formData.name,
-          role: formData.role.toUpperCase() as 'ADMIN' | 'PRACTITIONER' | 'ASSISTANT'
+          role: formData.role.toUpperCase() as 'ADMIN' | 'PRACTITIONER' | 'ASSISTANT' | 'PATIENT'
         });
 
         if (error) {
@@ -203,6 +203,7 @@ const AuthModal: React.FC = () => {
                   onChange={(e) => setFormData({ ...formData, role: e.target.value as any })}
                   className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl focus:border-teal-500 focus:outline-none transition-colors bg-white"
                 >
+                  <option value="patient">Patient</option>
                   <option value="practitioner">Praticien</option>
                   <option value="admin">Administrateur</option>
                   <option value="assistant">Assistant</option>

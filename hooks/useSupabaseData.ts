@@ -130,6 +130,8 @@ export const useInvoices = () => useSupabaseData('invoices', { column: 'date', a
 export const useExpenses = () => useSupabaseData('expenses', { column: 'date', ascending: false });
 export const useSessions = () => useSupabaseData('sessions', { column: 'date', ascending: false });
 export const useRecurringInvoices = () => useSupabaseData('recurring_invoices', { column: 'created_at', ascending: false });
+export const useAppointmentRequests = () => useSupabaseData('appointment_requests', { column: 'requested_date', ascending: false });
+export const useConsultationReports = () => useSupabaseData('consultation_reports', { column: 'date', ascending: false });
 
 // Hook spécial pour settings (un seul enregistrement par utilisateur)
 export const useSettings = () => {

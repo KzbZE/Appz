@@ -1,6 +1,6 @@
 import React from 'react';
 import { createRoot } from 'react-dom/client';
-import App from './App';
+import RoleBasedApp from './components/RoleBasedApp';
 import EnvErrorFallback from './components/EnvErrorFallback';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import AuthModal from './components/AuthModal';
@@ -36,7 +36,7 @@ const AppWrapper: React.FC = () => {
     return <AuthModal />;
   }
 
-  return <App />;
+  return <RoleBasedApp />;
 };
 
 const container = document.getElementById('root');

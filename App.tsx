@@ -23,6 +23,8 @@ import LoyaltyPromoModule from './components/LoyaltyPromoModule';
 import RGPDModule from './components/RGPDModule';
 import MigrationWizard from './components/MigrationWizard';
 import UrssafModule from './components/UrssafModule';
+import PractitionerRequestsManager from './components/PractitionerRequestsManager';
+import CreateConsultationReport from './components/CreateConsultationReport';
 import { checkAvailability, calculateLogistics, suggestOptimalTimeSlots } from './services/logisticsService';
 import { suggestOptimizedSlots, getAllAvailableSlots } from './services/optimizationService';
 import { Patient, Appointment, ApptStatus, PatientType, Invoice, InvoiceStatus, Expense, AppSettings } from './types';
@@ -707,6 +709,10 @@ const App: React.FC = () => {
           {currentView === 'goals' && <GoalsWidget />}
 
           {currentView === 'migration' && <MigrationWizard />}
+
+          {currentView === 'appointment_requests' && <PractitionerRequestsManager />}
+
+          {currentView === 'consultation_reports' && <CreateConsultationReport />}
         </div>
 
         {isNewApptModalOpen && renderNewApptModal()}
