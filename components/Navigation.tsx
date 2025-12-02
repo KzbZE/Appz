@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { LayoutDashboard, Users, TrendingUp, Calendar, Settings, PieChart, BarChart, FileText, Bell, CalendarDays, FileCode, Send, Package, Zap, Star, Gift, Shield, Target, Cloud, Menu, X, FileSpreadsheet } from 'lucide-react';
+import { LayoutDashboard, Users, TrendingUp, Calendar, Settings, PieChart, BarChart, FileText, Bell, CalendarDays, FileCode, Send, Package, Zap, Star, Gift, Shield, Target, Cloud, Menu, X, FileSpreadsheet, LogOut } from 'lucide-react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../db';
+import { useAuth } from '../contexts/AuthContext';
 
 interface NavigationProps {
   currentView: string;
@@ -11,6 +12,7 @@ interface NavigationProps {
 const Navigation: React.FC<NavigationProps> = ({ currentView, setView }) => {
   const settings = useLiveQuery(() => db.settings.toArray())?.[0];
   const [showFullMenu, setShowFullMenu] = useState(false);
+  const { signOut, user } = useAuth();
 
   const navItems = [
     { id: 'dashboard', label: 'Pilotage', icon: LayoutDashboard, gradient: 'from-teal-500 to-cyan-600' },
@@ -165,6 +167,21 @@ const Navigation: React.FC<NavigationProps> = ({ currentView, setView }) => {
                   </span>
                 </button>
               </div>
+
+              {/* User Info & Logout - Mobile */}
+              {user && (
+                <div className="mt-4 p-4 bg-slate-100 rounded-xl border border-slate-200">
+                  <p className="text-xs text-slate-500 font-bold uppercase mb-1">Connecté en tant que</p>
+                  <p className="text-sm text-slate-800 font-bold mb-3 truncate">{user.email}</p>
+                  <button
+                    onClick={signOut}
+                    className="w-full flex items-center justify-center px-4 py-3 bg-red-50 hover:bg-red-100 text-red-600 rounded-xl transition-all border border-red-200"
+                  >
+                    <LogOut size={18} strokeWidth={2} className="mr-2" />
+                    <span className="text-sm font-bold">Déconnexion</span>
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -240,8 +257,16 @@ const Navigation: React.FC<NavigationProps> = ({ currentView, setView }) => {
           })}
         </nav>
 
-        {/* Settings Button */}
-        <div className="p-3 border-t border-slate-800/50">
+        {/* Settings & Logout Buttons */}
+        <div className="p-3 border-t border-slate-800/50 space-y-2">
+          {/* User Info */}
+          {user && (
+            <div className="px-4 py-2 mb-2 bg-slate-800/50 rounded-xl border border-slate-700/50">
+              <p className="text-xs text-slate-400 font-bold uppercase">Connecté en tant que</p>
+              <p className="text-sm text-white font-bold truncate">{user.email}</p>
+            </div>
+          )}
+
           <button
             onClick={() => setView('settings')}
             className={`group flex items-center w-full px-4 py-3 rounded-xl transition-all duration-300 ${
@@ -256,6 +281,16 @@ const Navigation: React.FC<NavigationProps> = ({ currentView, setView }) => {
               <Settings size={18} strokeWidth={currentView === 'settings' ? 2.5 : 2} />
             </div>
             <span className="text-sm font-bold">Paramètres</span>
+          </button>
+
+          <button
+            onClick={signOut}
+            className="group flex items-center w-full px-4 py-3 rounded-xl transition-all duration-300 text-red-400 hover:text-white hover:bg-red-500/20 border border-red-500/20 hover:border-red-500/50"
+          >
+            <div className="mr-3 p-1.5 rounded-lg transition-all group-hover:bg-red-500/20">
+              <LogOut size={18} strokeWidth={2} />
+            </div>
+            <span className="text-sm font-bold">Déconnexion</span>
           </button>
         </div>
       </div>
