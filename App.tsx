@@ -573,7 +573,7 @@ const App: React.FC = () => {
                                     >
                                         <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-xs mr-3
                                             ${p.type === PatientType.HUMAN ? 'bg-teal-500' : 'bg-amber-500'}`}>
-                                            {p.name.substring(0,2).toUpperCase()}
+                                            {(p.name || '??').substring(0,2).toUpperCase()}
                                         </div>
                                         <div>
                                             <p className="font-bold text-slate-800 group-hover:text-primary-700">{p.name}</p>

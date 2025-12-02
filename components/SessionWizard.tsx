@@ -533,7 +533,7 @@ const SessionWizard: React.FC<SessionWizardProps> = ({ patient, settings, onComp
                   <div className="flex-1">
                     <p className="text-sm font-bold">{selectedTemplates.includes(template.id || 0) && '✓ '}{template.name}</p>
                     <p className={`text-xs mt-1 ${selectedTemplates.includes(template.id || 0) ? 'text-purple-100' : 'text-slate-500'}`}>
-                      {template.anamnesis.mainComplaint.substring(0, 60)}...
+                      {(template.anamnesis?.mainComplaint || '').substring(0, 60)}...
                     </p>
                   </div>
                   <span className={`text-xs px-2 py-1 rounded ${
@@ -880,7 +880,7 @@ const SessionWizard: React.FC<SessionWizardProps> = ({ patient, settings, onComp
       <div className="bg-slate-800 text-white p-4 flex items-center justify-between shrink-0">
         <div className="flex items-center">
            <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs mr-3 ${patient.type === PatientType.HUMAN ? 'bg-teal-500' : 'bg-amber-500'}`}>
-              {patient.name.substring(0,2).toUpperCase()}
+              {(patient.name || '??').substring(0,2).toUpperCase()}
            </div>
            <div>
              <h2 className="text-sm font-bold">{patient.name}</h2>

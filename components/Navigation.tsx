@@ -201,11 +201,11 @@ const Navigation: React.FC<NavigationProps> = ({ currentView, setView }) => {
               <img src={settings.branding.logoUrl} alt="Logo" className="h-16 w-auto mb-3 object-contain bg-white/5 rounded-xl p-2 border border-white/10" />
             ) : (
               <div className="h-14 w-14 bg-gradient-to-br from-teal-500 to-cyan-600 rounded-2xl mb-3 flex items-center justify-center text-2xl font-black text-white shadow-xl transform hover:scale-105 transition-transform">
-                {(settings?.appName || 'TheraFlow').substring(0,1)}
+                {((settings?.appName || settings?.app_name) || 'TheraFlow').substring(0,1)}
               </div>
             )}
             <h1 className="text-2xl font-black tracking-tight text-white">
-              {settings?.appName || 'TheraFlow'}
+              {(settings?.appName || settings?.app_name) || 'TheraFlow'}
             </h1>
             <div className="flex items-center gap-1 mt-1">
               <Zap size={12} className="text-teal-400" />

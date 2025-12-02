@@ -362,7 +362,7 @@ const DailyDashboard: React.FC<DailyDashboardProps> = ({ appointments, patients,
 
                             <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-white font-black text-sm mr-4 shrink-0 shadow-md transform group-hover:scale-110 transition-transform
                                 ${p.type === PatientType.HUMAN ? 'bg-gradient-to-br from-teal-500 to-cyan-600' : p.type === PatientType.EQUINE ? 'bg-gradient-to-br from-amber-500 to-orange-600' : 'bg-gradient-to-br from-blue-500 to-indigo-600'}`}>
-                                {p.name.substring(0,2).toUpperCase()}
+                                {(p.name || '??').substring(0,2).toUpperCase()}
                             </div>
 
                             <div className="flex-1 min-w-0">

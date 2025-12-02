@@ -383,7 +383,7 @@ const SessionHistory: React.FC = () => {
                                   <div className="flex items-center">
                                       <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold mr-3
                                           ${patient.type === PatientType.HUMAN ? 'bg-teal-500' : patient.type === PatientType.EQUINE ? 'bg-amber-500' : 'bg-indigo-500'}`}>
-                                          {patient.name.substring(0,2).toUpperCase()}
+                                          {(patient.name || '??').substring(0,2).toUpperCase()}
                                       </div>
                                       <div>
                                           <div className="font-bold text-slate-800">{patient.name}</div>

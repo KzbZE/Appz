@@ -170,6 +170,18 @@ export const useSettings = () => {
 
   const updateSettings = async (updates: any) => {
     try {
+      // Transformer camelCase en snake_case pour Supabase
+      const toSnakeCase = (obj: any): any => {
+        const snakeCaseObj: any = {};
+        for (const key in obj) {
+          const snakeKey = key.replace(/([A-Z])/g, '_$1').toLowerCase();
+          snakeCaseObj[snakeKey] = obj[key];
+        }
+        return snakeCaseObj;
+      };
+
+      const snakeCaseUpdates = toSnakeCase(updates);
+
       if (!settings?.id) {
         // Créer si n'existe pas
         const { data: userData } = await supabase.auth.getUser();
@@ -177,7 +189,7 @@ export const useSettings = () => {
 
         const { data, error: insertError } = await supabase
           .from('settings')
-          .insert([{ ...updates, user_id: userData.user.id }])
+          .insert([{ ...snakeCaseUpdates, user_id: userData.user.id }])
           .select()
           .single();
 
@@ -188,7 +200,7 @@ export const useSettings = () => {
         // Mettre à jour
         const { data, error: updateError } = await supabase
           .from('settings')
-          .update(updates)
+          .update(snakeCaseUpdates)
           .eq('id', settings.id)
           .select()
           .single();

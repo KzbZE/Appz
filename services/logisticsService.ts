@@ -273,7 +273,7 @@ export const groupAppointmentsByProximity = (
     });
 
     groups.push({
-      zone: appt.type === 'CABINET' ? 'Cabinet' : `Zone ${apptAddress.substring(0, 20)}...`,
+      zone: appt.type === 'CABINET' ? 'Cabinet' : `Zone ${(apptAddress || 'Adresse inconnue').substring(0, 20)}...`,
       appointments: nearby,
       centerAddress: apptAddress
     });

@@ -333,7 +333,7 @@ const PatientList: React.FC<PatientListProps> = ({ patients, onSelectPatient, on
             <div className="flex items-center">
                 <div className={`w-16 h-16 rounded-2xl flex items-center justify-center text-2xl font-bold text-white shadow-lg mr-4
                     ${p.type === PatientType.HUMAN ? 'bg-teal-500' : p.type === PatientType.EQUINE ? 'bg-amber-600' : 'bg-indigo-500'}`}>
-                    {p.name.substring(0,2).toUpperCase()}
+                    {(p.name || '??').substring(0,2).toUpperCase()}
                 </div>
                 <div>
                     <h2 className="text-2xl font-bold text-slate-800">{p.name}</h2>
@@ -497,7 +497,7 @@ const PatientList: React.FC<PatientListProps> = ({ patients, onSelectPatient, on
                 >
                     <div className={`w-12 h-12 rounded-full flex items-center justify-center text-white font-bold shrink-0
                          ${patient.type === PatientType.HUMAN ? 'bg-teal-500' : patient.type === PatientType.EQUINE ? 'bg-amber-500' : 'bg-indigo-500'}`}>
-                        {patient.name.substring(0,2).toUpperCase()}
+                        {(patient.name || '??').substring(0,2).toUpperCase()}
                     </div>
                     
                     <div className="ml-4 flex-1 min-w-0">
