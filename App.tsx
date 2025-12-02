@@ -30,9 +30,10 @@ import { Patient, Appointment, ApptStatus, PatientType, Invoice, InvoiceStatus, 
 import { X, Save, Clock, MapPin, User, Globe, AlertTriangle, Search, Zap, Plus, ChevronLeft } from 'lucide-react';
 import { initGoogleClient } from './services/googleApiService';
 import { setupAutomaticBackup } from './services/backupService';
+import { usePatients } from './hooks/usePatients';
 
 const App: React.FC = () => {
-  const patients = useLiveQuery(() => db.patients.toArray());
+  const { patients, isLoading: patientsLoading, addPatient, updatePatient, deletePatient } = usePatients();
   const appointments = useLiveQuery(() => db.appointments.toArray());
   const invoices = useLiveQuery(() => db.invoices.toArray());
   const expenses = useLiveQuery(() => db.expenses.toArray());
