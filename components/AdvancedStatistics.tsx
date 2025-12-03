@@ -1,16 +1,15 @@
 import React, { useState, useMemo } from 'react';
 import { Appointment, Patient, Invoice, Session, PatientType, ApptStatus, InvoiceStatus } from '../types';
 import { TrendingUp, Users, PieChart, Award, Activity, DollarSign, MapPin, ArrowUpRight, ArrowDownRight, Search, Calendar, Target, AlertCircle, ChevronRight, Zap, BarChart3, Clock, Route, Percent, TrendingDown, Star, Heart, Navigation, Sparkles, Crown, Trophy, Flame } from 'lucide-react';
-import { useLiveQuery } from 'dexie-react-hooks';
-import { db } from '../db';
+import { useAppointments, usePatients, useInvoices, useSessions } from '../hooks/useSupabaseData';
 
 type Period = 'week' | 'month' | 'quarter' | 'year' | 'all';
 
 const AdvancedStatistics: React.FC = () => {
-  const appointments = useLiveQuery(() => db.appointments.toArray()) || [];
-  const patients = useLiveQuery(() => db.patients.toArray()) || [];
-  const invoices = useLiveQuery(() => db.invoices.toArray()) || [];
-  const sessions = useLiveQuery(() => db.sessions.toArray()) || [];
+  const { data: appointments } = useAppointments();
+  const { data: patients } = usePatients();
+  const { data: invoices } = useInvoices();
+  const { data: sessions } = useSessions();
 
   const [period, setPeriod] = useState<Period>('month');
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());

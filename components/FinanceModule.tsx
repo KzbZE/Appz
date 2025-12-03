@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Invoice, InvoiceStatus, Expense, PaymentRecord, RecurringInvoice } from '../types';
 import { Download, TrendingUp, TrendingDown, Euro, Bell, CreditCard, AlertTriangle, Send, Check, Settings as SettingsIcon, X, HardDrive, Eye, Edit2, Plus, Trash2, Calendar, Repeat } from 'lucide-react';
-import { db } from '../db';
-import { useLiveQuery } from 'dexie-react-hooks';
+import { useSettings, useRecurringInvoices } from '../hooks/useSupabaseData';
 import { jsPDF } from 'jspdf';
 import { checkAuth, listDriveFolders, uploadToDriveReal } from '../services/googleApiService';
 
@@ -13,8 +12,8 @@ interface FinanceModuleProps {
 
 const FinanceModule: React.FC<FinanceModuleProps> = ({ invoices: initialInvoices, expenses }) => {
   const [activeTab, setActiveTab] = useState<'overview' | 'invoices' | 'recurring' | 'expenses'>('overview');
-  const settings = useLiveQuery(() => db.settings.toArray());
-  const currentSettings = settings?.[0];
+  const { settings } = useSettings();
+  const currentSettings = settings;
   
   const [isConfigOpen, setIsConfigOpen] = useState(false);
   const [configForm, setConfigForm] = useState({
@@ -1026,7 +1025,7 @@ const FinanceModule: React.FC<FinanceModuleProps> = ({ invoices: initialInvoices
   );
 
   // --- Recurring Invoices Render ---
-  const recurringInvoices = useLiveQuery(() => db.recurringInvoices.toArray()) || [];
+  const { data: recurringInvoices, addItem: addRecurringInvoice, updateItem: updateRecurringInvoice, deleteItem: deleteRecurringInvoice } = useRecurringInvoices();
 
   const renderRecurringInvoices = () => (
     <div className="space-y-6 animate-fadeIn">
@@ -1053,7 +1052,7 @@ const FinanceModule: React.FC<FinanceModuleProps> = ({ invoices: initialInvoices
                     <div className="text-sm font-bold opacity-90 uppercase tracking-wide">Abonnements Actifs</div>
                     <Repeat size={20} className="opacity-80" />
                 </div>
-                <div className="text-3xl font-black">{recurringInvoices.filter(r => r.isActive).length}</div>
+                <div className="text-3xl font-black">{(recurringInvoices || []).filter(r => r.isActive).length}</div>
             </div>
 
             <div className="bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl p-5 text-white shadow-lg">
