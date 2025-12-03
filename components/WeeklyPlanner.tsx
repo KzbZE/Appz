@@ -1,13 +1,12 @@
 import React, { useState, useMemo } from 'react';
-import { useLiveQuery } from 'dexie-react-hooks';
-import { db } from '../db';
+import { useAppointments, usePatients } from '../hooks/useSupabaseData';
 import { Appointment, Patient, ApptStatus, PatientType } from '../types';
 import { ChevronLeft, ChevronRight, Plus, Calendar, Clock, MapPin, User, X, Edit, Trash2, Sun, Cloud, CloudRain, Save } from 'lucide-react';
 import { checkAuth, createCalendarEvent } from '../services/googleApiService';
 
 const WeeklyPlanner: React.FC = () => {
-  const appointments = useLiveQuery(() => db.appointments.toArray()) || [];
-  const patients = useLiveQuery(() => db.patients.toArray()) || [];
+  const { data: appointments, addItem: addAppointment, updateItem: updateAppointment, deleteItem: deleteAppointment } = useAppointments();
+  const { data: patients } = usePatients();
 
   const [currentWeekStart, setCurrentWeekStart] = useState(() => {
     const now = new Date();
@@ -123,22 +122,29 @@ const WeeklyPlanner: React.FC = () => {
     const slotDate = new Date(weekDays[selectedSlot.day]);
     slotDate.setHours(selectedSlot.hour, 0, 0, 0);
 
-    // Créer le RDV dans la base de données locale
-    const appointmentId = await db.appointments.add({
-      patientId: newApptData.patientId,
-      startTime: slotDate.toISOString(),
-      durationMin: newApptData.durationMin,
+    // Créer le RDV dans Supabase
+    const result = await addAppointment({
+      patient_id: newApptData.patientId,
+      start_time: slotDate.toISOString(),
+      duration_min: newApptData.durationMin,
       status: ApptStatus.SCHEDULED,
       type: newApptData.type,
       notes: newApptData.notes,
       price: 0
     });
 
+    if (result.error) {
+      alert(`Erreur lors de la création du RDV: ${result.error}`);
+      return;
+    }
+
+    const appointmentId = result.data?.id;
+
     // ✅ Exporter automatiquement vers Google Calendar si connecté
     try {
       const isAuthed = await checkAuth();
-      if (isAuthed) {
-        const patient = patients.find(p => String(p.id) === String(newApptData.patientId));
+      if (isAuthed && appointmentId) {
+        const patient = (patients || []).find(p => String(p.id) === String(newApptData.patientId));
         const patientName = patient?.name || 'Patient';
 
         const endDate = new Date(slotDate);
@@ -154,7 +160,7 @@ const WeeklyPlanner: React.FC = () => {
 
         // Sauvegarder l'ID Google pour la synchro bidirectionnelle
         if (googleEvent && googleEvent.id) {
-          await db.appointments.update(appointmentId, { googleEventId: googleEvent.id });
+          await updateAppointment(appointmentId, { google_event_id: googleEvent.id });
         }
       }
     } catch (error) {
@@ -175,7 +181,7 @@ const WeeklyPlanner: React.FC = () => {
 
   const handleDeleteAppointment = async (apptId: string | number) => {
     if (confirm('Supprimer ce rendez-vous ?')) {
-      await db.appointments.delete(apptId);
+      await deleteAppointment(apptId);
     }
   };
 

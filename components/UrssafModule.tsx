@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
-import { useLiveQuery } from 'dexie-react-hooks';
-import { db } from '../db';
+import { useSessions, usePatients } from '../hooks/useSupabaseData';
 import { Download, FileSpreadsheet, Calendar, Euro, TrendingUp } from 'lucide-react';
 import * as XLSX from 'xlsx';
 
@@ -8,12 +7,12 @@ const UrssafModule: React.FC = () => {
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
 
-  const sessions = useLiveQuery(() => db.sessions.toArray()) || [];
-  const patients = useLiveQuery(() => db.patients.toArray()) || [];
+  const { data: sessions } = useSessions();
+  const { data: patients } = usePatients();
 
   // Filtrer les séances par mois/année
   const getSessionsForPeriod = (month: number, year: number) => {
-    return sessions.filter(s => {
+    return (sessions || []).filter(s => {
       const sessionDate = new Date(s.date);
       return sessionDate.getMonth() === month && sessionDate.getFullYear() === year;
     });
@@ -24,7 +23,7 @@ const UrssafModule: React.FC = () => {
   const monthRevenue = monthSessions.reduce((sum, s) => sum + (s.price || 0), 0);
 
   // Statistiques de l'année
-  const yearSessions = sessions.filter(s => new Date(s.date).getFullYear() === selectedYear);
+  const yearSessions = (sessions || []).filter(s => new Date(s.date).getFullYear() === selectedYear);
   const yearRevenue = yearSessions.reduce((sum, s) => sum + (s.price || 0), 0);
 
   // Export Excel pour le mois sélectionné
