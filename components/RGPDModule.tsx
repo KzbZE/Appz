@@ -1,18 +1,20 @@
 import React, { useState } from 'react';
 import { Patient } from '../types';
-import { db } from '../db';
-import { useLiveQuery } from 'dexie-react-hooks';
+import { usePatients, useAppointments, useInvoices, useSessions } from '../hooks/useSupabaseData';
 import { Shield, Download, Trash2, FileText, CheckCircle, AlertTriangle, Lock } from 'lucide-react';
 
 const RGPDModule: React.FC = () => {
-  const patients = useLiveQuery(() => db.patients.toArray()) || [];
+  const { data: patients, deleteItem: deletePatient, updateItem: updatePatient } = usePatients();
+  const { data: allAppointments, deleteItem: deleteAppointment } = useAppointments();
+  const { data: allInvoices, deleteItem: deleteInvoice } = useInvoices();
+  const { data: allSessions, deleteItem: deleteSession } = useSessions();
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
 
   const exportPatientData = async (patient: Patient) => {
     // Collecter toutes les données du patient
-    const appointments = await db.appointments.where('patientId').equals(patient.id!).toArray();
-    const invoices = await db.invoices.where('patientName').equals(patient.name).toArray();
-    const sessions = await db.sessions.where('patientId').equals(patient.id!).toArray();
+    const appointments = (allAppointments || []).filter(a => String(a.patient_id) === String(patient.id));
+    const invoices = (allInvoices || []).filter(i => i.patientName === patient.name);
+    const sessions = (allSessions || []).filter(s => String(s.patient_id) === String(patient.id));
 
     const patientData = {
       patient,
@@ -58,16 +60,19 @@ const RGPDModule: React.FC = () => {
 
     try {
       // Supprimer toutes les données liées
-      await db.appointments.where('patientId').equals(patient.id!).delete();
-      await db.invoices.where('patientName').equals(patient.name).delete();
-      await db.sessions.where('patientId').equals(patient.id!).delete();
-      await db.loyaltyCards.where('patientId').equals(patient.id!).delete();
-      await db.surveyResponses.where('patientId').equals(patient.id!).delete();
-      await db.referrals.where('referrerId').equals(patient.id!).delete();
-      await db.referrals.where('referredId').equals(patient.id!).delete();
+      const patientAppointments = (allAppointments || []).filter(a => String(a.patient_id) === String(patient.id));
+      const patientInvoices = (allInvoices || []).filter(i => i.patientName === patient.name);
+      const patientSessions = (allSessions || []).filter(s => String(s.patient_id) === String(patient.id));
+
+      // Supprimer en parallèle
+      await Promise.all([
+        ...patientAppointments.map(a => deleteAppointment(a.id!)),
+        ...patientInvoices.map(i => deleteInvoice(i.id!)),
+        ...patientSessions.map(s => deleteSession(s.id!)),
+      ]);
 
       // Supprimer le patient
-      await db.patients.delete(patient.id!);
+      await deletePatient(patient.id!);
 
       alert(`✅ Toutes les données de ${patient.name} ont été supprimées définitivement (conforme RGPD - droit à l'oubli)`);
     } catch (error) {
@@ -79,7 +84,7 @@ const RGPDModule: React.FC = () => {
     const threeYearsAgo = new Date();
     threeYearsAgo.setFullYear(threeYearsAgo.getFullYear() - 3);
 
-    const oldPatients = patients.filter(p => {
+    const oldPatients = (patients || []).filter(p => {
       if (!p.lastVisit) return false;
       return new Date(p.lastVisit) < threeYearsAgo;
     });
@@ -99,9 +104,9 @@ const RGPDModule: React.FC = () => {
     if (!confirmed) return;
 
     for (const patient of oldPatients) {
-      await db.patients.update(patient.id!, {
+      await updatePatient(patient.id!, {
         name: `Patient_Anonyme_${patient.id}`,
-        ownerName: undefined,
+        owner_name: undefined,
         phone: undefined,
         email: undefined,
         address: 'Adresse anonymisée',

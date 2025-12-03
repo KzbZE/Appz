@@ -1,16 +1,16 @@
 import React, { useState } from 'react';
 import { LoyaltyCard, Referral, Promotion } from '../types';
-import { db } from '../db';
-import { useLiveQuery } from 'dexie-react-hooks';
+import { usePatients } from '../hooks/useSupabaseData';
 import { Gift, Users, Tag, Percent, CreditCard, UserPlus, Trophy, Star, Plus, X, Check } from 'lucide-react';
 
 const LoyaltyPromoModule: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'loyalty' | 'referrals' | 'promos'>('loyalty');
 
-  const loyaltyCards = useLiveQuery(() => db.loyaltyCards.where('isActive').equals(1).toArray()) || [];
-  const referrals = useLiveQuery(() => db.referrals.toArray()) || [];
-  const promotions = useLiveQuery(() => db.promotions.toArray()) || [];
-  const patients = useLiveQuery(() => db.patients.toArray()) || [];
+  // TODO: Create hooks when these tables are added to Supabase
+  const loyaltyCards: LoyaltyCard[] = [];
+  const referrals: Referral[] = [];
+  const promotions: Promotion[] = [];
+  const { data: patients } = usePatients();
 
   const [showAddCardModal, setShowAddCardModal] = useState(false);
   const [showAddPromoModal, setShowAddPromoModal] = useState(false);
@@ -18,35 +18,19 @@ const LoyaltyPromoModule: React.FC = () => {
 
   // Loyalty Card Management
   const handleCreateCard = async (patientId: number | string, patientName: string, type: 'STAMP_CARD' | 'POINTS') => {
-    await db.loyaltyCards.add({
-      patientId,
-      patientName,
-      type,
-      currentCount: 0,
-      targetCount: type === 'STAMP_CARD' ? 10 : 100,
-      createdDate: new Date().toISOString(),
-      isActive: true,
-      rewardClaimed: false
-    } as LoyaltyCard);
+    // TODO: Implement when loyalty_cards table is added to Supabase
+    alert('⚠️ Fonctionnalité en cours de migration vers Supabase');
     setShowAddCardModal(false);
   };
 
   const handleStampCard = async (cardId: number, currentCount: number) => {
-    const newCount = currentCount + 1;
-    await db.loyaltyCards.update(cardId, { currentCount: newCount });
-
-    if (newCount >= 10) {
-      alert('🎉 Carte complète ! Séance gratuite disponible !');
-    }
+    // TODO: Implement when loyalty_cards table is added to Supabase
+    alert('⚠️ Fonctionnalité en cours de migration vers Supabase');
   };
 
   const handleClaimReward = async (cardId: number) => {
-    await db.loyaltyCards.update(cardId, {
-      rewardClaimed: true,
-      currentCount: 0,
-      isActive: false
-    });
-    alert('✅ Récompense réclamée ! Une nouvelle carte a été créée.');
+    // TODO: Implement when loyalty_cards table is added to Supabase
+    alert('⚠️ Fonctionnalité en cours de migration vers Supabase');
   };
 
   // Promotion Management
@@ -55,17 +39,14 @@ const LoyaltyPromoModule: React.FC = () => {
       alert("Veuillez remplir tous les champs");
       return;
     }
-
-    await db.promotions.add({
-      ...promo,
-      usageCount: 0,
-      isActive: true
-    } as Promotion);
+    // TODO: Implement when promotions table is added to Supabase
+    alert('⚠️ Fonctionnalité en cours de migration vers Supabase');
     setShowAddPromoModal(false);
   };
 
   const togglePromoStatus = async (id: number, currentStatus: boolean) => {
-    await db.promotions.update(id, { isActive: !currentStatus });
+    // TODO: Implement when promotions table is added to Supabase
+    alert('⚠️ Fonctionnalité en cours de migration vers Supabase');
   };
 
   // Referral Management
@@ -74,23 +55,14 @@ const LoyaltyPromoModule: React.FC = () => {
       alert("Veuillez remplir tous les champs");
       return;
     }
-
-    await db.referrals.add({
-      ...referral,
-      status: 'PENDING',
-      createdDate: new Date().toISOString(),
-      referrerReward: 20, // 20€ de réduction
-      referredReward: 10  // 10€ de réduction
-    } as Referral);
+    // TODO: Implement when referrals table is added to Supabase
+    alert('⚠️ Fonctionnalité en cours de migration vers Supabase');
     setShowAddReferralModal(false);
   };
 
   const markReferralCompleted = async (id: number) => {
-    await db.referrals.update(id, {
-      status: 'COMPLETED',
-      completedDate: new Date().toISOString()
-    });
-    alert('✅ Parrainage validé ! Les récompenses peuvent être attribuées.');
+    // TODO: Implement when referrals table is added to Supabase
+    alert('⚠️ Parrainage - Fonctionnalité en cours de migration vers Supabase');
   };
 
   return (

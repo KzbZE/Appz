@@ -1,8 +1,7 @@
 import React, { useState, useMemo } from 'react';
-import { useLiveQuery } from 'dexie-react-hooks';
-import { db } from '../db';
 import { Patient, Session } from '../types';
 import { Send, Mail, AlertCircle, TrendingDown, Users, X, Check, Clock, Target } from 'lucide-react';
+import { usePatients, useSessions, useSettings } from '../hooks/useSupabaseData';
 
 interface InactivePatient {
   patient: Patient;
@@ -14,10 +13,10 @@ interface InactivePatient {
 }
 
 const MarketingAutomation: React.FC = () => {
-  const patients = useLiveQuery(() => db.patients.toArray()) || [];
-  const sessions = useLiveQuery(() => db.sessions.toArray()) || [];
-  const settings = useLiveQuery(() => db.settings.toArray());
-  const currentSettings = settings?.[0];
+  const { data: patients } = usePatients();
+  const { data: sessions } = useSessions();
+  const { settings } = useSettings();
+  const currentSettings = settings;
 
   const [selectedPatients, setSelectedPatients] = useState<Set<number | string>>(new Set());
   const [showMailModal, setShowMailModal] = useState(false);
