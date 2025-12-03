@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useLiveQuery } from 'dexie-react-hooks';
-import { db } from './db';
+import { dataService } from './services/dataService';
 import Navigation from './components/Navigation';
 import DailyDashboard from './components/DailyDashboard';
 import SessionWizard from './components/SessionWizard';
@@ -32,11 +31,11 @@ import { initGoogleClient } from './services/googleApiService';
 import { setupAutomaticBackup } from './services/backupService';
 
 const App: React.FC = () => {
-  const patients = useLiveQuery(() => db.patients.toArray());
-  const appointments = useLiveQuery(() => db.appointments.toArray());
-  const invoices = useLiveQuery(() => db.invoices.toArray());
-  const expenses = useLiveQuery(() => db.expenses.toArray());
-  const settings = useLiveQuery(() => db.settings.toArray());
+  const [patients, setPatients] = useState<Patient[]>([]);
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [invoices, setInvoices] = useState<Invoice[]>([]);
+  const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [settings, setSettings] = useState<AppSettings[]>([]);
   
   const DEFAULT_SETTINGS: AppSettings = {
       appName: 'TheraFlow',
@@ -80,7 +79,25 @@ const App: React.FC = () => {
   const [quickSearchTerm, setQuickSearchTerm] = useState('');
 
   useEffect(() => {
-    db.populate();
+    const loadData = async () => {
+      try {
+        const [patientsData, appointmentsData, invoicesData, expensesData, settingsData] = await Promise.all([
+          dataService.getPatients(),
+          dataService.getAppointments(),
+          dataService.getInvoices(),
+          dataService.getExpenses(),
+          dataService.getSettings()
+        ]);
+        setPatients(patientsData);
+        setAppointments(appointmentsData);
+        setInvoices(invoicesData);
+        setExpenses(expensesData);
+        setSettings(settingsData);
+      } catch (error) {
+        console.error('Error loading data:', error);
+      }
+    };
+    loadData();
     setupAutomaticBackup();
   }, []);
 
@@ -173,29 +190,31 @@ const App: React.FC = () => {
 
   const handleInstantSession = async (patient: Patient) => {
       if (!patient.id) return;
-      const id = await db.appointments.add({
+      const newAppt = await dataService.createAppointment({
           patientId: patient.id,
           startTime: new Date().toISOString(),
           durationMin: 60,
           status: ApptStatus.IN_PROGRESS,
           type: patient.type === PatientType.HUMAN ? 'CABINET' : 'STABLE',
-          price: 0, 
+          price: 0,
           notes: 'Séance Hors-Planning'
       });
-      
-      const newAppt = await db.appointments.get(id);
+
       if (newAppt) {
         setActiveAppointment(newAppt);
         setCurrentView('session');
         setIsQuickSessionModalOpen(false);
         setIsCreatingQuickPatient(false);
+        // Refresh appointments list
+        const appointmentsData = await dataService.getAppointments();
+        setAppointments(appointmentsData);
       }
   };
 
   const handleCreateAndStartQuickPatient = async () => {
       if (!quickPatientForm.name) return;
 
-      const newId = await db.patients.add({
+      const newPatient = await dataService.createPatient({
           name: quickPatientForm.name,
           type: quickPatientForm.type as PatientType,
           ownerName: quickPatientForm.ownerName,
@@ -203,23 +222,31 @@ const App: React.FC = () => {
           address: 'Adresse à compléter',
       });
 
-      const newPatient = await db.patients.get(newId);
       if (newPatient) {
+          // Refresh patients list
+          const patientsData = await dataService.getPatients();
+          setPatients(patientsData);
           handleInstantSession(newPatient);
       }
   };
 
   const handleCompleteSession = async () => {
     if (activeAppointment && activeAppointment.id) {
-        await db.appointments.update(activeAppointment.id, { status: ApptStatus.COMPLETED });
+        await dataService.updateAppointment(activeAppointment.id, { status: ApptStatus.COMPLETED });
+        // Refresh appointments list
+        const appointmentsData = await dataService.getAppointments();
+        setAppointments(appointmentsData);
     }
     setActiveAppointment(null);
-    setCurrentView('finance'); 
+    setCurrentView('finance');
   };
 
   const handleUpdateSettings = async (newSettings: AppSettings) => {
       if (newSettings.id) {
-          await db.settings.put(newSettings);
+          await dataService.updateSettings(newSettings.id, newSettings);
+          // Refresh settings list
+          const settingsData = await dataService.getSettings();
+          setSettings(settingsData);
       }
   };
 
@@ -262,15 +289,18 @@ const App: React.FC = () => {
       let targetAddress = appSettings?.cabinetAddress || "Cabinet";
 
       if (newApptData.isNewPatient) {
-          const id = await db.patients.add({
+          const newPatient = await dataService.createPatient({
               name: newApptData.newPatientName,
               type: newApptData.newPatientType as PatientType,
               location: newApptData.type === 'CABINET' ? 'Cabinet' : 'Extérieur',
               address: newApptData.newPatientAddress || 'Adresse à compléter'
           });
-          patientId = String(id);
+          patientId = String(newPatient.id);
           patientName = newApptData.newPatientName;
           if (newApptData.type !== 'CABINET') targetAddress = newApptData.newPatientAddress;
+          // Refresh patients list
+          const patientsData = await dataService.getPatients();
+          setPatients(patientsData);
       } else {
           const p = patients?.find(p => String(p.id) === String(patientId));
           if (p) {
@@ -280,12 +310,12 @@ const App: React.FC = () => {
       }
 
       const start = new Date(`${newApptData.date}T${newApptData.time}`);
-      
+
       const check = checkAvailability(
-          start, 
-          60, 
-          targetAddress, 
-          appointments || [], 
+          start,
+          60,
+          targetAddress,
+          appointments || [],
           patients || []
       );
 
@@ -299,7 +329,7 @@ const App: React.FC = () => {
           logisticsData = {
               distanceKm: stats.distanceKm,
               travelDurationMin: stats.durationMin,
-              travelFee: stats.cost 
+              travelFee: stats.cost
           };
       }
 
@@ -311,15 +341,19 @@ const App: React.FC = () => {
           // Explicit cast to satisfy the Union Type for TypeScript
           type: newApptData.type as 'CABINET' | 'DOMICILE' | 'STABLE' | 'BLOCK',
           notes: `${patientName} - ${newApptData.notes}`,
-          price: 80, 
+          price: 80,
           ...logisticsData
       };
 
       if (editingApptId) {
-          await db.appointments.update(editingApptId, apptData);
+          await dataService.updateAppointment(editingApptId, apptData);
       } else {
-          await db.appointments.add(apptData as Appointment);
+          await dataService.createAppointment(apptData as Appointment);
       }
+
+      // Refresh appointments list
+      const appointmentsData = await dataService.getAppointments();
+      setAppointments(appointmentsData);
 
       setSuggestedTimeSlots([]); // Clear suggestions on close
       setIsNewApptModalOpen(false);
@@ -653,8 +687,8 @@ const App: React.FC = () => {
           )}
           
           {currentView === 'patients' && (
-            <PatientList 
-              patients={patients || []} 
+            <PatientList
+              patients={patients || []}
               onSelectPatient={(p) => {
                  setNewApptData({...newApptData, patientId: String(p.id), isNewPatient: false});
                  setIsNewApptModalOpen(true);
@@ -665,7 +699,12 @@ const App: React.FC = () => {
               }}
               onInstantSession={handleInstantSession}
               onUpdatePatient={async (p) => {
-                  if (p.id) await db.patients.put(p);
+                  if (p.id) {
+                    await dataService.updatePatient(p.id, p);
+                    // Refresh patients list
+                    const patientsData = await dataService.getPatients();
+                    setPatients(patientsData);
+                  }
               }}
             />
           )}

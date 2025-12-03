@@ -1,15 +1,30 @@
-import React, { useState } from 'react';
-import { useLiveQuery } from 'dexie-react-hooks';
-import { db } from '../db';
+import React, { useState, useEffect } from 'react';
+import { dataService } from '../services/dataService';
 import { Download, FileSpreadsheet, Calendar, Euro, TrendingUp } from 'lucide-react';
 import * as XLSX from 'xlsx';
+import { Session, Patient } from '../types';
 
 const UrssafModule: React.FC = () => {
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [sessions, setSessions] = useState<Session[]>([]);
+  const [patients, setPatients] = useState<Patient[]>([]);
 
-  const sessions = useLiveQuery(() => db.sessions.toArray()) || [];
-  const patients = useLiveQuery(() => db.patients.toArray()) || [];
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        const [sessionsData, patientsData] = await Promise.all([
+          dataService.getSessions(),
+          dataService.getPatients()
+        ]);
+        setSessions(sessionsData);
+        setPatients(patientsData);
+      } catch (error) {
+        console.error('Error loading data:', error);
+      }
+    };
+    loadData();
+  }, []);
 
   // Filtrer les séances par mois/année
   const getSessionsForPeriod = (month: number, year: number) => {

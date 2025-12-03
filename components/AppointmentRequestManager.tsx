@@ -1,28 +1,43 @@
-import React, { useState } from 'react';
-import { useLiveQuery } from 'dexie-react-hooks';
-import { db } from '../db';
-import { AppointmentRequest, AppointmentRequestStatus } from '../types';
+import React, { useState, useEffect } from 'react';
+import { useSupabaseQuery } from '../hooks/useSupabaseQuery';
+import { dataService } from '../services/dataService';
+import { AppointmentRequest, AppointmentRequestStatus, AppSettings } from '../types';
 import { Calendar, Check, X, Clock, MessageCircle, Send } from 'lucide-react';
 import { AppointmentNotifications } from '../services/notificationService';
 import { getAllAvailableSlots } from '../services/optimizationService';
 
 const AppointmentRequestManager: React.FC = () => {
-  const requests = useLiveQuery(() =>
-    db.appointmentRequests
-      .where('status')
-      .notEqual(AppointmentRequestStatus.CONFIRMED)
-      .and(r => r.status !== AppointmentRequestStatus.REJECTED)
-      .reverse()
-      .sortBy('createdAt')
-  );
-
+  const [requests, setRequests] = useState<AppointmentRequest[]>([]);
+  const [settings, setSettings] = useState<AppSettings | null>(null);
   const [selectedRequest, setSelectedRequest] = useState<AppointmentRequest | null>(null);
   const [proposedTime, setProposedTime] = useState('');
   const [responseMessage, setResponseMessage] = useState('');
   const [showSuggestedSlots, setShowSuggestedSlots] = useState(false);
   const [suggestedSlots, setSuggestedSlots] = useState<any[]>([]);
 
-  const settings = useLiveQuery(() => db.settings.toCollection().first());
+  // Charger les demandes en attente
+  useEffect(() => {
+    loadRequests();
+    loadSettings();
+  }, []);
+
+  const loadRequests = async () => {
+    try {
+      const data = await dataService.getPendingAppointmentRequests();
+      setRequests(data);
+    } catch (error) {
+      console.error('Error loading requests:', error);
+    }
+  };
+
+  const loadSettings = async () => {
+    try {
+      const data = await dataService.getFirstSettings();
+      setSettings(data);
+    } catch (error) {
+      console.error('Error loading settings:', error);
+    }
+  };
 
   const handleAccept = async (request: AppointmentRequest) => {
     if (!request.id || !settings) return;
@@ -32,9 +47,9 @@ const AppointmentRequestManager: React.FC = () => {
       const finalTime = request.proposedStartTime || request.requestedStartTime;
 
       // Récupérer le patient pour les coordonnées
-      const patient = await db.patients.get(request.patientId);
+      const patient = await dataService.getPatient(request.patientId);
 
-      await db.appointments.add({
+      await dataService.createAppointment({
         patientId: request.patientId,
         startTime: finalTime,
         durationMin: request.durationMin,
@@ -46,9 +61,8 @@ const AppointmentRequestManager: React.FC = () => {
       });
 
       // Mettre à jour la demande
-      await db.appointmentRequests.update(request.id, {
+      await dataService.updateAppointmentRequest(request.id, {
         status: AppointmentRequestStatus.CONFIRMED,
-        updatedAt: new Date().toISOString(),
         history: [
           ...request.history,
           {
@@ -70,6 +84,7 @@ const AppointmentRequestManager: React.FC = () => {
 
       alert('✅ Rendez-vous confirmé et patient notifié !');
       setSelectedRequest(null);
+      await loadRequests(); // Recharger la liste
     } catch (error) {
       console.error('Error accepting request:', error);
       alert('Erreur lors de l\'acceptation');
@@ -80,11 +95,10 @@ const AppointmentRequestManager: React.FC = () => {
     if (!request.id || !proposedTime || !settings) return;
 
     try {
-      await db.appointmentRequests.update(request.id, {
+      await dataService.updateAppointmentRequest(request.id, {
         status: AppointmentRequestStatus.PRACTITIONER_PROPOSED,
         proposedStartTime: proposedTime,
         proposedBy: 'PRACTITIONER',
-        updatedAt: new Date().toISOString(),
         history: [
           ...request.history,
           {
@@ -111,6 +125,7 @@ const AppointmentRequestManager: React.FC = () => {
       setSelectedRequest(null);
       setProposedTime('');
       setResponseMessage('');
+      await loadRequests(); // Recharger la liste
     } catch (error) {
       console.error('Error proposing time:', error);
       alert('Erreur lors de la proposition');
@@ -121,9 +136,8 @@ const AppointmentRequestManager: React.FC = () => {
     if (!request.id || !confirm('Refuser cette demande ?')) return;
 
     try {
-      await db.appointmentRequests.update(request.id, {
+      await dataService.updateAppointmentRequest(request.id, {
         status: AppointmentRequestStatus.REJECTED,
-        updatedAt: new Date().toISOString(),
         history: [
           ...request.history,
           {
@@ -147,6 +161,7 @@ const AppointmentRequestManager: React.FC = () => {
       alert('❌ Demande refusée et patient notifié');
       setSelectedRequest(null);
       setResponseMessage('');
+      await loadRequests(); // Recharger la liste
     } catch (error) {
       console.error('Error rejecting request:', error);
       alert('Erreur lors du refus');
@@ -155,7 +170,7 @@ const AppointmentRequestManager: React.FC = () => {
 
   const loadSuggestedSlots = async (request: AppointmentRequest) => {
     try {
-      const patient = await db.patients.get(request.patientId);
+      const patient = await dataService.getPatient(request.patientId);
       const slots = await getAllAvailableSlots(
         patient?.lat,
         patient?.lng,

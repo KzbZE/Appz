@@ -1,16 +1,35 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Appointment, Patient, Invoice, Session, PatientType, ApptStatus, InvoiceStatus } from '../types';
 import { TrendingUp, Users, PieChart, Award, Activity, DollarSign, MapPin, ArrowUpRight, ArrowDownRight, Search, Calendar, Target, AlertCircle, ChevronRight, Zap, BarChart3, Clock, Route, Percent, TrendingDown, Star, Heart, Navigation, Sparkles, Crown, Trophy, Flame } from 'lucide-react';
-import { useLiveQuery } from 'dexie-react-hooks';
-import { db } from '../db';
+import { dataService } from '../services/dataService';
 
 type Period = 'week' | 'month' | 'quarter' | 'year' | 'all';
 
 const AdvancedStatistics: React.FC = () => {
-  const appointments = useLiveQuery(() => db.appointments.toArray()) || [];
-  const patients = useLiveQuery(() => db.patients.toArray()) || [];
-  const invoices = useLiveQuery(() => db.invoices.toArray()) || [];
-  const sessions = useLiveQuery(() => db.sessions.toArray()) || [];
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [patients, setPatients] = useState<Patient[]>([]);
+  const [invoices, setInvoices] = useState<Invoice[]>([]);
+  const [sessions, setSessions] = useState<Session[]>([]);
+
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        const [appointmentsData, patientsData, invoicesData, sessionsData] = await Promise.all([
+          dataService.getAppointments(),
+          dataService.getPatients(),
+          dataService.getInvoices(),
+          dataService.getSessions()
+        ]);
+        setAppointments(appointmentsData);
+        setPatients(patientsData);
+        setInvoices(invoicesData);
+        setSessions(sessionsData);
+      } catch (error) {
+        console.error('Error loading data:', error);
+      }
+    };
+    loadData();
+  }, []);
 
   const [period, setPeriod] = useState<Period>('month');
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());

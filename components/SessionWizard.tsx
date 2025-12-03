@@ -3,7 +3,7 @@ import { Patient, PatientType, SessionDocument, AppSettings, Session } from '../
 import { generateSessionReport } from '../services/geminiService';
 import { checkAuth, listDriveFolders, uploadToDriveReal } from '../services/googleApiService';
 import { ChevronRight, ChevronLeft, Save, Video, AlertCircle, CheckCircle, Wand2, Upload, Download, Share2, Instagram, Facebook, Camera, Clock, HardDrive, FileText, Eye, Edit3 } from 'lucide-react';
-import { db } from '../db';
+import { dataService } from '../services/dataService';
 import { jsPDF } from 'jspdf';
 
 interface SessionTemplate {
@@ -327,7 +327,7 @@ const SessionWizard: React.FC<SessionWizardProps> = ({ patient, settings, onComp
           documents: documents,
           price: calculatedPrice,
       };
-      await db.sessions.add(sessionData);
+      await dataService.createSession(sessionData);
       localStorage.removeItem(STORAGE_KEY);
       onComplete();
   };

@@ -1,14 +1,36 @@
-import React, { useState } from 'react';
-import { Goal } from '../types';
-import { db } from '../db';
-import { useLiveQuery } from 'dexie-react-hooks';
+import React, { useState, useEffect } from 'react';
+import { Goal, Invoice, Patient, Appointment } from '../types';
+import { dataService } from '../services/dataService';
 import { Target, TrendingUp, Users, Euro, Plus, X, Check, AlertCircle } from 'lucide-react';
 
 const GoalsWidget: React.FC = () => {
-  const goals = useLiveQuery(() => db.goals.where('isActive').equals(1).toArray()) || [];
-  const invoices = useLiveQuery(() => db.invoices.toArray()) || [];
-  const patients = useLiveQuery(() => db.patients.toArray()) || [];
-  const appointments = useLiveQuery(() => db.appointments.where('status').equals('COMPLETED').toArray()) || [];
+  const [goals, setGoals] = useState<Goal[]>([]);
+  const [invoices, setInvoices] = useState<Invoice[]>([]);
+  const [patients, setPatients] = useState<Patient[]>([]);
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const loadData = async () => {
+    try {
+      const [invoicesData, patientsData, appointmentsData] = await Promise.all([
+        dataService.getInvoices(),
+        dataService.getPatients(),
+        dataService.getAppointments()
+      ]);
+      const goalsData = await dataService.getGoals();
+      const activeGoals = goalsData.filter(g => g.isActive);
+
+      setGoals(activeGoals);
+      setInvoices(invoicesData);
+      setPatients(patientsData);
+      setAppointments(appointmentsData.filter(a => a.status === 'COMPLETED'));
+    } catch (error) {
+      console.error('Error loading data:', error);
+    }
+  };
 
   const [showAddModal, setShowAddModal] = useState(false);
   const [newGoal, setNewGoal] = useState<Partial<Goal>>({
@@ -90,7 +112,7 @@ const GoalsWidget: React.FC = () => {
         break;
     }
 
-    await db.goals.add({
+    await dataService.createGoal({
       ...newGoal,
       startDate: start.toISOString(),
       endDate: end.toISOString(),
@@ -98,12 +120,14 @@ const GoalsWidget: React.FC = () => {
       isActive: true
     } as Goal);
 
+    await loadData();
     setNewGoal({ type: 'REVENUE', period: 'MONTHLY', targetValue: 0, unit: 'EUR', isActive: true });
     setShowAddModal(false);
   };
 
   const toggleGoalStatus = async (id: number, currentStatus: boolean) => {
-    await db.goals.update(id, { isActive: !currentStatus });
+    await dataService.updateGoal(id, { isActive: !currentStatus });
+    await loadData();
   };
 
   return (

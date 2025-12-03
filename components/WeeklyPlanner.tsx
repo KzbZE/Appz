@@ -1,13 +1,29 @@
-import React, { useState, useMemo } from 'react';
-import { useLiveQuery } from 'dexie-react-hooks';
-import { db } from '../db';
+import React, { useState, useMemo, useEffect } from 'react';
+import { dataService } from '../services/dataService';
 import { Appointment, Patient, ApptStatus, PatientType } from '../types';
 import { ChevronLeft, ChevronRight, Plus, Calendar, Clock, MapPin, User, X, Edit, Trash2, Sun, Cloud, CloudRain, Save } from 'lucide-react';
 import { checkAuth, createCalendarEvent } from '../services/googleApiService';
 
 const WeeklyPlanner: React.FC = () => {
-  const appointments = useLiveQuery(() => db.appointments.toArray()) || [];
-  const patients = useLiveQuery(() => db.patients.toArray()) || [];
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [patients, setPatients] = useState<Patient[]>([]);
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const loadData = async () => {
+    try {
+      const [appointmentsData, patientsData] = await Promise.all([
+        dataService.getAppointments(),
+        dataService.getPatients()
+      ]);
+      setAppointments(appointmentsData);
+      setPatients(patientsData);
+    } catch (error) {
+      console.error('Error loading data:', error);
+    }
+  };
 
   const [currentWeekStart, setCurrentWeekStart] = useState(() => {
     const now = new Date();
@@ -123,8 +139,8 @@ const WeeklyPlanner: React.FC = () => {
     const slotDate = new Date(weekDays[selectedSlot.day]);
     slotDate.setHours(selectedSlot.hour, 0, 0, 0);
 
-    // Créer le RDV dans la base de données locale
-    const appointmentId = await db.appointments.add({
+    // Créer le RDV dans la base de données
+    const newAppointment = await dataService.createAppointment({
       patientId: newApptData.patientId,
       startTime: slotDate.toISOString(),
       durationMin: newApptData.durationMin,
@@ -137,7 +153,7 @@ const WeeklyPlanner: React.FC = () => {
     // ✅ Exporter automatiquement vers Google Calendar si connecté
     try {
       const isAuthed = await checkAuth();
-      if (isAuthed) {
+      if (isAuthed && newAppointment && newAppointment.id) {
         const patient = patients.find(p => String(p.id) === String(newApptData.patientId));
         const patientName = patient?.name || 'Patient';
 
@@ -154,13 +170,16 @@ const WeeklyPlanner: React.FC = () => {
 
         // Sauvegarder l'ID Google pour la synchro bidirectionnelle
         if (googleEvent && googleEvent.id) {
-          await db.appointments.update(appointmentId, { googleEventId: googleEvent.id });
+          await dataService.updateAppointment(newAppointment.id, { googleEventId: googleEvent.id });
         }
       }
     } catch (error) {
       console.log("Export Google Calendar échoué (normal si non connecté):", error);
       // Ne pas bloquer la création du RDV si l'export Google échoue
     }
+
+    // Refresh appointments list
+    await loadData();
 
     // Reset et fermer
     setShowCreateModal(false);
@@ -175,7 +194,9 @@ const WeeklyPlanner: React.FC = () => {
 
   const handleDeleteAppointment = async (apptId: string | number) => {
     if (confirm('Supprimer ce rendez-vous ?')) {
-      await db.appointments.delete(apptId);
+      await dataService.deleteAppointment(apptId);
+      // Refresh appointments list
+      await loadData();
     }
   };
 

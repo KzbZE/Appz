@@ -1,16 +1,27 @@
-import React, { useState } from 'react';
-import { Invoice, ReminderRecord, ReminderStageConfig } from '../types';
+import React, { useState, useEffect } from 'react';
+import { Invoice, ReminderRecord, ReminderStageConfig, AppSettings } from '../types';
 import { Bell, Send, Mail, Calendar, AlertTriangle, CheckCircle, X } from 'lucide-react';
-import { db } from '../db';
-import { useLiveQuery } from 'dexie-react-hooks';
+import { dataService } from '../services/dataService';
 
 interface ReminderModuleProps {
   invoices: Invoice[];
 }
 
 const ReminderModule: React.FC<ReminderModuleProps> = ({ invoices }) => {
-  const settings = useLiveQuery(() => db.settings.toArray());
+  const [settings, setSettings] = useState<AppSettings[]>([]);
   const currentSettings = settings?.[0];
+
+  useEffect(() => {
+    const loadSettings = async () => {
+      try {
+        const settingsData = await dataService.getSettings();
+        setSettings(settingsData);
+      } catch (error) {
+        console.error('Error loading settings:', error);
+      }
+    };
+    loadSettings();
+  }, []);
 
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
   const [showSendModal, setShowSendModal] = useState(false);
@@ -68,7 +79,7 @@ const ReminderModule: React.FC<ReminderModuleProps> = ({ invoices }) => {
     };
 
     const existingReminders = selectedInvoice.reminders || [];
-    await db.invoices.update(selectedInvoice.id, {
+    await dataService.updateInvoice(selectedInvoice.id, {
       reminders: [...existingReminders, reminderRecord],
       reminderSentAt: new Date().toISOString()
     });

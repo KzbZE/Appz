@@ -1,7 +1,6 @@
-import React, { useState, useMemo } from 'react';
-import { useLiveQuery } from 'dexie-react-hooks';
-import { db } from '../db';
-import { Patient, Session } from '../types';
+import React, { useState, useMemo, useEffect } from 'react';
+import { dataService } from '../services/dataService';
+import { Patient, Session, AppSettings } from '../types';
 import { Send, Mail, AlertCircle, TrendingDown, Users, X, Check, Clock, Target } from 'lucide-react';
 
 interface InactivePatient {
@@ -14,10 +13,28 @@ interface InactivePatient {
 }
 
 const MarketingAutomation: React.FC = () => {
-  const patients = useLiveQuery(() => db.patients.toArray()) || [];
-  const sessions = useLiveQuery(() => db.sessions.toArray()) || [];
-  const settings = useLiveQuery(() => db.settings.toArray());
+  const [patients, setPatients] = useState<Patient[]>([]);
+  const [sessions, setSessions] = useState<Session[]>([]);
+  const [settings, setSettings] = useState<AppSettings[]>([]);
   const currentSettings = settings?.[0];
+
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        const [patientsData, sessionsData, settingsData] = await Promise.all([
+          dataService.getPatients(),
+          dataService.getSessions(),
+          dataService.getSettings()
+        ]);
+        setPatients(patientsData);
+        setSessions(sessionsData);
+        setSettings(settingsData);
+      } catch (error) {
+        console.error('Error loading data:', error);
+      }
+    };
+    loadData();
+  }, []);
 
   const [selectedPatients, setSelectedPatients] = useState<Set<number | string>>(new Set());
   const [showMailModal, setShowMailModal] = useState(false);

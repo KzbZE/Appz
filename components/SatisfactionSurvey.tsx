@@ -1,14 +1,31 @@
-import React, { useState } from 'react';
-import { SurveyResponse, Patient } from '../types';
-import { db } from '../db';
-import { useLiveQuery } from 'dexie-react-hooks';
+import React, { useState, useEffect } from 'react';
+import { SurveyResponse, Patient, AppSettings } from '../types';
+import { dataService } from '../services/dataService';
 import { Star, ThumbsUp, ThumbsDown, TrendingUp, Users, AlertCircle, CheckCircle, MessageSquare, BarChart3, X, Send } from 'lucide-react';
 
 const SatisfactionSurvey: React.FC = () => {
-  const surveyResponses = useLiveQuery(() => db.surveyResponses.toArray()) || [];
-  const patients = useLiveQuery(() => db.patients.toArray()) || [];
-  const settings = useLiveQuery(() => db.settings.toArray());
+  const [surveyResponses, setSurveyResponses] = useState<SurveyResponse[]>([]);
+  const [patients, setPatients] = useState<Patient[]>([]);
+  const [settings, setSettings] = useState<AppSettings[]>([]);
   const currentSettings = settings?.[0];
+
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        const [surveyData, patientsData, settingsData] = await Promise.all([
+          dataService.getSurveyResponses(),
+          dataService.getPatients(),
+          dataService.getSettings()
+        ]);
+        setSurveyResponses(surveyData);
+        setPatients(patientsData);
+        setSettings(settingsData);
+      } catch (error) {
+        console.error('Error loading data:', error);
+      }
+    };
+    loadData();
+  }, []);
 
   const [selectedResponse, setSelectedResponse] = useState<SurveyResponse | null>(null);
   const [showDetailModal, setShowDetailModal] = useState(false);

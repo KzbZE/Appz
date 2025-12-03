@@ -228,6 +228,39 @@ export type Database = {
     created_at: string;
     updated_at: string;
   };
+  appointment_requests: {
+    id: number;
+    patient_id: number;
+    patient_name: string;
+    patient_phone: string;
+    patient_email?: string;
+    patient_address?: string;
+    patient_lat?: number;
+    patient_lng?: number;
+    requested_start_time: string;
+    proposed_start_time?: string;
+    proposed_by?: 'PRACTITIONER' | 'PATIENT';
+    duration_min: number;
+    type: 'CABINET' | 'DOMICILE' | 'STABLE';
+    status: 'PENDING' | 'PRACTITIONER_PROPOSED' | 'PATIENT_PROPOSED' | 'CONFIRMED' | 'REJECTED';
+    notes?: string;
+    history: any;
+    created_at: string;
+    updated_at: string;
+  };
+  notifications: {
+    id: number;
+    type: 'EMAIL' | 'SMS' | 'BOTH';
+    recipient_email?: string;
+    recipient_phone?: string;
+    subject?: string;
+    message: string;
+    status: 'PENDING' | 'SENT' | 'FAILED';
+    sent_at?: string;
+    related_request_id?: number;
+    error?: string;
+    created_at: string;
+  };
 };
 
 // Utility functions for camelCase <-> snake_case conversion

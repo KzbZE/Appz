@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { db } from '../db';
+import { dataService } from '../services/dataService';
 import { AppointmentRequestStatus, PatientType } from '../types';
 import { Calendar, Clock, MapPin, Phone, Mail, User, Send, CheckCircle, Home } from 'lucide-react';
 import AddressAutocomplete from './AddressAutocomplete';
@@ -47,15 +47,12 @@ const PublicAppointmentRequest: React.FC = () => {
     try {
       // Find or create patient
       let patientId: number | undefined;
-      const existingPatients = await db.patients
-        .where('phone')
-        .equals(formData.patientPhone)
-        .toArray();
+      const existingPatients = await dataService.getPatientByPhone(formData.patientPhone);
 
       if (existingPatients.length > 0) {
         // Patient exists, use existing ID and update info if needed
         patientId = existingPatients[0].id as number;
-        await db.patients.update(patientId, {
+        await dataService.updatePatient(patientId, {
           name: formData.patientName,
           email: formData.patientEmail || existingPatients[0].email,
           address: formData.address || existingPatients[0].address,
@@ -67,7 +64,7 @@ const PublicAppointmentRequest: React.FC = () => {
         });
       } else {
         // Create new patient
-        patientId = await db.patients.add({
+        patientId = await dataService.createPatient({
           name: formData.patientName,
           type: formData.patientType as PatientType,
           phone: formData.patientPhone,
@@ -79,13 +76,13 @@ const PublicAppointmentRequest: React.FC = () => {
           lat: formData.lat,
           lng: formData.lng,
           location: formData.appointmentType === 'CABINET' ? 'Cabinet' : formData.city || 'Extérieur'
-        }) as number;
+        });
       }
 
       // Create appointment request
       const requestedStartTime = new Date(`${formData.requestedDate}T${formData.requestedTime}`).toISOString();
 
-      await db.appointmentRequests.add({
+      await dataService.createAppointmentRequest({
         patientId,
         patientName: formData.patientName,
         patientPhone: formData.patientPhone,
@@ -103,16 +100,10 @@ const PublicAppointmentRequest: React.FC = () => {
             message: 'Demande créée par le patient'
           }
         ],
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
         patientAddress: formData.address,
         patientLat: formData.lat,
         patientLng: formData.lng
       });
-
-      // TODO: Send notification to practitioner
-      // This would be done via the notification service in a real scenario
-      // For now, the AppointmentRequestManager will show the pending request
 
       setStep('SUCCESS');
     } catch (err: any) {

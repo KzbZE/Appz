@@ -1,8 +1,7 @@
-import React, { useState, useMemo } from 'react';
-import { Invoice, InvoiceStatus } from '../types';
+import React, { useState, useMemo, useEffect } from 'react';
+import { Invoice, InvoiceStatus, AppSettings } from '../types';
 import { AlertCircle, Send, Clock, Euro, Calendar, Mail, X, Check, TrendingDown, Bell } from 'lucide-react';
-import { useLiveQuery } from 'dexie-react-hooks';
-import { db } from '../db';
+import { dataService } from '../services/dataService';
 import { jsPDF } from 'jspdf';
 
 interface ReminderConfig {
@@ -12,9 +11,26 @@ interface ReminderConfig {
 }
 
 const InvoiceReminders: React.FC = () => {
-  const invoices = useLiveQuery(() => db.invoices.toArray()) || [];
-  const settings = useLiveQuery(() => db.settings.toArray());
+  const [invoices, setInvoices] = useState<Invoice[]>([]);
+  const [settings, setSettings] = useState<AppSettings[]>([]);
   const currentSettings = settings?.[0];
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const loadData = async () => {
+    try {
+      const [invoicesData, settingsData] = await Promise.all([
+        dataService.getInvoices(),
+        dataService.getSettings()
+      ]);
+      setInvoices(invoicesData);
+      setSettings(settingsData);
+    } catch (error) {
+      console.error('Error loading data:', error);
+    }
+  };
 
   const [showMailModal, setShowMailModal] = useState(false);
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
@@ -156,9 +172,10 @@ const InvoiceReminders: React.FC = () => {
 
     // Update reminder date
     if (selectedInvoice.id) {
-      await db.invoices.update(selectedInvoice.id, {
+      await dataService.updateInvoice(selectedInvoice.id, {
         reminderSentAt: new Date().toISOString()
       });
+      await loadData();
     }
 
     alert("Rappel envoyé ! Le PDF a été téléchargé.");
@@ -183,13 +200,14 @@ const InvoiceReminders: React.FC = () => {
 
   const saveConfig = async () => {
     if (currentSettings?.id) {
-      await db.settings.update(currentSettings.id, {
+      await dataService.updateSettings(currentSettings.id, {
         finance: {
           ...currentSettings.finance,
           firstReminderDays: config.firstReminderDays,
           nextReminderFreq: config.nextReminderFreq
         }
       });
+      await loadData();
       setShowConfig(false);
     }
   };

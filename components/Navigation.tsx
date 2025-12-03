@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { LayoutDashboard, Users, TrendingUp, Calendar, Settings, PieChart, BarChart, FileText, Bell, CalendarDays, FileCode, Send, Package, Zap, Star, Gift, Shield, Target, Cloud, Menu, X, FileSpreadsheet } from 'lucide-react';
-import { useLiveQuery } from 'dexie-react-hooks';
-import { db } from '../db';
+import { dataService } from '../services/dataService';
+import { AppSettings } from '../types';
 
 interface NavigationProps {
   currentView: string;
@@ -9,8 +9,20 @@ interface NavigationProps {
 }
 
 const Navigation: React.FC<NavigationProps> = ({ currentView, setView }) => {
-  const settings = useLiveQuery(() => db.settings.toArray())?.[0];
+  const [settings, setSettings] = useState<AppSettings | undefined>(undefined);
   const [showFullMenu, setShowFullMenu] = useState(false);
+
+  useEffect(() => {
+    const loadSettings = async () => {
+      try {
+        const settingsData = await dataService.getSettings();
+        setSettings(settingsData[0]);
+      } catch (error) {
+        console.error('Error loading settings:', error);
+      }
+    };
+    loadSettings();
+  }, []);
 
   const navItems = [
     { id: 'dashboard', label: 'Pilotage', icon: LayoutDashboard, gradient: 'from-teal-500 to-cyan-600' },

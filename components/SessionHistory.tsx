@@ -1,17 +1,37 @@
 
-import React, { useState } from 'react';
-import { useLiveQuery } from 'dexie-react-hooks';
-import { db } from '../db';
-import { Session, Patient, PatientType, TensionPoint } from '../types';
+import React, { useState, useEffect } from 'react';
+import { dataService } from '../services/dataService';
+import { Session, Patient, PatientType, TensionPoint, AppSettings } from '../types';
 import { Search, FileText, Edit, X, Save, Printer, Filter, Trash2, HardDrive, Mail, Download } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
 import { checkAuth, listDriveFolders, uploadToDriveReal } from '../services/googleApiService';
 
 const SessionHistory: React.FC = () => {
-  const sessions = useLiveQuery(() => db.sessions.toArray());
-  const patients = useLiveQuery(() => db.patients.toArray());
-  
+  const [sessions, setSessions] = useState<Session[]>([]);
+  const [patients, setPatients] = useState<Patient[]>([]);
+  const [settings, setSettings] = useState<AppSettings[]>([]);
+  const currentSettings = settings?.[0];
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const loadData = async () => {
+    try {
+      const [sessionsData, patientsData, settingsData] = await Promise.all([
+        dataService.getSessions(),
+        dataService.getPatients(),
+        dataService.getSettings()
+      ]);
+      setSessions(sessionsData);
+      setPatients(patientsData);
+      setSettings(settingsData);
+    } catch (error) {
+      console.error('Error loading data:', error);
+    }
+  };
+
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState<string>('ALL');
   const [selectedSession, setSelectedSession] = useState<Session | null>(null);
@@ -26,10 +46,8 @@ const SessionHistory: React.FC = () => {
   const [selectedFolder, setSelectedFolder] = useState('');
   const [showMailModal, setShowMailModal] = useState(false);
   const [mailForm, setMailForm] = useState({ to: '', subject: '', message: '' });
-  const settings = useLiveQuery(() => db.settings.toArray());
-  const currentSettings = settings?.[0];
 
-  if (!sessions || !patients) return <div className="p-8 text-center text-slate-400">Chargement des dossiers...</div>;
+  if (sessions.length === 0 && patients.length === 0) return <div className="p-8 text-center text-slate-400">Chargement des dossiers...</div>;
 
   const getPatient = (id: string | number) => patients.find(p => String(p.id) === String(id));
 
@@ -53,16 +71,18 @@ const SessionHistory: React.FC = () => {
 
   const handleSaveSession = async () => {
       if (selectedSession && selectedSession.id) {
-          await db.sessions.update(selectedSession.id, { 
+          await dataService.updateSession(selectedSession.id, {
               treatmentNotes: editNotes,
               tensions: editTensions
           });
-          setSelectedSession({ 
-              ...selectedSession, 
+          setSelectedSession({
+              ...selectedSession,
               treatmentNotes: editNotes,
               tensions: editTensions
           });
           setIsEditing(false);
+          // Refresh sessions list
+          await loadData();
       }
   };
 
