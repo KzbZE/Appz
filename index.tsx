@@ -2,6 +2,8 @@ import React from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App';
 import EnvErrorFallback from './components/EnvErrorFallback';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
+import AuthModal from './components/AuthModal';
 
 // Vérifier les variables d'environnement requises
 const checkRequiredEnvVars = () => {
@@ -16,6 +18,25 @@ const checkRequiredEnvVars = () => {
   }
 
   return missingVars;
+};
+
+// Composant wrapper qui gère l'authentification
+const AppWrapper: React.FC = () => {
+  const { isAuthenticated, isLoading } = useAuth();
+
+  if (isLoading) {
+    return (
+      <div className="fixed inset-0 bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 flex items-center justify-center">
+        <div className="text-white text-xl font-bold animate-pulse">Chargement...</div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return <AuthModal />;
+  }
+
+  return <App />;
 };
 
 const container = document.getElementById('root');
@@ -33,11 +54,13 @@ if (container) {
       </React.StrictMode>
     );
   } else {
-    // Tout est OK, charger l'application
+    // Tout est OK, charger l'application avec authentification
     console.log('✅ Variables d\'environnement configurées');
     root.render(
       <React.StrictMode>
-        <App />
+        <AuthProvider>
+          <AppWrapper />
+        </AuthProvider>
       </React.StrictMode>
     );
   }
