@@ -102,3 +102,20 @@ export function setupAutomaticBackup(): void {
   // Supabase gère automatiquement les backups de la base de données
   // Vous pouvez les télécharger depuis le dashboard Supabase
 }
+
+/**
+ * Get last backup date (désactivé - utilisez Supabase dashboard)
+ */
+export function getLastBackupDate(): Date | null {
+  // Avec Supabase, les backups sont gérés automatiquement
+  // Consultez le dashboard Supabase pour voir les backups
+  return null;
+}
+
+/**
+ * Restore from auto backup (désactivé - utilisez Supabase dashboard)
+ */
+export async function restoreFromAutoBackup(): Promise<boolean> {
+  console.warn('Restore via Supabase dashboard recommended');
+  return false;
+}
