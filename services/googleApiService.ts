@@ -1,5 +1,5 @@
 import { AppSettings } from '../types';
-import { db } from '../db';
+import { dataService } from './dataService';
 
 // Types pour GAPI
 declare global {
@@ -54,12 +54,12 @@ export const signInToGoogle = async (settings: AppSettings): Promise<string> => 
         }
         // Sauvegarder le token (session courte)
         if (settings.id) {
-            const updatedGoogle = { 
-                ...settings.google, 
+            const updatedGoogle = {
+                ...settings.google,
                 accessToken: resp.access_token,
                 tokenExpiry: Date.now() + (resp.expires_in * 1000)
             };
-            await db.settings.update(settings.id, { google: updatedGoogle });
+            await dataService.updateSettings(settings.id, { google: updatedGoogle });
         }
         resolve(resp.access_token);
       },
@@ -69,7 +69,8 @@ export const signInToGoogle = async (settings: AppSettings): Promise<string> => 
 };
 
 export const checkAuth = async (): Promise<boolean> => {
-    const settings = (await db.settings.toArray())[0];
+    const settingsArray = await dataService.getSettings();
+    const settings = settingsArray[0];
     if (!settings?.google?.accessToken) {
         console.log("❌ Google: Pas de token sauvegardé");
         return false;
@@ -80,7 +81,7 @@ export const checkAuth = async (): Promise<boolean> => {
         console.log("⏱️ Google: Token expiré. Reconnexion nécessaire.");
         // Nettoyer le token expiré
         if (settings.id) {
-            await db.settings.update(settings.id, {
+            await dataService.updateSettings(settings.id, {
                 google: { ...settings.google, accessToken: undefined, tokenExpiry: undefined }
             });
         }
@@ -241,30 +242,33 @@ export const deleteCalendarEvent = async (eventId: string) => {
     }
 };
 
-// ✅ NOUVEAU : Importer événements Google Calendar vers base locale
+// ✅ NOUVEAU : Importer événements Google Calendar vers Supabase
 export const importCalendarEventsToLocal = async () => {
     try {
         const events = await syncCalendarEvents();
         const imported = [];
 
+        // Récupérer tous les rendez-vous pour vérifier les doublons
+        const allAppointments = await dataService.getAppointments();
+
         for (const event of events) {
-            // Vérifier si l'événement existe déjà dans la base locale
-            const existing = await db.appointments.where('googleEventId').equals(event.id).first();
+            // Vérifier si l'événement existe déjà dans la base
+            const existing = allAppointments.find(a => a.googleEventId === event.id);
 
             if (!existing) {
-                // Créer un nouveau RDV local
+                // Créer un nouveau RDV
                 const appointmentData = {
-                    patientId: 'GOOGLE_IMPORT', // Patient temporaire
+                    patientId: 0, // Patient temporaire (Google import)
                     startTime: event.start.dateTime || event.start.date,
                     durationMin: calculateDuration(event.start.dateTime || event.start.date, event.end.dateTime || event.end.date),
                     status: 'SCHEDULED' as any,
                     type: 'CABINET' as any,
-                    notes: event.summary,
+                    notes: event.summary || 'Événement Google Calendar',
                     price: 0,
                     googleEventId: event.id // Lien avec Google Calendar
                 };
 
-                const id = await db.appointments.add(appointmentData);
+                const id = await dataService.createAppointment(appointmentData);
                 imported.push({ id, googleEventId: event.id });
             }
         }

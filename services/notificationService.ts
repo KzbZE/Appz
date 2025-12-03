@@ -1,4 +1,4 @@
-import { db } from '../db';
+import { dataService } from './dataService';
 import { Notification } from '../types';
 
 // Configuration depuis variables d'environnement
@@ -54,20 +54,20 @@ export async function sendEmail(params: EmailParams): Promise<boolean> {
     if (response.ok) {
       notification.status = 'SENT';
       notification.sentAt = new Date().toISOString();
-      await db.notifications.add(notification);
+      await dataService.createNotification(notification);
       return true;
     } else {
       const error = await response.text();
       notification.status = 'FAILED';
       notification.error = error;
-      await db.notifications.add(notification);
+      await dataService.createNotification(notification);
       console.error('Email error:', error);
       return false;
     }
   } catch (error: any) {
     notification.status = 'FAILED';
     notification.error = error.message;
-    await db.notifications.add(notification);
+    await dataService.createNotification(notification);
     console.error('Email exception:', error);
     return false;
   }
@@ -108,20 +108,20 @@ export async function sendSMS(params: SMSParams): Promise<boolean> {
     if (response.ok) {
       notification.status = 'SENT';
       notification.sentAt = new Date().toISOString();
-      await db.notifications.add(notification);
+      await dataService.createNotification(notification);
       return true;
     } else {
       const error = await response.text();
       notification.status = 'FAILED';
       notification.error = error;
-      await db.notifications.add(notification);
+      await dataService.createNotification(notification);
       console.error('SMS error:', error);
       return false;
     }
   } catch (error: any) {
     notification.status = 'FAILED';
     notification.error = error.message;
-    await db.notifications.add(notification);
+    await dataService.createNotification(notification);
     console.error('SMS exception:', error);
     return false;
   }

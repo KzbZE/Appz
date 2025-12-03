@@ -1,4 +1,4 @@
-import { db } from '../db';
+import { dataService } from './dataService';
 import { Appointment, Patient } from '../types';
 
 // Clé API Google Maps (à configurer dans les settings)
@@ -63,16 +63,17 @@ export async function findNearbyAppointments(
   const endOfDay = new Date(targetDate);
   endOfDay.setHours(23, 59, 59, 999);
 
-  const appointments = await db.appointments
-    .where('startTime')
-    .between(startOfDay.toISOString(), endOfDay.toISOString())
-    .and(appt => appt.status === 'SCHEDULED' && appt.type !== 'CABINET' && appt.type !== 'BLOCK')
-    .toArray();
+  const allAppointments = await dataService.getAppointments();
+  const appointments = allAppointments.filter(appt => {
+    const apptDate = new Date(appt.startTime);
+    return apptDate >= startOfDay && apptDate <= endOfDay &&
+           appt.status === 'SCHEDULED' && appt.type !== 'CABINET' && appt.type !== 'BLOCK';
+  });
 
   const nearby: Array<{ appointment: Appointment; patient: Patient; distance: number }> = [];
 
   for (const appointment of appointments) {
-    const patient = await db.patients.get(appointment.patientId);
+    const patient = await dataService.getPatient(appointment.patientId);
     if (!patient || !patient.lat || !patient.lng) continue;
 
     const distance = calculateDistance(targetLat, targetLng, patient.lat, patient.lng);
@@ -241,10 +242,11 @@ export async function getAllAvailableSlots(
   const endDate = new Date(startDate);
   endDate.setDate(endDate.getDate() + 14);
 
-  const bookedAppointments = await db.appointments
-    .where('startTime')
-    .between(startDate.toISOString(), endDate.toISOString())
-    .toArray();
+  const allAppointments = await dataService.getAppointments();
+  const bookedAppointments = allAppointments.filter(appt => {
+    const apptDate = new Date(appt.startTime);
+    return apptDate >= startDate && apptDate <= endDate;
+  });
 
   const excludeSlots = bookedAppointments.map(a => a.startTime);
 
