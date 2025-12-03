@@ -489,6 +489,36 @@ export class DataService {
     if (error) throw error;
   }
 
+  // ========== RGPD - SUPPRESSION EN CASCADE ==========
+
+  /**
+   * Supprime un patient et toutes ses données associées (conforme RGPD - droit à l'oubli)
+   */
+  async deletePatientWithAllData(patientId: number): Promise<void> {
+    // Supabase gère la suppression en cascade grâce aux ON DELETE CASCADE
+    // Mais on peut aussi le faire manuellement pour plus de contrôle
+    await this.deletePatient(patientId);
+  }
+
+  /**
+   * Exporte toutes les données d'un patient (conforme RGPD - droit d'accès)
+   */
+  async exportPatientData(patientId: number) {
+    const patient = await this.getPatient(patientId);
+    const appointments = (await this.getAppointments()).filter(a => a.patientId === patientId);
+    const sessions = await this.getSessionsByPatient(patientId);
+    const invoices = (await this.getInvoices()).filter(i => i.patientName === patient?.name);
+
+    return {
+      patient,
+      appointments,
+      sessions,
+      invoices,
+      exportDate: new Date().toISOString(),
+      format: 'RGPD_EXPORT_V1'
+    };
+  }
+
   // ========== UTILITIES ==========
 
   /**
