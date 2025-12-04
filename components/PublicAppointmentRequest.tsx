@@ -82,16 +82,15 @@ const PublicAppointmentRequest: React.FC = () => {
       // Create appointment request
       const requestedStartTime = new Date(`${formData.requestedDate}T${formData.requestedTime}`).toISOString();
 
-      await dataService.createAppointmentRequest({
+      // Préparer les données en filtrant les undefined
+      const requestData: any = {
         patientId,
         patientName: formData.patientName,
         patientPhone: formData.patientPhone,
-        patientEmail: formData.patientEmail,
         requestedStartTime,
         durationMin: formData.durationMin,
         type: formData.appointmentType,
         status: AppointmentRequestStatus.PENDING,
-        notes: formData.notes,
         history: [
           {
             date: new Date().toISOString(),
@@ -99,11 +98,17 @@ const PublicAppointmentRequest: React.FC = () => {
             by: 'PATIENT',
             message: 'Demande créée par le patient'
           }
-        ],
-        patientAddress: formData.address,
-        patientLat: formData.lat,
-        patientLng: formData.lng
-      });
+        ]
+      };
+
+      // Ajouter les champs optionnels seulement s'ils sont définis
+      if (formData.patientEmail) requestData.patientEmail = formData.patientEmail;
+      if (formData.notes) requestData.notes = formData.notes;
+      if (formData.address) requestData.patientAddress = formData.address;
+      if (formData.lat !== undefined) requestData.patientLat = formData.lat;
+      if (formData.lng !== undefined) requestData.patientLng = formData.lng;
+
+      await dataService.createAppointmentRequest(requestData);
 
       setStep('SUCCESS');
     } catch (err: any) {

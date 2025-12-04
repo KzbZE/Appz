@@ -364,7 +364,30 @@ const SessionWizard: React.FC<SessionWizardProps> = ({ patient, settings, onComp
 
   // Définir les techniques disponibles selon le type de patient et de séance
   const getTechniquesByType = (): { category: string; techniques: string[] }[] => {
-    if (sessionType === 'MASSAGE' && (patient.type === PatientType.EQUINE || patient.type === PatientType.CANINE)) {
+    if (sessionType === 'MASSAGE' && patient.type === PatientType.HUMAN) {
+      return [
+        {
+          category: 'Massage Bien-être',
+          techniques: ['Relaxant', 'Suédois', 'Californien', 'Balinais', 'Ayurvédique', 'Détente musculaire', 'Anti-stress']
+        },
+        {
+          category: 'Massage Thérapeutique',
+          techniques: ['Drainage lymphatique', 'Points trigger/gâchettes', 'Myofascial', 'Tissus profonds', 'Décontractant', 'Sportif']
+        },
+        {
+          category: 'Techniques Manuelles',
+          techniques: ['Stretching passif', 'Stretching actif', 'Mobilisations articulaires', 'Shiatsu', 'Acupression', 'Effleurage', 'Pétrissage', 'Friction']
+        },
+        {
+          category: 'Spécialisations',
+          techniques: ['Massage dos/nuque', 'Massage jambes lourdes', 'Massage crânien', 'Réflexologie plantaire', 'Massage femme enceinte', 'Massage assis']
+        },
+        {
+          category: 'Approches Complémentaires',
+          techniques: ['Thermothérapie (chaud)', 'Cryothérapie (froid)', 'Ventouses', 'Kinésiotaping', 'Aromathérapie', 'Pierres chaudes']
+        }
+      ];
+    } else if (sessionType === 'MASSAGE' && (patient.type === PatientType.EQUINE || patient.type === PatientType.CANINE)) {
       return [
         {
           category: 'Massage Sportif',

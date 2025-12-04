@@ -138,9 +138,9 @@ const FinanceModule: React.FC<FinanceModuleProps> = ({ invoices: initialInvoices
     }
   }, [initialInvoices]);
 
-  const totalCA = initialInvoices.reduce((acc, inv) => acc + inv.amountPaid, 0);
-  const pendingCA = initialInvoices.reduce((acc, inv) => acc + (inv.amountTTC - inv.amountPaid), 0);
-  const totalExpenses = expenses.reduce((acc, exp) => acc + exp.amount, 0);
+  const totalCA = initialInvoices.reduce((acc, inv) => acc + (inv.amountPaid || 0), 0);
+  const pendingCA = initialInvoices.reduce((acc, inv) => acc + ((inv.amountTTC || 0) - (inv.amountPaid || 0)), 0);
+  const totalExpenses = expenses.reduce((acc, exp) => acc + (exp.amount || 0), 0);
 
   const handleSaveConfig = async () => {
       if (currentSettings?.id) {
@@ -178,8 +178,8 @@ const FinanceModule: React.FC<FinanceModuleProps> = ({ invoices: initialInvoices
       const items = inv.items && inv.items.length > 0 ? inv.items : [{description: "Séance Thérapeutique", price: inv.amountTTC}];
       
       items.forEach(item => {
-          doc.text(item.description, 20, y);
-          doc.text(`${item.price.toFixed(2)} €`, 170, y);
+          doc.text(item.description || 'Prestation', 20, y);
+          doc.text(`${(item.price || 0).toFixed(2)} €`, 170, y);
           y += 10;
       });
 
@@ -559,8 +559,8 @@ const FinanceModule: React.FC<FinanceModuleProps> = ({ invoices: initialInvoices
                                     <tbody className="divide-y divide-gray-50">
                                         {selectedInvoice.items && selectedInvoice.items.length > 0 ? selectedInvoice.items.map((item, i) => (
                                             <tr key={i}>
-                                                <td className="py-2 text-slate-600">{item.description}</td>
-                                                <td className="py-2 text-right font-medium">{item.price.toFixed(2)} €</td>
+                                                <td className="py-2 text-slate-600">{item.description || 'Prestation'}</td>
+                                                <td className="py-2 text-right font-medium">{(item.price || 0).toFixed(2)} €</td>
                                             </tr>
                                         )) : (
                                             <tr><td className="py-2 text-slate-600">Consultation Standard</td><td className="py-2 text-right">{selectedInvoice.amountTTC.toFixed(2)} €</td></tr>
