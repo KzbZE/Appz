@@ -4,6 +4,7 @@ import { Download, TrendingUp, TrendingDown, Euro, Bell, CreditCard, AlertTriang
 import { useSettings, useRecurringInvoices } from '../hooks/useSupabaseData';
 import { jsPDF } from 'jspdf';
 import { checkAuth, listDriveFolders, uploadToDriveReal } from '../services/googleApiService';
+import dataService from '../services/dataService';
 
 interface FinanceModuleProps {
   invoices: Invoice[];
@@ -122,11 +123,15 @@ const FinanceModule: React.FC<FinanceModuleProps> = ({ invoices: initialInvoices
 
   useEffect(() => {
     if (initialInvoices) {
-        initialInvoices.forEach(inv => {
+        initialInvoices.forEach(async (inv) => {
             if (inv.status !== InvoiceStatus.PAID && inv.status !== InvoiceStatus.DRAFT) {
                 const isOverdue = new Date(inv.dueDate) < new Date() && inv.amountPaid < inv.amountTTC;
                 if (isOverdue && inv.status !== InvoiceStatus.OVERDUE && inv.id) {
-                    db.invoices.update(inv.id, { status: InvoiceStatus.OVERDUE });
+                    try {
+                        await dataService.updateInvoice(inv.id, { status: InvoiceStatus.OVERDUE });
+                    } catch (error) {
+                        console.error('Error updating invoice status:', error);
+                    }
                 }
             }
         });
@@ -139,8 +144,13 @@ const FinanceModule: React.FC<FinanceModuleProps> = ({ invoices: initialInvoices
 
   const handleSaveConfig = async () => {
       if (currentSettings?.id) {
-          await db.settings.update(currentSettings.id, { finance: configForm });
-          setIsConfigOpen(false);
+          try {
+              await dataService.updateSettings(currentSettings.id, { ...currentSettings, finance: configForm });
+              setIsConfigOpen(false);
+          } catch (error) {
+              console.error('Error saving finance config:', error);
+              alert('Erreur lors de la sauvegarde de la configuration');
+          }
       }
   };
 
@@ -249,9 +259,14 @@ const FinanceModule: React.FC<FinanceModuleProps> = ({ invoices: initialInvoices
           amountHT: newTotal, // Simplification (no VAT logic change)
       };
 
-      await db.invoices.update(selectedInvoice.id, updatedInvoice);
-      setSelectedInvoice(updatedInvoice as Invoice);
-      setIsEditingInvoice(false);
+      try {
+          await dataService.updateInvoice(selectedInvoice.id, updatedInvoice);
+          setSelectedInvoice(updatedInvoice as Invoice);
+          setIsEditingInvoice(false);
+      } catch (error) {
+          console.error('Error updating invoice:', error);
+          alert('Erreur lors de la mise à jour de la facture');
+      }
   };
 
   const handleItemChange = (index: number, field: 'description' | 'price', value: string) => {
@@ -309,21 +324,26 @@ const FinanceModule: React.FC<FinanceModuleProps> = ({ invoices: initialInvoices
 
       const updatedPayments = [...(selectedInvoice.payments || []), newPayment];
 
-      await db.invoices.update(selectedInvoice.id, {
-          amountPaid: newPaid,
-          status: newStatus,
-          payments: updatedPayments
-      });
+      try {
+          await dataService.updateInvoice(selectedInvoice.id, {
+              amountPaid: newPaid,
+              status: newStatus,
+              payments: updatedPayments
+          });
 
-      // Update local view
-      setSelectedInvoice({
-          ...selectedInvoice,
-          amountPaid: newPaid,
-          status: newStatus,
-          payments: updatedPayments
-      });
+          // Update local view
+          setSelectedInvoice({
+              ...selectedInvoice,
+              amountPaid: newPaid,
+              status: newStatus,
+              payments: updatedPayments
+          });
 
-      setIsPaymentModalOpen(false);
+          setIsPaymentModalOpen(false);
+      } catch (error) {
+          console.error('Error recording payment:', error);
+          alert('Erreur lors de l\'enregistrement du paiement');
+      }
   };
 
   // Mail Functions
@@ -359,9 +379,13 @@ const FinanceModule: React.FC<FinanceModuleProps> = ({ invoices: initialInvoices
 
       // Marquer le rappel comme envoyé
       if (selectedInvoice.id) {
-          await db.invoices.update(selectedInvoice.id, {
-              reminderSentAt: new Date().toISOString()
-          });
+          try {
+              await dataService.updateInvoice(selectedInvoice.id, {
+                  reminderSentAt: new Date().toISOString()
+              });
+          } catch (error) {
+              console.error('Error marking reminder as sent:', error);
+          }
       }
 
       setShowMailModal(false);
@@ -635,7 +659,7 @@ const FinanceModule: React.FC<FinanceModuleProps> = ({ invoices: initialInvoices
             <div className="flex items-center space-x-2"><h3 className="font-bold text-slate-800">Factures & Paiements</h3></div>
             <div className="flex gap-2">
                 <button onClick={() => setIsConfigOpen(true)} className="p-2 bg-gray-100 text-slate-600 hover:bg-gray-200 rounded-lg"><SettingsIcon size={20} /></button>
-                <button onClick={async () => { await db.invoices.add({ number: `F${Date.now()}`, date: new Date().toISOString(), dueDate: new Date(Date.now() + 30*24*60*60*1000).toISOString(), patientName: 'Nouveau Client', amountHT: 0, vatRate: 0, amountTTC: 0, amountPaid: 0, status: InvoiceStatus.DRAFT, items: [], payments: [] }); }} className="px-4 py-2 bg-gradient-to-r from-teal-500 to-cyan-600 hover:from-teal-600 hover:to-cyan-700 text-white text-sm rounded-lg font-bold shadow-lg transition-all duration-300 hover:scale-105">+ Créer Facture</button>
+                <button onClick={async () => { try { await dataService.createInvoice({ number: `F${Date.now()}`, date: new Date().toISOString(), dueDate: new Date(Date.now() + 30*24*60*60*1000).toISOString(), patientName: 'Nouveau Client', amountHT: 0, vatRate: 0, amountTTC: 0, amountPaid: 0, status: InvoiceStatus.DRAFT, items: [], payments: [] }); } catch (error) { console.error('Error creating invoice:', error); alert('Erreur lors de la création de la facture'); } }} className="px-4 py-2 bg-gradient-to-r from-teal-500 to-cyan-600 hover:from-teal-600 hover:to-cyan-700 text-white text-sm rounded-lg font-bold shadow-lg transition-all duration-300 hover:scale-105">+ Créer Facture</button>
             </div>
         </div>
         <div className="bg-white rounded-xl border border-gray-100 overflow-hidden shadow-sm">
@@ -676,28 +700,38 @@ const FinanceModule: React.FC<FinanceModuleProps> = ({ invoices: initialInvoices
           return;
       }
 
-      await db.expenses.add({
-          date: expenseForm.date || new Date().toISOString(),
-          category: expenseForm.category as any,
-          description: expenseForm.description,
-          amount: expenseForm.amount,
-          notes: expenseForm.notes,
-          receiptUrl: expenseForm.receiptUrl
-      });
+      try {
+          await dataService.createExpense({
+              date: expenseForm.date || new Date().toISOString(),
+              category: expenseForm.category as any,
+              description: expenseForm.description,
+              amount: expenseForm.amount,
+              notes: expenseForm.notes,
+              receiptUrl: expenseForm.receiptUrl
+          });
 
-      setExpenseForm({
-          date: new Date().toISOString().split('T')[0],
-          category: 'MATERIEL',
-          description: '',
-          amount: 0,
-          notes: ''
-      });
-      setIsAddingExpense(false);
+          setExpenseForm({
+              date: new Date().toISOString().split('T')[0],
+              category: 'MATERIEL',
+              description: '',
+              amount: 0,
+              notes: ''
+          });
+          setIsAddingExpense(false);
+      } catch (error) {
+          console.error('Error adding expense:', error);
+          alert('Erreur lors de l\'ajout de la dépense');
+      }
   };
 
   const handleDeleteExpense = async (id: number | string) => {
       if (confirm("Êtes-vous sûr de vouloir supprimer cette dépense ?")) {
-          await db.expenses.delete(id);
+          try {
+              await dataService.deleteExpense(id as number);
+          } catch (error) {
+              console.error('Error deleting expense:', error);
+              alert('Erreur lors de la suppression');
+          }
       }
   };
 
@@ -711,33 +745,38 @@ const FinanceModule: React.FC<FinanceModuleProps> = ({ invoices: initialInvoices
 
       const nextDate = calculateNextDueDate(recurringForm.startDate || new Date().toISOString(), recurringForm.frequency || 'MONTHLY');
 
-      await db.recurringInvoices.add({
-          patientName: recurringForm.patientName,
-          subscriptionType: recurringForm.subscriptionType,
-          frequency: recurringForm.frequency || 'MONTHLY',
-          amountHT: recurringForm.amountHT,
-          vatRate: recurringForm.vatRate || 0,
-          items: recurringForm.items || [],
-          startDate: recurringForm.startDate || new Date().toISOString(),
-          nextDueDate: nextDate,
-          endDate: recurringForm.endDate,
-          isActive: true,
-          totalGenerated: 0
-      } as RecurringInvoice);
+      try {
+          await dataService.createRecurringInvoice({
+              patientName: recurringForm.patientName,
+              subscriptionType: recurringForm.subscriptionType,
+              frequency: recurringForm.frequency || 'MONTHLY',
+              amountHT: recurringForm.amountHT,
+              vatRate: recurringForm.vatRate || 0,
+              items: recurringForm.items || [],
+              startDate: recurringForm.startDate || new Date().toISOString(),
+              nextDueDate: nextDate,
+              endDate: recurringForm.endDate,
+              isActive: true,
+              totalGenerated: 0
+          } as RecurringInvoice);
 
-      setRecurringForm({
-          patientName: '',
-          subscriptionType: '',
-          frequency: 'MONTHLY',
-          amountHT: 0,
-          vatRate: 0,
-          items: [],
-          startDate: new Date().toISOString().split('T')[0],
-          nextDueDate: new Date().toISOString().split('T')[0],
-          isActive: true,
-          totalGenerated: 0
-      });
-      setIsAddingRecurring(false);
+          setRecurringForm({
+              patientName: '',
+              subscriptionType: '',
+              frequency: 'MONTHLY',
+              amountHT: 0,
+              vatRate: 0,
+              items: [],
+              startDate: new Date().toISOString().split('T')[0],
+              nextDueDate: new Date().toISOString().split('T')[0],
+              isActive: true,
+              totalGenerated: 0
+          });
+          setIsAddingRecurring(false);
+      } catch (error) {
+          console.error('Error creating recurring invoice:', error);
+          alert('Erreur lors de la création de la facture récurrente');
+      }
   };
 
   const calculateNextDueDate = (currentDate: string, frequency: string): string => {
@@ -762,47 +801,63 @@ const FinanceModule: React.FC<FinanceModuleProps> = ({ invoices: initialInvoices
   const generateInvoiceFromRecurring = async (recurring: RecurringInvoice) => {
       if (!recurring.id) return;
 
-      const invoiceCount = await db.invoices.count();
-      const invoiceNumber = `FAC-${new Date().getFullYear()}-${String(invoiceCount + 1).padStart(4, '0')}`;
+      try {
+          const invoices = await dataService.getInvoices();
+          const invoiceCount = invoices.length;
+          const invoiceNumber = `FAC-${new Date().getFullYear()}-${String(invoiceCount + 1).padStart(4, '0')}`;
 
-      const today = new Date().toISOString().split('T')[0];
-      const dueDate = new Date();
-      dueDate.setDate(dueDate.getDate() + 30);
+          const today = new Date().toISOString().split('T')[0];
+          const dueDate = new Date();
+          dueDate.setDate(dueDate.getDate() + 30);
 
-      const amountTTC = recurring.amountHT * (1 + recurring.vatRate / 100);
+          const amountTTC = recurring.amountHT * (1 + recurring.vatRate / 100);
 
-      await db.invoices.add({
-          number: invoiceNumber,
-          date: today,
-          dueDate: dueDate.toISOString().split('T')[0],
-          patientName: recurring.patientName,
-          amountHT: recurring.amountHT,
-          vatRate: recurring.vatRate,
-          amountTTC: amountTTC,
-          amountPaid: 0,
-          status: InvoiceStatus.DRAFT,
-          items: recurring.items.length > 0 ? recurring.items : [{ description: recurring.subscriptionType, price: amountTTC }],
-          payments: []
-      } as Invoice);
+          await dataService.createInvoice({
+              number: invoiceNumber,
+              date: today,
+              dueDate: dueDate.toISOString().split('T')[0],
+              patientName: recurring.patientName,
+              amountHT: recurring.amountHT,
+              vatRate: recurring.vatRate,
+              amountTTC: amountTTC,
+              amountPaid: 0,
+              status: InvoiceStatus.DRAFT,
+              items: recurring.items.length > 0 ? recurring.items : [{ description: recurring.subscriptionType, price: amountTTC }],
+              payments: []
+          } as Invoice);
 
-      // Update recurring invoice
-      const nextDate = calculateNextDueDate(recurring.nextDueDate, recurring.frequency);
-      await db.recurringInvoices.update(recurring.id, {
-          nextDueDate: nextDate,
-          lastGeneratedDate: today,
-          totalGenerated: (recurring.totalGenerated || 0) + 1
-      });
+          // Update recurring invoice
+          const nextDate = calculateNextDueDate(recurring.nextDueDate, recurring.frequency);
+          await dataService.updateRecurringInvoice(recurring.id, {
+              nextDueDate: nextDate,
+              lastGeneratedDate: today,
+              totalGenerated: (recurring.totalGenerated || 0) + 1
+          });
 
-      alert(`Facture ${invoiceNumber} générée avec succès !`);
+          alert(`Facture ${invoiceNumber} générée avec succès !`);
+      } catch (error) {
+          console.error('Error generating invoice from recurring:', error);
+          alert('Erreur lors de la génération de la facture');
+      }
   };
 
   const toggleRecurringStatus = async (id: number | string, currentStatus: boolean) => {
-      await db.recurringInvoices.update(id, { isActive: !currentStatus });
+      try {
+          await dataService.updateRecurringInvoice(id as number, { isActive: !currentStatus });
+      } catch (error) {
+          console.error('Error toggling recurring status:', error);
+          alert('Erreur lors de la modification du statut');
+      }
   };
 
   const handleDeleteRecurring = async (id: number | string) => {
       if (confirm("Êtes-vous sûr de vouloir supprimer cet abonnement ?")) {
-          await db.recurringInvoices.delete(id);
+          try {
+              await dataService.deleteRecurringInvoice(id as number);
+          } catch (error) {
+              console.error('Error deleting recurring invoice:', error);
+              alert('Erreur lors de la suppression');
+          }
       }
   };
 
