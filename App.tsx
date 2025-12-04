@@ -289,13 +289,13 @@ const App: React.FC = () => {
       let targetAddress = appSettings?.cabinetAddress || "Cabinet";
 
       if (newApptData.isNewPatient) {
-          const newPatient = await dataService.createPatient({
+          const newPatientId = await dataService.createPatient({
               name: newApptData.newPatientName,
               type: newApptData.newPatientType as PatientType,
               location: newApptData.type === 'CABINET' ? 'Cabinet' : 'Extérieur',
               address: newApptData.newPatientAddress || 'Adresse à compléter'
           });
-          patientId = String(newPatient.id);
+          patientId = String(newPatientId);
           patientName = newApptData.newPatientName;
           if (newApptData.type !== 'CABINET') targetAddress = newApptData.newPatientAddress;
           // Refresh patients list
