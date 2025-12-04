@@ -50,6 +50,12 @@ const AddressAutocomplete: React.FC<AddressAutocompleteProps> = ({
   useEffect(() => {
     if (!isLoaded || !inputRef.current) return;
 
+    // Vérifier que google.maps.places est disponible
+    if (!(window as any).google?.maps?.places) {
+      console.error('Google Places API not loaded yet');
+      return;
+    }
+
     try {
       // Initialiser l'autocomplete
       autocompleteRef.current = new google.maps.places.Autocomplete(inputRef.current, {
@@ -104,14 +110,14 @@ const AddressAutocomplete: React.FC<AddressAutocompleteProps> = ({
 
     return () => {
       // Cleanup
-      if (autocompleteRef.current) {
+      if (autocompleteRef.current && (window as any).google?.maps?.event) {
         google.maps.event.clearInstanceListeners(autocompleteRef.current);
       }
     };
   }, [isLoaded, onChange, onPlaceSelected]);
 
   // Fallback si API non configurée
-  if (GOOGLE_PLACES_API_KEY === 'YOUR_GOOGLE_PLACES_API_KEY') {
+  if (!GOOGLE_PLACES_API_KEY || GOOGLE_PLACES_API_KEY === 'YOUR_GOOGLE_PLACES_API_KEY') {
     return (
       <div className="relative">
         <input

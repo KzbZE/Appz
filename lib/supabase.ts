@@ -269,7 +269,12 @@ export const toSnakeCase = (obj: any): any => {
     return obj.map(toSnakeCase);
   } else if (obj !== null && typeof obj === 'object') {
     return Object.keys(obj).reduce((acc, key) => {
-      const snakeKey = key.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
+      // Gère les acronymes: amountHT -> amount_ht (pas amount_h_t)
+      // et les camelCase: camelCase -> camel_case
+      const snakeKey = key
+        .replace(/([A-Z]+)([A-Z][a-z])/g, '$1_$2') // HTValue -> ht_value
+        .replace(/([a-z\d])([A-Z])/g, '$1_$2')     // camelCase -> camel_case
+        .toLowerCase();
       acc[snakeKey] = toSnakeCase(obj[key]);
       return acc;
     }, {} as any);
