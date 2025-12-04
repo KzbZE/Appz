@@ -288,19 +288,10 @@ const App: React.FC = () => {
       let patientName = "Patient";
       let targetAddress = appSettings?.cabinetAddress || "Cabinet";
 
+      // Déterminer l'adresse et le nom AVANT de créer le patient
       if (newApptData.isNewPatient) {
-          const newPatientId = await dataService.createPatient({
-              name: newApptData.newPatientName,
-              type: newApptData.newPatientType as PatientType,
-              location: newApptData.type === 'CABINET' ? 'Cabinet' : 'Extérieur',
-              address: newApptData.newPatientAddress || 'Adresse à compléter'
-          });
-          patientId = String(newPatientId);
           patientName = newApptData.newPatientName;
           if (newApptData.type !== 'CABINET') targetAddress = newApptData.newPatientAddress;
-          // Refresh patients list
-          const patientsData = await dataService.getPatients();
-          setPatients(patientsData);
       } else {
           const p = patients?.find(p => String(p.id) === String(patientId));
           if (p) {
@@ -311,6 +302,7 @@ const App: React.FC = () => {
 
       const start = new Date(`${newApptData.date}T${newApptData.time}`);
 
+      // ✅ VÉRIFIER LA DISPONIBILITÉ AVANT DE CRÉER LE PATIENT
       const check = checkAvailability(
           start,
           60,
@@ -320,7 +312,33 @@ const App: React.FC = () => {
       );
 
       if (!check.available && !confirm(`Attention Conflit Logistique:\n${check.reason}\n\nVoulez-vous forcer le rendez-vous ?`)) {
-          return;
+          return; // ❌ Annulation : le patient n'a pas encore été créé
+      }
+
+      // ✅ CRÉER LE PATIENT SEULEMENT SI LA DISPONIBILITÉ EST OK
+      if (newApptData.isNewPatient) {
+          // Vérifier si le patient existe déjà (par nom pour éviter doublons)
+          const existingPatient = patients?.find(p =>
+              p.name.toLowerCase() === newApptData.newPatientName.toLowerCase()
+          );
+
+          if (existingPatient) {
+              // Patient existe déjà, utiliser son ID
+              patientId = String(existingPatient.id);
+          } else {
+              // Créer le nouveau patient
+              const newPatientId = await dataService.createPatient({
+                  name: newApptData.newPatientName,
+                  type: newApptData.newPatientType as PatientType,
+                  location: newApptData.type === 'CABINET' ? 'Cabinet' : 'Extérieur',
+                  address: newApptData.newPatientAddress || 'Adresse à compléter'
+              });
+              patientId = String(newPatientId);
+
+              // Refresh patients list
+              const patientsData = await dataService.getPatients();
+              setPatients(patientsData);
+          }
       }
 
       let logisticsData = {};
