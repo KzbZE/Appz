@@ -4,7 +4,7 @@ import { Download, TrendingUp, TrendingDown, Euro, Bell, CreditCard, AlertTriang
 import { useSettings, useRecurringInvoices } from '../hooks/useSupabaseData';
 import { jsPDF } from 'jspdf';
 import { checkAuth, listDriveFolders, uploadToDriveReal } from '../services/googleApiService';
-import dataService from '../services/dataService';
+import { dataService } from '../services/dataService';
 
 interface FinanceModuleProps {
   invoices: Invoice[];
