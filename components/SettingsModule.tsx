@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AppSettings } from '../types';
 import { Save, MapPin, DollarSign, Share2, Instagram, Facebook, Palette, Image, User, Type, Upload, Settings as SettingsIcon, Briefcase, Cloud, Database, Download, UploadCloud, AlertTriangle, CheckCircle } from 'lucide-react';
 import { signInToGoogle } from '../services/googleApiService';
@@ -13,6 +13,11 @@ const SettingsModule: React.FC<SettingsModuleProps> = ({ settings, onSave }) => 
   const [localSettings, setLocalSettings] = useState<AppSettings>(settings);
   const [isConnecting, setIsConnecting] = useState(false);
   const [lastBackupDate, setLastBackupDate] = useState<string | null>(getLastBackupDate());
+
+  // Sync local state with props when settings change
+  useEffect(() => {
+    setLocalSettings(settings);
+  }, [settings]);
 
   const handleSave = () => {
     onSave(localSettings);

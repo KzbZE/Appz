@@ -412,7 +412,7 @@ const PatientList: React.FC<PatientListProps> = ({ patients, onSelectPatient, on
                         <div className="flex justify-between py-2 border-b border-gray-50">
                             <span className="text-slate-500">Pathologies connues</span>
                             <div className="flex gap-1">
-                                {p.medicalHistory.pathologies.map(path => (
+                                {(p.medicalHistory?.pathologies || []).map(path => (
                                     <span key={path} className="px-2 py-0.5 bg-red-50 text-red-600 text-xs rounded-full font-medium">{path}</span>
                                 ))}
                             </div>

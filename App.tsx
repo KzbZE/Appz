@@ -54,13 +54,23 @@ const App: React.FC = () => {
   const [isNewApptModalOpen, setIsNewApptModalOpen] = useState(false);
   const [isClientBookingOpen, setIsClientBookingOpen] = useState(false);
   const [isQuickSessionModalOpen, setIsQuickSessionModalOpen] = useState(false);
+  const [isNewPatientModalOpen, setIsNewPatientModalOpen] = useState(false);
   const [editingApptId, setEditingApptId] = useState<string | number | null>(null);
-  
+
   const [isCreatingQuickPatient, setIsCreatingQuickPatient] = useState(false);
   const [quickPatientForm, setQuickPatientForm] = useState({
       name: '',
       type: 'HUMAN',
       ownerName: ''
+  });
+
+  const [newPatientForm, setNewPatientForm] = useState({
+      name: '',
+      type: 'HUMAN' as PatientType,
+      ownerName: '',
+      email: '',
+      phone: '',
+      address: ''
   });
 
   const [newApptData, setNewApptData] = useState({
@@ -227,6 +237,44 @@ const App: React.FC = () => {
           const patientsData = await dataService.getPatients();
           setPatients(patientsData);
           handleInstantSession(newPatient);
+      }
+  };
+
+  const handleCreatePatientOnly = async () => {
+      if (!newPatientForm.name) {
+          alert('Le nom du patient est obligatoire');
+          return;
+      }
+
+      try {
+          await dataService.createPatient({
+              name: newPatientForm.name,
+              type: newPatientForm.type,
+              ownerName: newPatientForm.ownerName,
+              email: newPatientForm.email,
+              phone: newPatientForm.phone,
+              address: newPatientForm.address || 'Adresse à compléter',
+              location: newPatientForm.type === PatientType.HUMAN ? 'Cabinet' : 'Extérieur',
+          });
+
+          // Refresh patients list
+          const patientsData = await dataService.getPatients();
+          setPatients(patientsData);
+
+          // Reset form and close modal
+          setNewPatientForm({
+              name: '',
+              type: PatientType.HUMAN,
+              ownerName: '',
+              email: '',
+              phone: '',
+              address: ''
+          });
+          setIsNewPatientModalOpen(false);
+          alert('Patient créé avec succès !');
+      } catch (error) {
+          console.error('Error creating patient:', error);
+          alert('Erreur lors de la création du patient');
       }
   };
 
@@ -650,6 +698,109 @@ const App: React.FC = () => {
       );
   };
 
+  const renderNewPatientModal = () => (
+      <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 animate-fadeIn">
+          <div className="bg-white rounded-2xl w-full max-w-md p-6 shadow-xl max-h-[90vh] overflow-y-auto">
+              <div className="flex justify-between items-center mb-6">
+                  <h2 className="text-2xl font-bold text-slate-800">Créer un Patient</h2>
+                  <button
+                      onClick={() => setIsNewPatientModalOpen(false)}
+                      className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                  >
+                      <X size={20} />
+                  </button>
+              </div>
+
+              <div className="space-y-4">
+                  <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-2">Nom *</label>
+                      <input
+                          type="text"
+                          className="w-full p-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-primary-200 focus:border-primary-500 outline-none"
+                          placeholder="Nom du patient"
+                          value={newPatientForm.name}
+                          onChange={e => setNewPatientForm({...newPatientForm, name: e.target.value})}
+                      />
+                  </div>
+
+                  <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-2">Type *</label>
+                      <select
+                          className="w-full p-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-primary-200 focus:border-primary-500 outline-none"
+                          value={newPatientForm.type}
+                          onChange={e => setNewPatientForm({...newPatientForm, type: e.target.value as PatientType})}
+                      >
+                          <option value="HUMAN">Humain</option>
+                          <option value="EQUINE">Cheval</option>
+                          <option value="CANINE">Chien</option>
+                      </select>
+                  </div>
+
+                  {newPatientForm.type !== PatientType.HUMAN && (
+                      <div>
+                          <label className="block text-sm font-medium text-slate-700 mb-2">Nom du propriétaire</label>
+                          <input
+                              type="text"
+                              className="w-full p-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-primary-200 focus:border-primary-500 outline-none"
+                              placeholder="Nom du propriétaire"
+                              value={newPatientForm.ownerName}
+                              onChange={e => setNewPatientForm({...newPatientForm, ownerName: e.target.value})}
+                          />
+                      </div>
+                  )}
+
+                  <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-2">Email</label>
+                      <input
+                          type="email"
+                          className="w-full p-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-primary-200 focus:border-primary-500 outline-none"
+                          placeholder="email@exemple.com"
+                          value={newPatientForm.email}
+                          onChange={e => setNewPatientForm({...newPatientForm, email: e.target.value})}
+                      />
+                  </div>
+
+                  <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-2">Téléphone</label>
+                      <input
+                          type="tel"
+                          className="w-full p-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-primary-200 focus:border-primary-500 outline-none"
+                          placeholder="06 12 34 56 78"
+                          value={newPatientForm.phone}
+                          onChange={e => setNewPatientForm({...newPatientForm, phone: e.target.value})}
+                      />
+                  </div>
+
+                  <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-2">Adresse</label>
+                      <input
+                          type="text"
+                          className="w-full p-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-primary-200 focus:border-primary-500 outline-none"
+                          placeholder="123 Rue de la Santé, Paris"
+                          value={newPatientForm.address}
+                          onChange={e => setNewPatientForm({...newPatientForm, address: e.target.value})}
+                      />
+                  </div>
+
+                  <div className="flex gap-3 pt-4">
+                      <button
+                          onClick={() => setIsNewPatientModalOpen(false)}
+                          className="flex-1 py-3 px-4 border border-gray-200 rounded-lg font-medium text-slate-700 hover:bg-gray-50 transition-colors"
+                      >
+                          Annuler
+                      </button>
+                      <button
+                          onClick={handleCreatePatientOnly}
+                          className="flex-1 py-3 px-4 bg-gradient-to-r from-teal-500 to-cyan-600 hover:from-teal-600 hover:to-cyan-700 text-white rounded-lg font-bold shadow-lg transition-all"
+                      >
+                          Créer Patient
+                      </button>
+                  </div>
+              </div>
+          </div>
+      </div>
+  );
+
   return (
     <div className="flex h-screen bg-white w-full overflow-hidden">
       <Navigation currentView={currentView} setView={setCurrentView} />
@@ -712,8 +863,7 @@ const App: React.FC = () => {
                  setIsNewApptModalOpen(true);
               }}
               onAddPatient={() => {
-                 setNewApptData({...newApptData, isNewPatient: true, patientId: ''});
-                 setIsNewApptModalOpen(true);
+                 setIsNewPatientModalOpen(true);
               }}
               onInstantSession={handleInstantSession}
               onUpdatePatient={async (p) => {
@@ -777,6 +927,7 @@ const App: React.FC = () => {
 
         {isNewApptModalOpen && renderNewApptModal()}
         {isQuickSessionModalOpen && renderQuickSessionModal()}
+        {isNewPatientModalOpen && renderNewPatientModal()}
         {isClientBookingOpen && (
             <div className="fixed inset-0 z-50 bg-white">
                 <button

@@ -495,8 +495,33 @@ export class DataService {
    * Supprime un patient et toutes ses données associées (conforme RGPD - droit à l'oubli)
    */
   async deletePatientWithAllData(patientId: number): Promise<void> {
-    // Supabase gère la suppression en cascade grâce aux ON DELETE CASCADE
-    // Mais on peut aussi le faire manuellement pour plus de contrôle
+    // Récupérer le nom du patient pour supprimer les factures
+    const patient = await this.getPatient(patientId);
+    if (!patient) throw new Error('Patient not found');
+
+    // 1. Supprimer les factures (non liées par FK, utilisent patient_name)
+    const { error: invoicesError } = await supabase
+      .from('invoices')
+      .delete()
+      .eq('patient_name', patient.name);
+    if (invoicesError) console.error('Error deleting invoices:', invoicesError);
+
+    // 2. Supprimer les factures récurrentes (non liées par FK, utilisent patient_name)
+    const { error: recurringError } = await supabase
+      .from('recurring_invoices')
+      .delete()
+      .eq('patient_name', patient.name);
+    if (recurringError) console.error('Error deleting recurring invoices:', recurringError);
+
+    // 3. Supprimer le patient (les autres tables ont ON DELETE CASCADE)
+    // Cela supprimera automatiquement:
+    // - appointments
+    // - sessions
+    // - goals
+    // - loyalty_cards
+    // - loyalty_transactions
+    // - referrals
+    // - promotions
     await this.deletePatient(patientId);
   }
 

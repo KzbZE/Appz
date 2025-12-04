@@ -312,9 +312,11 @@ const SessionWizard: React.FC<SessionWizardProps> = ({ patient, settings, onComp
 
   const handleFinishSession = async () => {
       if (!patient.id) return;
+
+      const now = new Date();
       const sessionData: Session = {
           patientId: patient.id,
-          date: new Date().toISOString(),
+          date: now.toISOString(),
           type: sessionType,
           anamnesis: {
             ...anamnesis,
@@ -327,7 +329,35 @@ const SessionWizard: React.FC<SessionWizardProps> = ({ patient, settings, onComp
           documents: documents,
           price: calculatedPrice,
       };
+
       await dataService.createSession(sessionData);
+
+      // Créer la facture automatiquement
+      const invoiceNumber = `INV-${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}-${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}${String(now.getSeconds()).padStart(2, '0')}`;
+      const amountHT = calculatedPrice / 1.2; // Calculer HT à partir du TTC (TVA 20%)
+      const vatRate = 20;
+      const amountTTC = calculatedPrice;
+
+      const invoice = {
+          number: invoiceNumber,
+          date: now.toISOString(),
+          dueDate: new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString(), // +30 jours
+          patientName: patient.name,
+          amountHT: Number(amountHT.toFixed(2)),
+          vatRate: vatRate,
+          amountTTC: amountTTC,
+          amountPaid: 0,
+          status: 'UNPAID' as const,
+          items: [{
+              description: `Séance ${sessionType === 'KINESIO' ? 'Kinésithérapie' : sessionType === 'MASSAGE' ? 'Massage' : 'Suivi'} - ${patient.name}`,
+              price: calculatedPrice
+          }],
+          reminders: [],
+          payments: []
+      };
+
+      await dataService.createInvoice(invoice);
+
       localStorage.removeItem(STORAGE_KEY);
       onComplete();
   };
