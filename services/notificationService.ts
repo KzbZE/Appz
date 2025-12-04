@@ -266,5 +266,144 @@ N'hésitez pas à faire une nouvelle demande pour un autre créneau.
 TheraFlow`;
 
     return sendNotification(patientEmail, patientPhone, subject, notifMessage, requestId);
+  },
+
+  /**
+   * Nouveau RDV créé → Notifier le patient
+   */
+  notifyAppointmentCreated: async (
+    patientEmail: string | undefined,
+    patientPhone: string | undefined,
+    patientName: string,
+    appointmentTime: string,
+    notes: string | undefined,
+    appointmentId: number | string
+  ) => {
+    const date = new Date(appointmentTime);
+    const dateStr = date.toLocaleDateString('fr-FR', {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric'
+    });
+    const timeStr = date.toLocaleTimeString('fr-FR', {
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+
+    const subject = '✅ Rendez-vous confirmé';
+    const message = `Bonjour ${patientName},
+
+Votre rendez-vous est confirmé pour le ${dateStr} à ${timeStr}.
+
+${notes ? `Notes : ${notes}\n` : ''}
+À bientôt !
+TheraFlow`;
+
+    return sendNotification(patientEmail, patientPhone, subject, message, appointmentId);
+  },
+
+  /**
+   * RDV modifié → Notifier le patient
+   */
+  notifyAppointmentUpdated: async (
+    patientEmail: string | undefined,
+    patientPhone: string | undefined,
+    patientName: string,
+    appointmentTime: string,
+    notes: string | undefined,
+    appointmentId: number | string
+  ) => {
+    const date = new Date(appointmentTime);
+    const dateStr = date.toLocaleDateString('fr-FR', {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric'
+    });
+    const timeStr = date.toLocaleTimeString('fr-FR', {
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+
+    const subject = '📅 Rendez-vous modifié';
+    const message = `Bonjour ${patientName},
+
+Votre rendez-vous a été modifié.
+Nouvelle date : ${dateStr} à ${timeStr}.
+
+${notes ? `Notes : ${notes}\n` : ''}
+À bientôt !
+TheraFlow`;
+
+    return sendNotification(patientEmail, patientPhone, subject, message, appointmentId);
+  },
+
+  /**
+   * Rappel 24h avant → Notifier le patient
+   */
+  notifyAppointmentReminder: async (
+    patientEmail: string | undefined,
+    patientPhone: string | undefined,
+    patientName: string,
+    appointmentTime: string,
+    notes: string | undefined,
+    appointmentId: number | string
+  ) => {
+    const date = new Date(appointmentTime);
+    const dateStr = date.toLocaleDateString('fr-FR', {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long'
+    });
+    const timeStr = date.toLocaleTimeString('fr-FR', {
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+
+    const subject = '⏰ Rappel de rendez-vous';
+    const message = `Bonjour ${patientName},
+
+Rappel : Vous avez rendez-vous demain ${dateStr} à ${timeStr}.
+
+${notes ? `Notes : ${notes}\n` : ''}
+À demain !
+TheraFlow`;
+
+    return sendNotification(patientEmail, patientPhone, subject, message, appointmentId);
+  },
+
+  /**
+   * RDV annulé → Notifier le patient
+   */
+  notifyAppointmentCancelled: async (
+    patientEmail: string | undefined,
+    patientPhone: string | undefined,
+    patientName: string,
+    appointmentTime: string,
+    appointmentId: number | string
+  ) => {
+    const date = new Date(appointmentTime);
+    const dateStr = date.toLocaleDateString('fr-FR', {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric'
+    });
+    const timeStr = date.toLocaleTimeString('fr-FR', {
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+
+    const subject = '❌ Rendez-vous annulé';
+    const message = `Bonjour ${patientName},
+
+Votre rendez-vous du ${dateStr} à ${timeStr} a été annulé.
+
+Contactez-nous pour reprogrammer.
+
+TheraFlow`;
+
+    return sendNotification(patientEmail, patientPhone, subject, message, appointmentId);
   }
 };

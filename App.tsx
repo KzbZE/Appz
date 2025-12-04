@@ -25,6 +25,7 @@ import MigrationWizard from './components/MigrationWizard';
 import UrssafModule from './components/UrssafModule';
 import { checkAvailability, calculateLogistics, suggestOptimalTimeSlots } from './services/logisticsService';
 import { suggestOptimizedSlots, getAllAvailableSlots } from './services/optimizationService';
+import { AppointmentNotifications } from './services/notificationService';
 import { Patient, Appointment, ApptStatus, PatientType, Invoice, InvoiceStatus, Expense, AppSettings } from './types';
 import { X, Save, Clock, MapPin, User, Globe, AlertTriangle, Search, Zap, Plus, ChevronLeft } from 'lucide-react';
 import { initGoogleClient } from './services/googleApiService';
@@ -413,8 +414,42 @@ const App: React.FC = () => {
 
       if (editingApptId) {
           await dataService.updateAppointment(editingApptId, apptData);
+
+          // Notification de modification
+          const patient = patients?.find(p => String(p.id) === String(patientId));
+          if (patient && patient.id) {
+              try {
+                  await AppointmentNotifications.notifyAppointmentUpdated(
+                      patient.email,
+                      patient.phone,
+                      patient.name,
+                      start.toISOString(),
+                      newApptData.notes,
+                      editingApptId
+                  );
+              } catch (error) {
+                  console.error('Error sending notification:', error);
+              }
+          }
       } else {
-          await dataService.createAppointment(apptData as Appointment);
+          const newApptId = await dataService.createAppointment(apptData as Appointment);
+
+          // Notification de création
+          const patient = patients?.find(p => String(p.id) === String(patientId));
+          if (patient && patient.id && newApptId) {
+              try {
+                  await AppointmentNotifications.notifyAppointmentCreated(
+                      patient.email,
+                      patient.phone,
+                      patient.name,
+                      start.toISOString(),
+                      newApptData.notes,
+                      newApptId
+                  );
+              } catch (error) {
+                  console.error('Error sending notification:', error);
+              }
+          }
       }
 
       // Refresh appointments list
